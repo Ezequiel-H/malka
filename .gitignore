@@ -30,3 +30,6 @@ Thumbs.db
 # MongoDB
 data/
 
+# Backend (tiene su propio repositorio)
+backend/
+
