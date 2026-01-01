@@ -65,20 +65,49 @@ const ActivitiesManagement = () => {
     }
   };
 
-  const handleExport = async (activityId) => {
+  const handleExport = async (activity) => {
     try {
-      const response = await axios.get(`/activities/${activityId}/export`, {
+      const response = await axios.get(`/activities/${activity._id}/export`, {
         responseType: 'blob'
       });
+      
+      // Build filename the same way as backend
+      const formatDateForFilename = (date) => {
+        if (!date) return 'sin-fecha';
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      const formatDateTimeForFilename = (date) => {
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        const seconds = String(d.getSeconds()).padStart(2, '0');
+        return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
+      };
+
+      // Clean activity title for filename
+      const cleanTitle = activity.titulo.replace(/[^a-z0-9\s]/gi, '').replace(/\s+/g, '_');
+      const eventDate = formatDateForFilename(activity.fecha);
+      const exportDateTime = formatDateTimeForFilename(new Date());
+      const filename = `${cleanTitle}_${eventDate}_exportado_${exportDateTime}.xlsx`;
       
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `inscriptos-${activityId}.xlsx`);
+      link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
       link.remove();
+      window.URL.revokeObjectURL(url);
     } catch (error) {
+      console.error('Error al exportar:', error);
       showError('Error al exportar inscripciones');
     }
   };
@@ -137,7 +166,7 @@ const ActivitiesManagement = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {activities.map(activity => (
-              <div key={activity._id} className="card hover:shadow-xl transition-shadow">
+              <div key={activity._id} className="card hover:shadow-xl transition-shadow flex flex-col">
                 <div className="flex justify-between items-start mb-4">
                   <h2 className="text-xl font-bold text-gray-800 flex-1">{activity.titulo}</h2>
                   {getEstadoBadge(activity.estado)}
@@ -164,7 +193,7 @@ const ActivitiesManagement = () => {
                   <p><strong>Tipo:</strong> {activity.tipo === 'recurrente' ? 'Recurrente' : 'Única'}</p>
                 </div>
 
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-2 flex-wrap mt-auto">
                   <button
                     onClick={() => navigate(`/admin/activities/${activity._id}/inscriptions`)}
                     className="btn btn-primary flex-1 min-w-[100px]"
@@ -178,7 +207,7 @@ const ActivitiesManagement = () => {
                     Editar
                   </button>
                   <button
-                    onClick={() => handleExport(activity._id)}
+                    onClick={() => handleExport(activity)}
                     className="btn btn-success flex-1 min-w-[100px]"
                   >
                     Exportar Excel

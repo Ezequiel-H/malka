@@ -3,6 +3,24 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
 
+// Helper function to format date as YYYY-MM-DD - simple date, no timezone conversion
+// Just extract the year, month, day as simple numbers
+const formatDateToString = (date) => {
+  if (!date) return '';
+  
+  // If it's already a string in YYYY-MM-DD format, return it as-is
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
+    return date.substring(0, 10);
+  }
+  
+  // For Date objects, extract year, month, day as simple numbers
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const ActivitiesList = () => {
   const { showSuccess, showError } = useToast();
   const [activities, setActivities] = useState([]);
@@ -18,6 +36,8 @@ const ActivitiesList = () => {
   const [showDateModal, setShowDateModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showCancelPolicyModal, setShowCancelPolicyModal] = useState(false);
 
   const navigate = useNavigate();
 
@@ -42,6 +62,30 @@ const ActivitiesList = () => {
     fetchActivities();
   }, [filters]);
 
+  // Cerrar modal con ESC
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        if (showCancelPolicyModal) {
+          setShowCancelPolicyModal(false);
+        } else if (showDetailModal) {
+          setShowDetailModal(false);
+          setSelectedActivity(null);
+          setAvailableDates([]);
+        } else if (showDateModal) {
+          setShowDateModal(false);
+          setSelectedActivity(null);
+          setAvailableDates([]);
+        } else if (showConfirmModal) {
+          setShowConfirmModal(false);
+          setSelectedDate(null);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [showDetailModal, showDateModal, showConfirmModal, showCancelPolicyModal]);
+
   const getDateRange = (periodo) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -58,7 +102,7 @@ const ActivitiesList = () => {
         const sunday = new Date(monday);
         sunday.setDate(monday.getDate() + 6);
         sunday.setHours(23, 59, 59, 999);
-        return { fechaDesde: monday.toISOString().split('T')[0], fechaHasta: sunday.toISOString().split('T')[0] };
+        return { fechaDesde: formatDateToString(monday), fechaHasta: formatDateToString(sunday) };
       }
       case 'semana-que-viene': {
         // Lunes de la próxima semana
@@ -71,7 +115,7 @@ const ActivitiesList = () => {
         const sunday = new Date(monday);
         sunday.setDate(monday.getDate() + 6);
         sunday.setHours(23, 59, 59, 999);
-        return { fechaDesde: monday.toISOString().split('T')[0], fechaHasta: sunday.toISOString().split('T')[0] };
+        return { fechaDesde: formatDateToString(monday), fechaHasta: formatDateToString(sunday) };
       }
       case 'este-mes': {
         // Primer día del mes actual
@@ -80,10 +124,56 @@ const ActivitiesList = () => {
         // Último día del mes actual
         const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
         lastDay.setHours(23, 59, 59, 999);
-        return { fechaDesde: firstDay.toISOString().split('T')[0], fechaHasta: lastDay.toISOString().split('T')[0] };
+        return { fechaDesde: formatDateToString(firstDay), fechaHasta: formatDateToString(lastDay) };
+      }
+      case 'siguiente-mes': {
+        // Primer día del siguiente mes
+        const firstDay = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        firstDay.setHours(0, 0, 0, 0);
+        // Último día del siguiente mes
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+        lastDay.setHours(23, 59, 59, 999);
+        return { fechaDesde: formatDateToString(firstDay), fechaHasta: formatDateToString(lastDay) };
       }
       default:
         return { fechaDesde: '', fechaHasta: '' };
+    }
+  };
+
+  const getPeriodLabel = (periodo) => {
+    if (!periodo) return 'Todos los períodos';
+    
+    const { fechaDesde, fechaHasta } = getDateRange(periodo);
+    if (!fechaDesde || !fechaHasta) return 'Todos los períodos';
+    
+    const formatDate = (dateStr) => {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
+    };
+    
+    const desde = formatDate(fechaDesde);
+    const hasta = formatDate(fechaHasta);
+    
+    switch (periodo) {
+      case 'esta-semana':
+        return `Esta semana (${desde} - ${hasta})`;
+      case 'semana-que-viene':
+        return `Semana que viene (${desde} - ${hasta})`;
+      case 'este-mes': {
+        const today = new Date();
+        const monthName = today.toLocaleDateString('es-AR', { month: 'long' });
+        const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+        return capitalizedMonth;
+      }
+      case 'siguiente-mes': {
+        const today = new Date();
+        const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        const monthName = nextMonth.toLocaleDateString('es-AR', { month: 'long' });
+        const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+        return capitalizedMonth;
+      }
+      default:
+        return 'Todos los períodos';
     }
   };
 
@@ -110,9 +200,21 @@ const ActivitiesList = () => {
       }
 
       const response = await axios.get(`/activities?${params.toString()}`);
-      setActivities(response.data.activities);
+      const updatedActivities = response.data.activities;
+      setActivities(updatedActivities);
+      
+      // Si hay una actividad seleccionada, actualizarla también
+      if (selectedActivity) {
+        const updatedActivity = updatedActivities.find(a => a._id === selectedActivity._id);
+        if (updatedActivity) {
+          setSelectedActivity(updatedActivity);
+        }
+      }
+      
+      return updatedActivities;
     } catch (error) {
       console.error('Error fetching activities:', error);
+      return [];
     } finally {
       setLoading(false);
     }
@@ -125,6 +227,9 @@ const ActivitiesList = () => {
       setShowConfirmModal(false);
       setSelectedDate(null);
       
+      // Recargar las actividades primero (esto actualizará selectedActivity automáticamente)
+      await fetchActivities();
+      
       // Recargar las fechas disponibles para actualizar el estado de inscripción
       if (selectedActivity && selectedActivity.tipo === 'recurrente') {
         try {
@@ -135,9 +240,10 @@ const ActivitiesList = () => {
         }
       } else {
         setShowDateModal(false);
-        setSelectedActivity(null);
+        if (!showDetailModal) {
+          setSelectedActivity(null);
+        }
         setAvailableDates([]);
-        fetchActivities();
       }
     } catch (error) {
       showError(error.response?.data?.message || 'Error al inscribirse');
@@ -199,10 +305,37 @@ const ActivitiesList = () => {
     }
   };
 
-  const handleInscribeClick = async (activity) => {
+  const handleActivityClick = (activity, e) => {
+    // Evitar que se abra el modal si se hace clic en un botón o enlace
+    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) {
+      return;
+    }
+    setSelectedActivity(activity);
+    setShowDetailModal(true);
+    
+    // Si es actividad recurrente, cargar fechas disponibles
+    if (activity.tipo === 'recurrente') {
+      setLoadingDates(true);
+      axios.get(`/inscriptions/activity/${activity._id}/available-dates`)
+        .then(response => {
+          setAvailableDates(response.data.availableDates);
+        })
+        .catch(error => {
+          console.error('Error fetching available dates:', error);
+        })
+        .finally(() => {
+          setLoadingDates(false);
+        });
+    }
+  };
+
+  const handleInscribeClick = async (activity, e) => {
+    if (e) {
+      e.stopPropagation();
+    }
     // Si es actividad única, inscribirse directamente
     if (activity.tipo === 'unica') {
-      const fecha = activity.fecha ? new Date(activity.fecha).toISOString().split('T')[0] : null;
+      const fecha = activity.fecha ? formatDateToString(activity.fecha) : null;
       await handleInscribe(activity._id, fecha);
       return;
     }
@@ -212,6 +345,7 @@ const ActivitiesList = () => {
       setSelectedActivity(activity);
       setLoadingDates(true);
       setShowDateModal(true);
+      setShowDetailModal(false);
       try {
         const response = await axios.get(`/inscriptions/activity/${activity._id}/available-dates`);
         setAvailableDates(response.data.availableDates);
@@ -269,9 +403,10 @@ const ActivitiesList = () => {
                 className="bg-white"
               >
                 <option value="">Todos los períodos</option>
-                <option value="esta-semana">Esta semana</option>
-                <option value="semana-que-viene">Semana que viene</option>
-                <option value="este-mes">Este mes</option>
+                <option value="esta-semana">{getPeriodLabel('esta-semana')}</option>
+                <option value="semana-que-viene">{getPeriodLabel('semana-que-viene')}</option>
+                <option value="este-mes">{getPeriodLabel('este-mes')}</option>
+                <option value="siguiente-mes">{getPeriodLabel('siguiente-mes')}</option>
               </select>
             </div>
 
@@ -303,7 +438,11 @@ const ActivitiesList = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {activities.map(activity => (
-              <div key={activity._id} className="card hover:shadow-xl transition-shadow">
+              <div 
+                key={activity._id} 
+                className="card hover:shadow-xl transition-shadow cursor-pointer flex flex-col"
+                onClick={(e) => handleActivityClick(activity, e)}
+              >
                 {activity.fotos && activity.fotos.length > 0 && (
                   <img
                     src={activity.fotos[0]}
@@ -334,13 +473,24 @@ const ActivitiesList = () => {
                   <p><strong>Precio:</strong> {activity.esGratuita ? 'Gratis' : `$${activity.precio}`}</p>
                 </div>
 
-                <div className="flex gap-2 mb-4">
-                  <button
-                    onClick={() => handleInscribeClick(activity)}
-                    className="btn btn-primary flex-1"
-                  >
-                    Inscribirse
-                  </button>
+                <div className="flex gap-2 mt-auto" onClick={(e) => e.stopPropagation()}>
+                  {activity.estadoInscripcion ? (
+                    <div className="flex-1 flex flex-col gap-2">
+                      {getEstadoInscripcionBadge(activity.estadoInscripcion)}
+                      {activity.tipo === 'recurrente' && activity.fechaInscripcion && (
+                        <p className="text-sm text-gray-600">
+                          Inscrito para: {new Date(activity.fechaInscripcion).toLocaleDateString('es-AR')}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={(e) => handleInscribeClick(activity, e)}
+                      className="btn btn-primary flex-1"
+                    >
+                      Inscribirse
+                    </button>
+                  )}
                   {activity.ubicacionOnline && (
                     <a
                       href={activity.ubicacionOnline}
@@ -355,6 +505,345 @@ const ActivitiesList = () => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Modal de detalles de actividad */}
+        {showDetailModal && selectedActivity && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowDetailModal(false);
+                setSelectedActivity(null);
+                setAvailableDates([]);
+              }
+            }}
+          >
+            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <h2 className="text-3xl font-bold text-gray-800 pr-4">
+                    {selectedActivity.titulo}
+                  </h2>
+                  <button
+                    onClick={() => {
+                      setShowDetailModal(false);
+                      setSelectedActivity(null);
+                      setAvailableDates([]);
+                    }}
+                    className="text-gray-500 hover:text-gray-700 text-3xl flex-shrink-0"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                {/* Imágenes */}
+                {selectedActivity.fotos && selectedActivity.fotos.length > 0 && (
+                  <div className="mb-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {selectedActivity.fotos.map((foto, index) => (
+                        <img
+                          key={index}
+                          src={foto}
+                          alt={`${selectedActivity.titulo} - Imagen ${index + 1}`}
+                          className="w-full h-64 object-cover rounded-lg"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Descripción completa */}
+                {selectedActivity.descripcion && (
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold text-gray-800 mb-2">Descripción</h3>
+                    <p className="text-gray-600 whitespace-pre-wrap">{selectedActivity.descripcion}</p>
+                  </div>
+                )}
+
+                {/* Categorías */}
+                {selectedActivity.categorias && selectedActivity.categorias.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold text-gray-800 mb-2">Categorías</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedActivity.categorias.map(cat => (
+                        <span key={cat} className="badge badge-secondary">
+                          {cat}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Información detallada */}
+                <div className="bg-gray-50 p-6 rounded-lg mb-6 space-y-3">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-4">Información</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {selectedActivity.tipo === 'recurrente' && selectedActivity.proximaOcurrencia ? (
+                      <div>
+                        <span className="font-semibold text-gray-700">Próxima fecha:</span>
+                        <span className="ml-2 text-gray-800">
+                          {new Date(selectedActivity.proximaOcurrencia).toLocaleDateString('es-AR', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </span>
+                      </div>
+                    ) : selectedActivity.fecha && (
+                      <div>
+                        <span className="font-semibold text-gray-700">Fecha:</span>
+                        <span className="ml-2 text-gray-800">
+                          {new Date(selectedActivity.fecha).toLocaleDateString('es-AR', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {selectedActivity.hora && (
+                      <div>
+                        <span className="font-semibold text-gray-700">Hora:</span>
+                        <span className="ml-2 text-gray-800">{selectedActivity.hora}</span>
+                      </div>
+                    )}
+                    
+                    {selectedActivity.duracion && (
+                      <div>
+                        <span className="font-semibold text-gray-700">Duración:</span>
+                        <span className="ml-2 text-gray-800">{selectedActivity.duracion} minutos</span>
+                      </div>
+                    )}
+                    
+                    {selectedActivity.lugar && (
+                      <div>
+                        <span className="font-semibold text-gray-700">Lugar:</span>
+                        <span className="ml-2 text-gray-800">{selectedActivity.lugar}</span>
+                      </div>
+                    )}
+                    
+                    {selectedActivity.ubicacionOnline && (
+                      <div>
+                        <span className="font-semibold text-gray-700">Ubicación:</span>
+                        <a 
+                          href={selectedActivity.ubicacionOnline} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="ml-2 text-blue-600 hover:underline"
+                        >
+                          Ver en Google Maps
+                        </a>
+                      </div>
+                    )}
+                    
+                    <div>
+                      <span className="font-semibold text-gray-700">Precio:</span>
+                      <span className="ml-2 text-gray-800">
+                        {selectedActivity.esGratuita ? 'Gratis' : `$${selectedActivity.precio}`}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Estado de inscripción */}
+                {selectedActivity.estadoInscripcion && (
+                  <div className="mb-6">
+                    {getEstadoInscripcionBadge(selectedActivity.estadoInscripcion)}
+                    {selectedActivity.tipo === 'recurrente' && selectedActivity.fechaInscripcion && (
+                      <p className="text-sm text-gray-600 mt-2">
+                        Inscrito para: {new Date(selectedActivity.fechaInscripcion).toLocaleDateString('es-AR')}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Fechas disponibles para actividades recurrentes */}
+                {selectedActivity.tipo === 'recurrente' && (
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold text-gray-800 mb-4">Fechas Disponibles</h3>
+                    {loadingDates ? (
+                      <div className="text-center py-8">
+                        <div className="spinner mx-auto"></div>
+                        <p className="mt-4 text-gray-600">Cargando fechas disponibles...</p>
+                      </div>
+                    ) : availableDates.length === 0 ? (
+                      <p className="text-gray-600 text-center py-4">No hay fechas disponibles en los próximos 30 días.</p>
+                    ) : (
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {availableDates.slice(0, 5).map((dateOption, index) => {
+                          const isInscribed = !!dateOption.estadoInscripcion;
+                          return (
+                            <div
+                              key={index}
+                              className={`p-3 rounded-lg border-2 ${
+                                dateOption.estadoInscripcion === 'aceptada'
+                                  ? 'border-green-500 bg-green-50'
+                                  : dateOption.estadoInscripcion === 'pendiente'
+                                  ? 'border-yellow-500 bg-yellow-50'
+                                  : dateOption.estadoInscripcion === 'en_espera'
+                                  ? 'border-blue-500 bg-blue-50'
+                                  : dateOption.tieneCupo
+                                  ? 'border-gray-300 bg-white'
+                                  : 'border-gray-200 bg-gray-100 opacity-50'
+                              }`}
+                            >
+                              <div className="flex justify-between items-center">
+                                <div className="flex-1">
+                                  <p className="font-semibold text-gray-800">
+                                    {new Date(dateOption.fecha).toLocaleDateString('es-AR', {
+                                      weekday: 'long',
+                                      year: 'numeric',
+                                      month: 'long',
+                                      day: 'numeric'
+                                    })}
+                                  </p>
+                                  {dateOption.hora && (
+                                    <p className="text-sm text-gray-600">Hora: {dateOption.hora}</p>
+                                  )}
+                                  {dateOption.cuposDisponibles !== null && (
+                                    <p className={`text-sm font-semibold ${
+                                      dateOption.cuposDisponibles > 0 ? 'text-green-600' : 'text-red-600'
+                                    }`}>
+                                      {dateOption.cuposDisponibles > 0
+                                        ? `${dateOption.cuposDisponibles} cupos disponibles`
+                                        : 'Sin cupo'}
+                                    </p>
+                                  )}
+                                </div>
+                                {getEstadoInscripcionBadge(dateOption.estadoInscripcion)}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {availableDates.length > 5 && (
+                          <p className="text-sm text-gray-600 text-center mt-2">
+                            Y {availableDates.length - 5} fecha(s) más...
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Botones de acción */}
+                <div className="flex gap-3 pt-4 flex-wrap">
+                  {!selectedActivity.estadoInscripcion && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleInscribeClick(selectedActivity, e);
+                      }}
+                      className="btn btn-primary flex-1 min-w-[150px]"
+                    >
+                      Inscribirse
+                    </button>
+                  )}
+                  
+                  {selectedActivity.ubicacionOnline && (
+                    <a
+                      href={selectedActivity.ubicacionOnline}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-secondary whitespace-nowrap"
+                      title="Ver ubicación en Google Maps"
+                    >
+                      🗺️ ¿Cómo llego?
+                    </a>
+                  )}
+                  
+                  {selectedActivity.tipo === 'recurrente' && availableDates.length > 0 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowDetailModal(false);
+                        setShowDateModal(true);
+                      }}
+                      className="btn btn-secondary"
+                    >
+                      Ver todas las fechas
+                    </button>
+                  )}
+                  
+                  {selectedActivity.politicaCancelacion && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowCancelPolicyModal(true);
+                      }}
+                      className="btn btn-secondary"
+                    >
+                      📋 Política de Cancelación
+                    </button>
+                  )}
+                  
+                  <button
+                    onClick={() => {
+                      setShowDetailModal(false);
+                      setSelectedActivity(null);
+                      setAvailableDates([]);
+                    }}
+                    className="btn btn-outline"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Política de Cancelación */}
+        {showCancelPolicyModal && selectedActivity && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowCancelPolicyModal(false);
+              }
+            }}
+          >
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    Política de Cancelación
+                  </h2>
+                  <button
+                    onClick={() => setShowCancelPolicyModal(false)}
+                    className="text-gray-500 hover:text-gray-700 text-3xl flex-shrink-0"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="mb-4">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {selectedActivity.titulo}
+                  </h3>
+                </div>
+
+                <div className="bg-gray-50 p-6 rounded-lg">
+                  <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                    {selectedActivity.politicaCancelacion}
+                  </p>
+                </div>
+
+                <div className="flex justify-end pt-4">
+                  <button
+                    onClick={() => setShowCancelPolicyModal(false)}
+                    className="btn btn-primary"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

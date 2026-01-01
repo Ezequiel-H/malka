@@ -17,7 +17,20 @@ const MyInscriptions = () => {
       setLoading(true);
       const params = filter ? `?estado=${filter}` : '';
       const response = await axios.get(`/inscriptions/my${params}`);
-      setInscriptions(response.data.inscriptions);
+      
+      // Filtrar inscripciones: solo las que son de ayer o futuras
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      yesterday.setHours(0, 0, 0, 0);
+      
+      const filteredInscriptions = response.data.inscriptions.filter(inscription => {
+        if (!inscription.fecha) return false;
+        const inscriptionDate = new Date(inscription.fecha);
+        inscriptionDate.setHours(0, 0, 0, 0);
+        return inscriptionDate >= yesterday;
+      });
+      
+      setInscriptions(filteredInscriptions);
     } catch (error) {
       console.error('Error fetching inscriptions:', error);
     } finally {
@@ -92,7 +105,7 @@ const MyInscriptions = () => {
             {inscriptions.map(inscription => {
               const activity = inscription.activityId;
               return (
-                <div key={inscription._id} className="card hover:shadow-xl transition-shadow">
+                <div key={inscription._id} className="card hover:shadow-xl transition-shadow flex flex-col">
                   <div className="flex justify-between items-start mb-4">
                     <h2 className="text-xl font-bold text-gray-800 flex-1">{activity?.titulo || 'Actividad eliminada'}</h2>
                     {getEstadoBadge(inscription.estado)}
@@ -151,7 +164,7 @@ const MyInscriptions = () => {
                   {inscription.estado !== 'cancelada' && (
                     <button
                       onClick={() => handleCancel(inscription._id)}
-                      className="btn btn-danger w-full"
+                      className="btn btn-danger w-full mt-auto"
                     >
                       Cancelar Inscripción
                     </button>

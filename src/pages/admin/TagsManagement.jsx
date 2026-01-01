@@ -15,7 +15,6 @@ const TagsManagement = () => {
     activa: true
   });
   const [filter, setFilter] = useState('all'); // all, active, inactive
-  const [showUsageModal, setShowUsageModal] = useState(null);
 
   useEffect(() => {
     fetchTags();
@@ -98,15 +97,6 @@ const TagsManagement = () => {
       fetchTags();
     } catch (error) {
       showError('Error al cambiar el estado de la tag');
-    }
-  };
-
-  const handleViewUsage = async (tagId) => {
-    try {
-      const response = await axios.get(`/tags/${tagId}/usage`);
-      setShowUsageModal(response.data);
-    } catch (error) {
-      showError('Error al obtener el uso de la tag');
     }
   };
 
@@ -302,12 +292,6 @@ const TagsManagement = () => {
 
                 <div className="flex gap-2 flex-wrap">
                   <button
-                    onClick={() => handleViewUsage(tag._id)}
-                    className="btn btn-info flex-1 min-w-[100px]"
-                  >
-                    Ver Uso
-                  </button>
-                  <button
                     onClick={() => handleEdit(tag)}
                     className="btn btn-secondary flex-1 min-w-[100px]"
                   >
@@ -333,78 +317,6 @@ const TagsManagement = () => {
           </div>
         )}
       </div>
-
-      {/* Modal de uso */}
-      {showUsageModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-gray-800">
-                  Uso de la tag: <span className="capitalize">{showUsageModal.tag}</span>
-                </h2>
-                <button
-                  onClick={() => setShowUsageModal(null)}
-                  className="text-gray-500 hover:text-gray-700 text-2xl"
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold mb-2 text-gray-800">
-                    Actividades ({showUsageModal.usage.actividades.count})
-                  </h3>
-                  {showUsageModal.usage.actividades.count === 0 ? (
-                    <p className="text-gray-600">No hay actividades usando esta tag</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {showUsageModal.usage.actividades.items.map(activity => (
-                        <div key={activity._id} className="p-3 bg-gray-50 rounded">
-                          <p className="font-medium">{activity.titulo}</p>
-                          <p className="text-sm text-gray-600">
-                            Estado: {activity.estado}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold mb-2 text-gray-800">
-                    Usuarios ({showUsageModal.usage.usuarios.count})
-                  </h3>
-                  {showUsageModal.usage.usuarios.count === 0 ? (
-                    <p className="text-gray-600">No hay usuarios con esta tag</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {showUsageModal.usage.usuarios.items.map(user => (
-                        <div key={user._id} className="p-3 bg-gray-50 rounded">
-                          <p className="font-medium">
-                            {user.nombre} {user.apellido}
-                          </p>
-                          <p className="text-sm text-gray-600">{user.email}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={() => setShowUsageModal(null)}
-                  className="btn btn-secondary"
-                >
-                  Cerrar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

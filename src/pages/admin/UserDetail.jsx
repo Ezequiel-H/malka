@@ -23,7 +23,9 @@ const UserDetail = () => {
     telefono: '',
     tags: [],
     estado: '',
-    role: ''
+    role: '',
+    restriccionesAlimentarias: [],
+    comoSeEntero: ''
   });
 
   useEffect(() => {
@@ -40,8 +42,12 @@ const UserDetail = () => {
   const fetchUser = async () => {
     try {
       setLoading(true);
+      setError('');
       const response = await axios.get(`/users/${id}`);
       const userData = response.data.user;
+      if (!userData) {
+        throw new Error('Usuario no encontrado en la respuesta');
+      }
       setUser(userData);
       setFormData({
         nombre: userData.nombre || '',
@@ -50,11 +56,17 @@ const UserDetail = () => {
         telefono: userData.telefono || '',
         tags: userData.tags || [],
         estado: userData.estado || '',
-        role: userData.role || ''
+        role: userData.role || '',
+        restriccionesAlimentarias: userData.restriccionesAlimentarias || [],
+        comoSeEntero: userData.comoSeEntero || ''
       });
     } catch (error) {
       console.error('Error fetching user:', error);
-      setError('Error al cargar la información del usuario');
+      const errorMessage = error.response?.data?.message || 
+                          error.message || 
+                          'Error al cargar la información del usuario';
+      setError(errorMessage);
+      showError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -172,6 +184,64 @@ const UserDetail = () => {
     }
   };
 
+  const handleSetPending = async () => {
+    if (!window.confirm('¿Estás seguro de que deseas poner este usuario como pendiente?')) {
+      return;
+    }
+    try {
+      await axios.put(`/users/${id}`, {
+        nombre: formData.nombre,
+        apellido: formData.apellido,
+        telefono: formData.telefono,
+        tags: formData.tags,
+        estado: 'pending'
+      });
+      showSuccess('Usuario puesto como pendiente');
+      fetchUser();
+    } catch (error) {
+      showError(error.response?.data?.message || 'Error al cambiar estado del usuario');
+    }
+  };
+
+  const handleEstadoChange = async (e) => {
+    const newEstado = e.target.value;
+    if (newEstado === formData.estado) return;
+
+    const confirmMessages = {
+      approved: '¿Estás seguro de que deseas aprobar este usuario?',
+      rejected: '¿Estás seguro de que deseas rechazar este usuario?',
+      pending: '¿Estás seguro de que deseas poner este usuario como pendiente?'
+    };
+
+    if (!window.confirm(confirmMessages[newEstado])) {
+      return;
+    }
+
+    try {
+      if (newEstado === 'approved') {
+        await axios.put(`/users/${id}/approve`);
+        showSuccess('Usuario aprobado exitosamente');
+      } else if (newEstado === 'rejected') {
+        await axios.put(`/users/${id}/reject`);
+        showSuccess('Usuario rechazado');
+      } else {
+        await axios.put(`/users/${id}`, {
+          nombre: formData.nombre,
+          apellido: formData.apellido,
+          telefono: formData.telefono,
+          tags: formData.tags,
+          estado: 'pending'
+        });
+        showSuccess('Usuario puesto como pendiente');
+      }
+      fetchUser();
+    } catch (error) {
+      showError(error.response?.data?.message || 'Error al cambiar estado del usuario');
+      // Revertir el select al estado anterior
+      e.target.value = formData.estado;
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -223,12 +293,19 @@ const UserDetail = () => {
     );
   }
 
-  if (!user) {
+  if (!user && !loading) {
     return (
       <div className="min-h-screen bg-light-bg py-12 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="card">
-            <p className="text-red-600">Usuario no encontrado</p>
+            {error ? (
+              <>
+                <p className="text-red-600 font-semibold mb-2">Error al cargar el usuario</p>
+                <p className="text-gray-600 mb-4">{error}</p>
+              </>
+            ) : (
+              <p className="text-red-600">Usuario no encontrado</p>
+            )}
             <button onClick={() => navigate('/admin/users')} className="btn btn-secondary mt-4">
               Volver a Usuarios
             </button>
@@ -275,27 +352,16 @@ const UserDetail = () => {
 
               <div className="form-group">
                 <label>Estado</label>
-                <div className="flex items-center gap-4">
-                  {getEstadoBadge(formData.estado)}
-                  {formData.estado === 'pending' && (
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={handleApprove}
-                        className="btn btn-success btn-sm"
-                      >
-                        Aprobar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleReject}
-                        className="btn btn-danger btn-sm"
-                      >
-                        Rechazar
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <select
+                  name="estado"
+                  value={formData.estado}
+                  onChange={handleEstadoChange}
+                  className="bg-white"
+                >
+                  <option value="pending">Pendiente</option>
+                  <option value="approved">Aprobado</option>
+                  <option value="rejected">Rechazado</option>
+                </select>
               </div>
 
               <div className="form-group">
@@ -342,6 +408,41 @@ const UserDetail = () => {
                   className="bg-gray-100 cursor-not-allowed"
                 />
                 <p className="text-sm text-gray-500 mt-1">El rol no se puede modificar desde aquí</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Información del Onboarding */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Información del Onboarding</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="form-group md:col-span-2">
+                <label>Restricciones Alimentarias</label>
+                {formData.restriccionesAlimentarias && formData.restriccionesAlimentarias.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {formData.restriccionesAlimentarias.map((restriccion, index) => (
+                      <span
+                        key={index}
+                        className="badge badge-secondary"
+                      >
+                        {restriccion}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 mt-2 italic">No tiene restricciones alimentarias</p>
+                )}
+              </div>
+
+              <div className="form-group md:col-span-2">
+                <label>¿Cómo se enteró de esta propuesta?</label>
+                {formData.comoSeEntero ? (
+                  <p className="mt-2 text-gray-700 bg-gray-50 p-3 rounded border border-gray-200">
+                    {formData.comoSeEntero}
+                  </p>
+                ) : (
+                  <p className="text-gray-500 mt-2 italic">No especificado</p>
+                )}
               </div>
             </div>
           </div>

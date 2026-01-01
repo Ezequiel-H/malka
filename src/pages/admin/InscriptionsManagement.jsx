@@ -77,6 +77,26 @@ const InscriptionsManagement = () => {
     }
   };
 
+  const handleStatusChange = async (inscriptionId, newStatus) => {
+    try {
+      await axios.put(`/inscriptions/${inscriptionId}/status`, { estado: newStatus });
+      showSuccess(`Estado actualizado a ${getEstadoLabel(newStatus)}`);
+      fetchInscriptions();
+    } catch (error) {
+      showError(error.response?.data?.message || 'Error al actualizar estado');
+    }
+  };
+
+  const getEstadoLabel = (estado) => {
+    const labels = {
+      aceptada: 'Aceptada',
+      pendiente: 'Pendiente',
+      cancelada: 'Cancelada',
+      en_espera: 'En lista de espera'
+    };
+    return labels[estado] || estado;
+  };
+
   const getEstadoBadge = (estado) => {
     const badges = {
       aceptada: { class: 'badge-success', text: 'Aceptada' },
@@ -163,11 +183,24 @@ const InscriptionsManagement = () => {
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-4">
-                      <div>
+                      <div className="flex-1">
                         <h3 className="text-xl font-bold text-gray-800 mb-2">
                           {inscription.activityId?.titulo || 'Actividad no encontrada'}
                         </h3>
-                        {getEstadoBadge(inscription.estado)}
+                        <div className="flex items-center gap-3">
+                          {getEstadoBadge(inscription.estado)}
+                          <select
+                            value={inscription.estado}
+                            onChange={(e) => handleStatusChange(inscription._id, e.target.value)}
+                            className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary transition-colors cursor-pointer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <option value="pendiente">Pendiente</option>
+                            <option value="aceptada">Aceptada</option>
+                            <option value="cancelada">Cancelada</option>
+                            <option value="en_espera">En lista de espera</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
 
@@ -234,22 +267,6 @@ const InscriptionsManagement = () => {
                     </div>
                   </div>
 
-                  {inscription.estado === 'pendiente' && (
-                    <div className="flex flex-col gap-2 md:min-w-[200px]">
-                      <button
-                        onClick={() => handleApprove(inscription._id)}
-                        className="btn btn-success w-full"
-                      >
-                        Aprobar
-                      </button>
-                      <button
-                        onClick={() => handleReject(inscription._id)}
-                        className="btn btn-danger w-full"
-                      >
-                        Rechazar
-                      </button>
-                    </div>
-                  )}
                 </div>
               </div>
             ))}

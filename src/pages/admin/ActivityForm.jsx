@@ -2,6 +2,48 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useToast } from '../../contexts/ToastContext';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+
+// Helper function to format date as YYYY-MM-DD - simple date, no timezone conversion
+// Just extract the year, month, day as simple numbers
+const formatDateToString = (date) => {
+  if (!date) return '';
+  
+  // If it's already a string in YYYY-MM-DD format, return it as-is
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
+    return date.substring(0, 10);
+  }
+  
+  // For Date objects, extract year, month, day as simple numbers
+  // Use local methods to get exactly what the user sees/selected
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Helper function to convert YYYY-MM-DD string to Date object using local components
+// This prevents timezone issues when displaying dates in DatePicker
+const stringToLocalDate = (dateString) => {
+  if (!dateString) return null;
+  
+  // If it's already a Date, return it
+  if (dateString instanceof Date) {
+    return dateString;
+  }
+  
+  // If it's a string in YYYY-MM-DD format, parse it using local components
+  if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateString)) {
+    const [year, month, day] = dateString.substring(0, 10).split('-').map(Number);
+    // Create Date using local components (not UTC) to avoid day shift
+    return new Date(year, month - 1, day);
+  }
+  
+  // Otherwise, try to parse it normally
+  return new Date(dateString);
+};
 
 const ActivityForm = () => {
   const { id } = useParams();
@@ -79,7 +121,7 @@ const ActivityForm = () => {
       
       setFormData({
         ...activity,
-        fecha: activity.fecha ? new Date(activity.fecha).toISOString().split('T')[0] : '',
+        fecha: activity.fecha ? formatDateToString(activity.fecha) : '',
         cupo: activity.cupo || '',
         duracion: activity.duracion || '',
         hora: activity.hora || (recurrence?.hora || ''),
@@ -88,7 +130,7 @@ const ActivityForm = () => {
           ...recurrence,
           daysOfWeek: recurrence.daysOfWeek || [],
           dayOfMonth: recurrence.dayOfMonth || [],
-          endDate: recurrence.endDate ? new Date(recurrence.endDate).toISOString().split('T')[0] : '',
+          endDate: recurrence.endDate ? formatDateToString(recurrence.endDate) : '',
           hora: recurrence.hora || activity.hora || ''
         }
       });
@@ -105,6 +147,27 @@ const ActivityForm = () => {
       [name]: type === 'checkbox' ? checked : value
     }));
   };
+
+  // Helper para convertir hora en formato HH:mm a horas y minutos
+  const parseTime = (timeString) => {
+    if (!timeString) return { hour: '', minute: '' };
+    const [hour, minute] = timeString.split(':');
+    return { hour: hour || '', minute: minute || '' };
+  };
+
+  // Helper para formatear hora y minutos a formato HH:mm
+  const formatTime = (hour, minute) => {
+    if (!hour || !minute) return '';
+    const h = hour.padStart(2, '0');
+    const m = minute.padStart(2, '0');
+    return `${h}:${m}`;
+  };
+
+  // Generar opciones de horas (0-23)
+  const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
+  
+  // Generar opciones de minutos con intervalos de 10 minutos
+  const minutes = ['00', '10', '15', '20', '30', '40', '45', '50'];
 
 
   const handleAddTag = () => {
@@ -166,9 +229,11 @@ const ActivityForm = () => {
         }
       }
 
+      const fechaToSend = formData.tipo === 'unica' ? formData.fecha : (formData.tipo === 'recurrente' && formData.recurrence.frequency === 'daily' ? formData.fecha : undefined);
+
       const dataToSend = {
         ...formData,
-        fecha: formData.tipo === 'unica' ? formData.fecha : (formData.tipo === 'recurrente' && formData.recurrence.frequency === 'daily' ? formData.fecha : undefined),
+        fecha: fechaToSend,
         hora: formData.tipo === 'recurrente' ? (formData.recurrence.hora || formData.hora) : formData.hora,
         cupo: formData.cupo ? Number(formData.cupo) : null,
         duracion: formData.duracion ? Number(formData.duracion) : null,
@@ -339,23 +404,53 @@ const ActivityForm = () => {
           <>
             <div className="form-group">
               <label>Fecha</label>
-              <input
-                type="date"
-                name="fecha"
-                value={formData.fecha}
-                onChange={handleChange}
-                className="bg-white"
+              <DatePicker
+                selected={formData.fecha ? stringToLocalDate(formData.fecha) : null}
+                onChange={(date) => {
+                  const dateString = date ? formatDateToString(date) : '';
+                  setFormData(prev => ({ ...prev, fecha: dateString }));
+                }}
+                dateFormat="dd/MM/yyyy"
+                placeholderText="dd/mm/yyyy"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all bg-white cursor-pointer"
+                showPopperArrow={false}
               />
             </div>
             <div className="form-group">
               <label>Hora</label>
-              <input
-                type="time"
-                name="hora"
-                value={formData.hora}
-                onChange={handleChange}
-                className="bg-white"
-              />
+              <div className="flex gap-2">
+                <select
+                  value={parseTime(formData.hora).hour}
+                  onChange={(e) => {
+                    const newHour = e.target.value;
+                    const { minute } = parseTime(formData.hora);
+                    const newTime = formatTime(newHour, minute || '00');
+                    setFormData(prev => ({ ...prev, hora: newTime }));
+                  }}
+                  className="flex-1 bg-white cursor-pointer"
+                >
+                  <option value="">Hora</option>
+                  {hours.map(hour => (
+                    <option key={hour} value={hour}>{hour}</option>
+                  ))}
+                </select>
+                <span className="flex items-center text-gray-500 font-bold">:</span>
+                <select
+                  value={parseTime(formData.hora).minute}
+                  onChange={(e) => {
+                    const newMinute = e.target.value;
+                    const { hour } = parseTime(formData.hora);
+                    const newTime = formatTime(hour || '00', newMinute);
+                    setFormData(prev => ({ ...prev, hora: newTime }));
+                  }}
+                  className="flex-1 bg-white cursor-pointer"
+                >
+                  <option value="">Min</option>
+                  {minutes.map(minute => (
+                    <option key={minute} value={minute}>{minute}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </>
         ) : (
@@ -385,20 +480,51 @@ const ActivityForm = () => {
 
             <div className="form-group">
               <label>Hora *</label>
-              <input
-                type="time"
-                value={formData.recurrence.hora || formData.hora}
-                onChange={(e) => {
-                  const hora = e.target.value;
-                  setFormData(prev => ({
-                    ...prev,
-                    hora,
-                    recurrence: { ...prev.recurrence, hora }
-                  }));
-                }}
-                className="bg-white"
-                required
-              />
+              <div className="flex gap-2">
+                <select
+                  value={parseTime(formData.recurrence.hora || formData.hora).hour}
+                  onChange={(e) => {
+                    const newHour = e.target.value;
+                    const currentTime = formData.recurrence.hora || formData.hora;
+                    const { minute } = parseTime(currentTime);
+                    const newTime = formatTime(newHour, minute || '00');
+                    setFormData(prev => ({
+                      ...prev,
+                      hora: newTime,
+                      recurrence: { ...prev.recurrence, hora: newTime }
+                    }));
+                  }}
+                  className="flex-1 bg-white cursor-pointer"
+                  required
+                >
+                  <option value="">Hora</option>
+                  {hours.map(hour => (
+                    <option key={hour} value={hour}>{hour}</option>
+                  ))}
+                </select>
+                <span className="flex items-center text-gray-500 font-bold">:</span>
+                <select
+                  value={parseTime(formData.recurrence.hora || formData.hora).minute}
+                  onChange={(e) => {
+                    const newMinute = e.target.value;
+                    const currentTime = formData.recurrence.hora || formData.hora;
+                    const { hour } = parseTime(currentTime);
+                    const newTime = formatTime(hour || '00', newMinute);
+                    setFormData(prev => ({
+                      ...prev,
+                      hora: newTime,
+                      recurrence: { ...prev.recurrence, hora: newTime }
+                    }));
+                  }}
+                  className="flex-1 bg-white cursor-pointer"
+                  required
+                >
+                  <option value="">Min</option>
+                  {minutes.map(minute => (
+                    <option key={minute} value={minute}>{minute}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {formData.recurrence.frequency === 'weekly' && (
@@ -497,25 +623,37 @@ const ActivityForm = () => {
             {formData.recurrence.frequency === 'daily' && (
               <div className="form-group">
                 <label>Fecha de Inicio</label>
-                <input
-                  type="date"
-                  value={formData.fecha}
-                  onChange={(e) => setFormData(prev => ({ ...prev, fecha: e.target.value }))}
-                  className="bg-white"
+                <DatePicker
+                  selected={formData.fecha ? stringToLocalDate(formData.fecha) : null}
+                  onChange={(date) => {
+                    const dateString = date ? formatDateToString(date) : '';
+                    setFormData(prev => ({ ...prev, fecha: dateString }));
+                  }}
+                  dateFormat="dd/MM/yyyy"
+                  placeholderText="dd/mm/yyyy"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all bg-white cursor-pointer"
+                  showPopperArrow={false}
                 />
               </div>
             )}
 
             <div className="form-group">
               <label>Fecha de Fin (opcional)</label>
-              <input
-                type="date"
-                value={formData.recurrence.endDate ? new Date(formData.recurrence.endDate).toISOString().split('T')[0] : ''}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  recurrence: { ...prev.recurrence, endDate: e.target.value ? new Date(e.target.value).toISOString() : '' }
-                }))}
-                className="bg-white"
+              <DatePicker
+                selected={formData.recurrence.endDate ? stringToLocalDate(formData.recurrence.endDate) : null}
+                onChange={(date) => {
+                  const dateString = date ? formatDateToString(date) : '';
+                  setFormData(prev => ({
+                    ...prev,
+                    recurrence: { ...prev.recurrence, endDate: dateString }
+                  }));
+                }}
+                dateFormat="dd/MM/yyyy"
+                placeholderText="dd/mm/yyyy"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all bg-white cursor-pointer"
+                showPopperArrow={false}
+                locale="es"
+                isClearable
               />
               <p className="text-sm text-gray-500 mt-1">Deja vacío si no tiene fecha de fin</p>
             </div>

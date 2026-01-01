@@ -3,14 +3,34 @@ import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
 
+// Helper function to format date as YYYY-MM-DD - simple date, no timezone conversion
+// Just extract the year, month, day as simple numbers
+const formatDateToString = (date) => {
+  if (!date) return '';
+  
+  // If it's already a string in YYYY-MM-DD format, return it as-is
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
+    return date.substring(0, 10);
+  }
+  
+  // For Date objects, extract year, month, day as simple numbers
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const ActivityInscriptions = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
   const [activity, setActivity] = useState(null);
   const [inscriptions, setInscriptions] = useState([]);
+  const [allInscriptions, setAllInscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [groupedInscriptions, setGroupedInscriptions] = useState({});
+  const [estadoFilter, setEstadoFilter] = useState('todos');
 
   useEffect(() => {
     fetchActivity();
@@ -21,6 +41,15 @@ const ActivityInscriptions = () => {
       fetchInscriptions();
     }
   }, [activity, id]);
+
+  const applyFilter = (inscriptionsToFilter, filter) => {
+    if (filter === 'todos') {
+      setInscriptions(inscriptionsToFilter);
+    } else {
+      const filtered = inscriptionsToFilter.filter(inscription => inscription.estado === filter);
+      setInscriptions(filtered);
+    }
+  };
 
   const fetchActivity = async () => {
     try {
@@ -50,13 +79,13 @@ const ActivityInscriptions = () => {
         return inscriptionDate >= yesterday;
       });
 
-      setInscriptions(filteredInscriptions);
+      setAllInscriptions(filteredInscriptions);
       
-      // Agrupar por fecha si es actividad recurrente
+      // Agrupar por fecha si es actividad recurrente (usando todas las inscripciones filtradas)
       if (activity?.tipo === 'recurrente') {
         const grouped = {};
         filteredInscriptions.forEach(inscription => {
-          const fechaStr = new Date(inscription.fecha).toISOString().split('T')[0];
+          const fechaStr = formatDateToString(inscription.fecha);
           if (!grouped[fechaStr]) {
             grouped[fechaStr] = [];
           }
@@ -66,6 +95,9 @@ const ActivityInscriptions = () => {
       } else {
         setGroupedInscriptions({});
       }
+      
+      // Aplicar filtro inicial
+      applyFilter(filteredInscriptions, estadoFilter);
     } catch (error) {
       console.error('Error fetching inscriptions:', error);
       showError('Error al cargar las inscripciones');
@@ -97,6 +129,32 @@ const ActivityInscriptions = () => {
     }
   };
 
+  const handleStatusChange = async (inscriptionId, newStatus) => {
+    try {
+      await axios.put(`/inscriptions/${inscriptionId}/status`, { estado: newStatus });
+      showSuccess(`Estado actualizado a ${getEstadoLabel(newStatus)}`);
+      fetchInscriptions();
+    } catch (error) {
+      showError(error.response?.data?.message || 'Error al actualizar estado');
+    }
+  };
+
+  const getEstadoLabel = (estado) => {
+    const labels = {
+      aceptada: 'Aceptada',
+      pendiente: 'Pendiente',
+      cancelada: 'Cancelada',
+      en_espera: 'En lista de espera'
+    };
+    return labels[estado] || estado;
+  };
+
+  const handleFilterChange = (e) => {
+    const newFilter = e.target.value;
+    setEstadoFilter(newFilter);
+    applyFilter(allInscriptions, newFilter);
+  };
+
   const getEstadoBadge = (estado) => {
     const badges = {
       aceptada: { class: 'badge-success', text: 'Aceptada' },
@@ -122,11 +180,24 @@ const ActivityInscriptions = () => {
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div className="flex-1">
           <div className="flex items-start justify-between mb-4">
-            <div>
+            <div className="flex-1">
               <h4 className="text-lg font-bold text-gray-800 mb-2">
                 {inscription.userId?.nombre} {inscription.userId?.apellido}
               </h4>
-              {getEstadoBadge(inscription.estado)}
+              <div className="flex items-center gap-3">
+                {getEstadoBadge(inscription.estado)}
+                <select
+                  value={inscription.estado}
+                  onChange={(e) => handleStatusChange(inscription._id, e.target.value)}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary transition-colors cursor-pointer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <option value="pendiente">Pendiente</option>
+                  <option value="aceptada">Aceptada</option>
+                  <option value="cancelada">Cancelada</option>
+                  <option value="en_espera">En lista de espera</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -167,23 +238,6 @@ const ActivityInscriptions = () => {
             )}
           </div>
         </div>
-
-        {inscription.estado === 'pendiente' && (
-          <div className="flex flex-col gap-2 md:min-w-[200px]">
-            <button
-              onClick={() => handleApprove(inscription._id)}
-              className="btn btn-success w-full"
-            >
-              Aprobar
-            </button>
-            <button
-              onClick={() => handleReject(inscription._id)}
-              className="btn btn-danger w-full"
-            >
-              Rechazar
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -201,9 +255,27 @@ const ActivityInscriptions = () => {
     return null;
   }
 
+  // Filtrar y agrupar inscripciones según el filtro de estado
+  const getFilteredGroupedInscriptions = () => {
+    if (estadoFilter === 'todos') {
+      return groupedInscriptions;
+    }
+    const filtered = {};
+    Object.keys(groupedInscriptions).forEach(fechaStr => {
+      const filteredByDate = groupedInscriptions[fechaStr].filter(
+        inscription => inscription.estado === estadoFilter
+      );
+      if (filteredByDate.length > 0) {
+        filtered[fechaStr] = filteredByDate;
+      }
+    });
+    return filtered;
+  };
+
   // Ordenar fechas para actividades recurrentes
+  const filteredGrouped = activity.tipo === 'recurrente' ? getFilteredGroupedInscriptions() : {};
   const sortedDates = activity.tipo === 'recurrente' 
-    ? Object.keys(groupedInscriptions).sort((a, b) => new Date(a) - new Date(b))
+    ? Object.keys(filteredGrouped).sort((a, b) => new Date(a) - new Date(b))
     : [];
 
   return (
@@ -277,29 +349,45 @@ const ActivityInscriptions = () => {
 
         {/* Estadísticas */}
         <div className="card mb-8">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-800">Resumen</h2>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+            <h2 className="text-2xl font-semibold text-gray-800">Resumen</h2>
+            <div className="flex items-center gap-3">
+              <label className="text-gray-700 font-medium">Filtrar por estado:</label>
+              <select
+                value={estadoFilter}
+                onChange={handleFilterChange}
+                className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="todos">Todos</option>
+                <option value="pendiente">Pendientes</option>
+                <option value="aceptada">Aceptadas</option>
+                <option value="cancelada">Canceladas</option>
+                <option value="en_espera">En espera</option>
+              </select>
+            </div>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
               <p className="text-3xl font-bold text-yellow-500">
-                {inscriptions.filter(i => i.estado === 'pendiente').length}
+                {allInscriptions.filter(i => i.estado === 'pendiente').length}
               </p>
               <p className="text-gray-600">Pendientes</p>
             </div>
             <div className="text-center">
               <p className="text-3xl font-bold text-green-600">
-                {inscriptions.filter(i => i.estado === 'aceptada').length}
+                {allInscriptions.filter(i => i.estado === 'aceptada').length}
               </p>
               <p className="text-gray-600">Aceptadas</p>
             </div>
             <div className="text-center">
               <p className="text-3xl font-bold text-red-600">
-                {inscriptions.filter(i => i.estado === 'cancelada').length}
+                {allInscriptions.filter(i => i.estado === 'cancelada').length}
               </p>
               <p className="text-gray-600">Canceladas</p>
             </div>
             <div className="text-center">
               <p className="text-3xl font-bold text-blue-600">
-                {inscriptions.filter(i => i.estado === 'en_espera').length}
+                {allInscriptions.filter(i => i.estado === 'en_espera').length}
               </p>
               <p className="text-gray-600">En espera</p>
             </div>
@@ -307,38 +395,52 @@ const ActivityInscriptions = () => {
         </div>
 
         {/* Lista de inscripciones */}
-        {inscriptions.length === 0 ? (
+        {allInscriptions.length === 0 ? (
           <div className="card">
             <p className="text-gray-600 text-center py-4">
               No hay inscripciones para esta actividad (solo se muestran inscripciones de ayer en adelante).
             </p>
           </div>
+        ) : inscriptions.length === 0 ? (
+          <div className="card">
+            <p className="text-gray-600 text-center py-4">
+              No hay inscripciones con el estado seleccionado.
+            </p>
+          </div>
         ) : activity.tipo === 'recurrente' ? (
           // Actividad recurrente: agrupar por fecha
           <div className="space-y-8">
-            {sortedDates.map(fechaStr => {
-              const fechaInscriptions = groupedInscriptions[fechaStr];
-              const fecha = new Date(fechaStr);
-              
-              return (
-                <div key={fechaStr}>
-                  <div className="mb-4">
-                    <h3 className="text-2xl font-bold text-gray-800 mb-2">
-                      {formatDate(fecha)}
-                    </h3>
-                    {activity.hora && (
-                      <p className="text-gray-600">Hora: {activity.hora}</p>
-                    )}
-                    <p className="text-sm text-gray-500">
-                      {fechaInscriptions.length} inscripción{fechaInscriptions.length !== 1 ? 'es' : ''}
-                    </p>
+            {sortedDates.length === 0 ? (
+              <div className="card">
+                <p className="text-gray-600 text-center py-4">
+                  No hay inscripciones con el estado seleccionado.
+                </p>
+              </div>
+            ) : (
+              sortedDates.map(fechaStr => {
+                const fechaInscriptions = filteredGrouped[fechaStr];
+                const fecha = new Date(fechaStr);
+                
+                return (
+                  <div key={fechaStr}>
+                    <div className="mb-4">
+                      <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                        {formatDate(fecha)}
+                      </h3>
+                      {activity.hora && (
+                        <p className="text-gray-600">Hora: {activity.hora}</p>
+                      )}
+                      <p className="text-sm text-gray-500">
+                        {fechaInscriptions.length} inscripción{fechaInscriptions.length !== 1 ? 'es' : ''}
+                      </p>
+                    </div>
+                    <div className="space-y-4">
+                      {fechaInscriptions.map(inscription => renderInscriptionCard(inscription))}
+                    </div>
                   </div>
-                  <div className="space-y-4">
-                    {fechaInscriptions.map(inscription => renderInscriptionCard(inscription))}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         ) : (
           // Actividad única: mostrar todas juntas

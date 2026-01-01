@@ -25,18 +25,11 @@ const Navbar = () => {
             {user?.role === 'admin' ? (
               <>
                 <button
-                  onClick={() => navigate('/admin')}
+                  onClick={() => navigate('/admin/users')}
                   className="text-gray-700 font-medium hover:text-primary transition-colors cursor-pointer bg-transparent border-none p-0"
                   type="button"
                 >
-                  Admin
-                </button>
-                <button
-                  onClick={() => navigate('/admin/users/pending')}
-                  className="text-gray-700 font-medium hover:text-primary transition-colors cursor-pointer bg-transparent border-none p-0"
-                  type="button"
-                >
-                  Usuarios Pendientes
+                  Usuarios
                 </button>
                 <button
                   onClick={() => navigate('/admin/activities')}
@@ -51,6 +44,13 @@ const Navbar = () => {
                   type="button"
                 >
                   Inscripciones
+                </button>
+                <button
+                  onClick={() => navigate('/admin/tags')}
+                  className="text-gray-700 font-medium hover:text-primary transition-colors cursor-pointer bg-transparent border-none p-0"
+                  type="button"
+                >
+                  Tags
                 </button>
               </>
             ) : (
