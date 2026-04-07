@@ -8,6 +8,7 @@ const Register = () => {
     password: '',
     nombre: '',
     apellido: '',
+    dni: '',
     telefono: '',
     restriccionesAlimentarias: [],
     comoSeEntero: ''
@@ -18,9 +19,11 @@ const Register = () => {
   const navigate = useNavigate();
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
+    const next = name === 'dni' ? value.replace(/ /g, '').trim() : value;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: next
     });
   };
 
@@ -46,7 +49,10 @@ const Register = () => {
     setError('');
     setLoading(true);
 
-    const result = await register(formData);
+    const result = await register({
+      ...formData,
+      dni: formData.dni.replace(/ /g, '').trim()
+    });
     
     if (result.success) {
       navigate('/dashboard');
@@ -93,6 +99,24 @@ const Register = () => {
             </div>
 
             <div className="form-group">
+              <label>DNI</label>
+              <input
+                type="text"
+                name="dni"
+                value={formData.dni}
+                onChange={handleChange}
+                required
+                inputMode="numeric"
+                autoComplete="off"
+                minLength={7}
+                maxLength={10}
+                pattern="\d{7,10}"
+                title="Ingresá entre 7 y 10 dígitos"
+                className="bg-white"
+              />
+            </div>
+
+            <div className="form-group">
               <label>Email</label>
               <input
                 type="email"
@@ -132,14 +156,17 @@ const Register = () => {
               <label className="mb-2 block">Toda la comida es Kosher. ¿Tenés algún tipo de restricción?</label>
               <div className="space-y-2.5">
                 {['Vegetariano', 'Vegano', 'Sin gluten', 'Sin lactosa', 'Sin nueces', 'Sin mariscos', 'Diabético'].map((restriccion) => (
-                  <label key={restriccion} className="flex items-start gap-3 cursor-pointer">
+                  <label
+                    key={restriccion}
+                    className="!mb-0 !flex !max-w-none cursor-pointer items-center gap-3 font-normal"
+                  >
                     <input
                       type="checkbox"
                       checked={formData.restriccionesAlimentarias?.includes(restriccion) || false}
                       onChange={() => handleRestriccionChange(restriccion)}
-                      className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary flex-shrink-0 mt-0.5"
+                      className="!h-4 !w-4 !max-w-none !min-h-0 !p-0 flex-shrink-0 rounded border-gray-300 text-primary focus:ring-primary"
                     />
-                    <span className="text-gray-700 leading-normal">{restriccion}</span>
+                    <span className="leading-normal text-gray-700">{restriccion}</span>
                   </label>
                 ))}
               </div>

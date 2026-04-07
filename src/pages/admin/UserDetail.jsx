@@ -20,6 +20,7 @@ const UserDetail = () => {
     nombre: '',
     apellido: '',
     email: '',
+    dni: '',
     telefono: '',
     tags: [],
     estado: '',
@@ -53,6 +54,7 @@ const UserDetail = () => {
         nombre: userData.nombre || '',
         apellido: userData.apellido || '',
         email: userData.email || '',
+        dni: userData.dni || '',
         telefono: userData.telefono || '',
         tags: userData.tags || [],
         estado: userData.estado || '',
@@ -129,9 +131,11 @@ const UserDetail = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    const next =
+      type === 'checkbox' ? checked : name === 'dni' ? value.replace(/ /g, '').trim() : value;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: next
     }));
   };
 
@@ -192,6 +196,7 @@ const UserDetail = () => {
       await axios.put(`/users/${id}`, {
         nombre: formData.nombre,
         apellido: formData.apellido,
+        dni: formData.dni.replace(/ /g, '').trim(),
         telefono: formData.telefono,
         tags: formData.tags,
         estado: 'pending'
@@ -228,6 +233,7 @@ const UserDetail = () => {
         await axios.put(`/users/${id}`, {
           nombre: formData.nombre,
           apellido: formData.apellido,
+          dni: formData.dni.replace(/ /g, '').trim(),
           telefono: formData.telefono,
           tags: formData.tags,
           estado: 'pending'
@@ -251,6 +257,7 @@ const UserDetail = () => {
       await axios.put(`/users/${id}`, {
         nombre: formData.nombre,
         apellido: formData.apellido,
+        dni: formData.dni.replace(/ /g, '').trim(),
         telefono: formData.telefono,
         tags: formData.tags
       });
@@ -384,6 +391,23 @@ const UserDetail = () => {
                   value={formData.apellido}
                   onChange={handleChange}
                   required
+                  className="bg-white"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>DNI</label>
+                <input
+                  type="text"
+                  name="dni"
+                  value={formData.dni}
+                  onChange={handleChange}
+                  inputMode="numeric"
+                  autoComplete="off"
+                  minLength={7}
+                  maxLength={10}
+                  pattern="\d{7,10}"
+                  title="Entre 7 y 10 dígitos"
                   className="bg-white"
                 />
               </div>

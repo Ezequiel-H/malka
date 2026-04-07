@@ -44,7 +44,7 @@ cp .env.example .env
 Editar `.env` con tus credenciales:
 ```
 PORT=5000
-MONGODB_URI=mongodb://localhost:27017/centro-cultural
+MONGODB_URI=mongodb+srv://USUARIO:CONTRASEÑA@cluster0.wur7pv5.mongodb.net/centro-cultural?appName=Cluster0
 JWT_SECRET=tu_secret_key_super_segura_aqui
 JWT_EXPIRE=7d
 FRONTEND_URL=http://localhost:5173

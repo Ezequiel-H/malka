@@ -75,6 +75,7 @@ const PendingUsers = () => {
               <div key={user._id} className="card hover:shadow-xl transition-shadow">
                 <h2 className="text-xl font-bold mb-2 text-gray-800">{user.nombre} {user.apellido}</h2>
                 <p className="text-gray-600 mb-4">{user.email}</p>
+                {user.dni && <p className="mb-2"><strong>DNI:</strong> {user.dni}</p>}
                 {user.telefono && <p className="mb-2"><strong>Teléfono:</strong> {user.telefono}</p>}
 
                 {user.tags && user.tags.length > 0 && (
