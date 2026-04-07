@@ -8,11 +8,13 @@ Asegúrate de tener MongoDB corriendo localmente o configura una URI remota.
 
 ### 2. Configurar Backend
 
+Cloná el repo del API si aún no lo tenés. Desde la carpeta del backend (p. ej. `backend/` junto a este proyecto):
+
 ```bash
 cd backend
 npm install
 cp .env.example .env
-# Editar .env con tus valores
+# Editar .env (PORT por defecto 5001, MONGODB_URI, JWT_SECRET, FRONTEND_URL)
 ```
 
 ### 3. Crear Usuario Administrador
@@ -24,6 +26,7 @@ node scripts/createAdmin.js admin@centro.com admin123 Admin Sistema
 
 O usar el script npm:
 ```bash
+cd backend
 npm run create-admin -- admin@centro.com admin123 Admin Sistema
 ```
 
@@ -34,24 +37,26 @@ cd backend
 npm run dev
 ```
 
-El servidor estará en `http://localhost:5000`
+El API estará en `http://localhost:5001` (rutas bajo `/api`).
 
 ### 5. Configurar Frontend
 
+Desde la **raíz de este repo** de frontend (si tu workspace tiene subcarpeta `frontend/`, entra ahí primero):
+
 ```bash
-cd frontend
+cd frontend   # omití este paso si ya estás en la raíz del clon malka.git
 npm install
 ```
 
 Opcional: crear `.env` con:
 ```
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=http://localhost:5001/api
 ```
 
 ### 6. Iniciar Frontend
 
 ```bash
-cd frontend
+cd frontend   # si aplica
 npm run dev
 ```
 

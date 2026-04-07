@@ -10,15 +10,24 @@ Aplicación web completa para gestionar usuarios, actividades y procesos de insc
 - **Autenticación**: JWT
 - **Exportación**: ExcelJS
 
-## Estructura del Proyecto
+## Estructura del repositorio
+
+Este repositorio contiene **solo el frontend** (React + Vite). El API está en [malka-backend](https://github.com/Ezequiel-H/malka-backend).
+
+Tras clonar, en la raíz del repo tenés `src/`, `package.json`, etc. Los comandos de instalación y `npm run dev` se ejecutan **desde esa raíz**.
+
+### Workspace local con ambos repos (opcional)
+
+Muchos desarrolladores mantienen una carpeta contenedora sin Git con dos clonaciones hermanas:
 
 ```
-malka/
-├── backend/          # API REST con Express
-├── frontend/         # Aplicación React
-├── instrucciones.md  # Especificaciones del proyecto
-└── README.md         # Este archivo
+malka/                    # carpeta local (sin .git)
+├── frontend/             # este repo (git@github.com:Ezequiel-H/malka.git)
+├── backend/              # API (git@github.com:Ezequiel-H/malka-backend.git)
+└── ...
 ```
+
+Si trabajás así, los comandos del frontend son desde `frontend/`; los del backend desde `backend/`.
 
 ## Instalación
 
@@ -28,23 +37,22 @@ malka/
 - MongoDB (local o remoto)
 - npm o yarn
 
-### Backend
+### Backend (repositorio aparte)
 
-1. Instalar dependencias:
+Cloná [malka-backend](https://github.com/Ezequiel-H/malka-backend) y seguí su README. Resumen:
+
+1. Desde la carpeta del backend (por ejemplo `backend/` junto a este proyecto):
 ```bash
 cd backend
 npm install
 ```
 
-2. Configurar variables de entorno:
-```bash
-cp .env.example .env
-```
+2. Configurar variables de entorno (`cp .env.example .env` si existe, o creá `.env`).
 
-Editar `.env` con tus credenciales:
+Valores típicos (el puerto por defecto del servidor es **5001**):
 ```
-PORT=5000
-MONGODB_URI=mongodb+srv://USUARIO:CONTRASEÑA@cluster0.wur7pv5.mongodb.net/centro-cultural?appName=Cluster0
+PORT=5001
+MONGODB_URI=...
 JWT_SECRET=tu_secret_key_super_segura_aqui
 JWT_EXPIRE=7d
 FRONTEND_URL=http://localhost:5173
@@ -52,41 +60,31 @@ FRONTEND_URL=http://localhost:5173
 
 3. Crear usuario administrador inicial:
 ```bash
-node scripts/createAdmin.js [email] [password] [nombre] [apellido]
-```
-
-Ejemplo:
-```bash
 node scripts/createAdmin.js admin@centro.com admin123 Admin Sistema
 ```
 
-4. Iniciar servidor:
+4. Iniciar servidor: `npm run dev` (o `npm start`). El API queda en `http://localhost:5001/api`.
+
+### Frontend (este repositorio)
+
+1. En la **raíz de este clon** (o dentro de `frontend/` si usás el workspace de dos carpetas):
 ```bash
-npm run dev
-```
-
-El servidor estará disponible en `http://localhost:5000`
-
-### Frontend
-
-1. Instalar dependencias:
-```bash
-cd frontend
 npm install
 ```
 
-2. Configurar variables de entorno (opcional):
-Crear archivo `.env`:
+2. Opcional: archivo `.env` con:
 ```
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=http://localhost:5001/api
 ```
 
-3. Iniciar servidor de desarrollo:
+En desarrollo, Vite hace proxy de `/api` al backend; si no definís `VITE_API_URL`, el cliente usa por defecto `http://localhost:5001/api` (ver `src/contexts/AuthContext.jsx`).
+
+3. Iniciar desarrollo:
 ```bash
 npm run dev
 ```
 
-La aplicación estará disponible en `http://localhost:5173`
+La app queda en `http://localhost:5173`
 
 ## Funcionalidades
 
