@@ -223,6 +223,7 @@ const MyProfile = () => {
               value={formData.comoSeEntero}
               onChange={handleChange}
               placeholder="Escribe cómo te enteraste..."
+              required
               className="bg-white"
             />
           </div>
