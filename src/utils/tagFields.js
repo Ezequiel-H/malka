@@ -29,7 +29,7 @@ export function activityPublicTags(activity) {
 
 export function activityPrivateTags(activity) {
   if (!activity) return [];
-  const v = activity.tagsPrivados ?? activity.tagsVisibilidad;
+  const v = activity.tagsPrivados;
   return Array.isArray(v) ? v : [];
 }
 

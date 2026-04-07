@@ -264,7 +264,6 @@ const ActivityForm = () => {
         createdAt,
         updatedAt,
         categorias: _legacyCat,
-        tagsVisibilidad: _legacyVis,
         ...formRest
       } = formData;
 
@@ -273,7 +272,6 @@ const ActivityForm = () => {
         tags: formData.tags,
         categorias: formData.tags,
         tagsPrivados: formData.tagsPrivados,
-        tagsVisibilidad: formData.tagsPrivados,
         fecha: fechaToSend,
         hora: formData.tipo === 'recurrente' ? (formData.recurrence.hora || formData.hora) : formData.hora,
         cupo: formData.cupo ? Number(formData.cupo) : null,
