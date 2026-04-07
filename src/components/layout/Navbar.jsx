@@ -58,6 +58,13 @@ const Navbar = () => {
             ) : (
               <>
                 <button
+                  onClick={() => navigate('/my-profile')}
+                  className="text-gray-700 font-medium hover:text-primary transition-colors cursor-pointer bg-transparent border-none p-0"
+                  type="button"
+                >
+                  Mi perfil
+                </button>
+                <button
                   onClick={() => navigate('/activities')}
                   className="text-gray-700 font-medium hover:text-primary transition-colors cursor-pointer bg-transparent border-none p-0"
                   type="button"

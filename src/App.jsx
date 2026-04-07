@@ -17,6 +17,7 @@ import TagsManagement from './pages/admin/TagsManagement';
 import PrivateTagsManagement from './pages/admin/PrivateTagsManagement';
 import UserDetail from './pages/admin/UserDetail';
 import MyInterests from './pages/participant/MyInterests';
+import MyProfile from './pages/participant/MyProfile';
 import PrivateRoute from './components/auth/PrivateRoute';
 import AdminRoute from './components/auth/AdminRoute';
 
@@ -70,6 +71,14 @@ function App() {
           element={
             <PrivateRoute>
               <MyInterests />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/my-profile"
+          element={
+            <PrivateRoute>
+              <MyProfile />
             </PrivateRoute>
           }
         />
