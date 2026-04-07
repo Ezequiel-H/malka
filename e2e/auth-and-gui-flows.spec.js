@@ -41,7 +41,7 @@ test.describe('Login', () => {
     await page.getByRole('button', { name: 'Iniciar Sesión' }).click();
     await expect(page).toHaveURL(/\/activities$/);
     await expect(page.getByRole('heading', { name: 'Cartelera de Actividades' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Centro Cultural' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Malka' })).toBeVisible();
   });
 
   test('participante pendiente ve el mensaje de validación en el dashboard', async ({ page }) => {

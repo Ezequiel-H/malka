@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import logoMalka from '../../assets/logo-malka-positivo.png';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -16,10 +17,11 @@ const Navbar = () => {
         <div className="flex justify-between items-center">
           <button
             onClick={() => navigate('/dashboard')}
-            className="text-2xl font-bold text-primary hover:text-primary/80 transition-colors cursor-pointer bg-transparent border-none p-0"
+            className="flex items-center gap-3 cursor-pointer bg-transparent border-none p-0"
             type="button"
           >
-            Centro Cultural
+            <img src={logoMalka} alt="Malka" className="h-10 w-auto" />
+            <span className="sr-only">Malka</span>
           </button>
           <div className="flex items-center gap-6">
             {user?.role === 'admin' ? (

@@ -1,6 +1,6 @@
-# App de Gestión de Eventos - Centro Cultural
+# App de Gestión de Eventos - Malka
 
-Aplicación web completa para gestionar usuarios, actividades y procesos de inscripción en un centro cultural.
+Aplicación web completa para gestionar usuarios, actividades y procesos de inscripción en Malka.
 
 ## Stack Tecnológico
 

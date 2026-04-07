@@ -1,8 +1,8 @@
-# **Especificación del Proyecto: App de Gestión de Eventos para un Centro Cultural**
+# **Especificación del Proyecto: App de Gestión de Eventos para Malka**
 
 ## **Descripción general**
 
-Desarrollar una aplicación web en **JavaScript** (stack flexible: Node.js + Express para backend, React para frontend, MongoDB o PostgreSQL para base de datos, a definir en implementación) cuyo objetivo sea **gestionar usuarios, actividades y procesos de inscripción** dentro de un centro cultural.
+Desarrollar una aplicación web en **JavaScript** (stack flexible: Node.js + Express para backend, React para frontend, MongoDB o PostgreSQL para base de datos, a definir en implementación) cuyo objetivo sea **gestionar usuarios, actividades y procesos de inscripción** dentro de Malka.
 La aplicación tendrá dos tipos de usuarios: **Participantes** y **Administradores**, cada uno con flujos específicos.
 
 ---
