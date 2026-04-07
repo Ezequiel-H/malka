@@ -52,13 +52,6 @@ const Navbar = () => {
                 >
                   Tags
                 </button>
-                <button
-                  onClick={() => navigate('/admin/tags-privados')}
-                  className="text-gray-700 font-medium hover:text-primary transition-colors cursor-pointer bg-transparent border-none p-0"
-                  type="button"
-                >
-                  Tags privados
-                </button>
               </>
             ) : (
               <>

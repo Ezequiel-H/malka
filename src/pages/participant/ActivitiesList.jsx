@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
-import { activityPublicTags } from '../../utils/tagFields';
+import { activityPublicTags, publicTagColor } from '../../utils/tagFields';
 
 // Helper function to format date as YYYY-MM-DD - simple date, no timezone conversion
 // Just extract the year, month, day as simple numbers
@@ -39,6 +39,7 @@ const ActivitiesList = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showCancelPolicyModal, setShowCancelPolicyModal] = useState(false);
+  const [publicTagCatalog, setPublicTagCatalog] = useState([]);
 
   const navigate = useNavigate();
 
@@ -60,6 +61,21 @@ const ActivitiesList = () => {
   useEffect(() => {
     fetchActivities();
   }, [filters]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await axios.get('/tags');
+        if (!cancelled) setPublicTagCatalog(res.data.tags || []);
+      } catch (e) {
+        console.error('Error loading tag catalog:', e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Cerrar modal con ESC
   useEffect(() => {
@@ -454,7 +470,11 @@ const ActivitiesList = () => {
                 
                 <div className="mb-4 flex flex-wrap gap-2">
                   {activityPublicTags(activity).map(cat => (
-                    <span key={cat} className="badge badge-secondary">
+                    <span
+                      key={cat}
+                      className="badge text-white"
+                      style={{ backgroundColor: publicTagColor(publicTagCatalog, cat) }}
+                    >
                       {cat}
                     </span>
                   ))}
@@ -567,7 +587,11 @@ const ActivitiesList = () => {
                     <h3 className="text-xl font-semibold text-gray-800 mb-2">Tags</h3>
                     <div className="flex flex-wrap gap-2">
                       {activityPublicTags(selectedActivity).map(cat => (
-                        <span key={cat} className="badge badge-secondary">
+                        <span
+                          key={cat}
+                          className="badge text-white"
+                          style={{ backgroundColor: publicTagColor(publicTagCatalog, cat) }}
+                        >
                           {cat}
                         </span>
                       ))}

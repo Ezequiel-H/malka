@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { catalogTagByName, publicTagColor } from '../../utils/tagFields';
 
 /**
  * Selector múltiple de tags públicos por nombre (catálogo GET /tags).
@@ -14,10 +15,11 @@ const PublicTagPicker = ({
 
   const addTag = (nombre) => {
     if (!nombre || disabled) return;
-    const lower = nombre.toLowerCase();
-    if (selectedNames.some(t => t.toLowerCase() === lower)) return;
-    const fromCat = availableTags.find(t => t.nombre.toLowerCase() === lower);
-    onChange([...selectedNames, fromCat ? fromCat.nombre : nombre]);
+    const lower = String(nombre).trim().toLowerCase();
+    if (!lower) return;
+    if (selectedNames.some(t => String(t).trim().toLowerCase() === lower)) return;
+    const fromCat = catalogTagByName(availableTags, nombre);
+    onChange([...selectedNames, fromCat ? fromCat.nombre : nombre.trim()]);
     setSelectValue('');
   };
 
@@ -38,7 +40,12 @@ const PublicTagPicker = ({
           <option value="">Seleccionar tag</option>
           {availableTags.length > 0 ? (
             availableTags
-              .filter(tag => !selectedNames.some(t => t.toLowerCase() === tag.nombre.toLowerCase()))
+              .filter(
+              tag =>
+                !selectedNames.some(
+                  t => String(t).trim().toLowerCase() === String(tag.nombre).trim().toLowerCase()
+                )
+            )
               .map(tag => (
                 <option key={tag._id} value={tag.nombre}>
                   {tag.nombre.charAt(0).toUpperCase() + tag.nombre.slice(1)}
@@ -60,8 +67,7 @@ const PublicTagPicker = ({
       </div>
       <div className="flex flex-wrap gap-2">
         {selectedNames.map(tagNombre => {
-          const tag = availableTags.find(t => t.nombre.toLowerCase() === tagNombre.toLowerCase());
-          const tagColor = tag?.color || '#3B82F6';
+          const tagColor = publicTagColor(availableTags, tagNombre);
           return (
             <span
               key={tagNombre}

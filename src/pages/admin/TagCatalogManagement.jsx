@@ -10,7 +10,9 @@ const TagCatalogManagement = ({
   apiBase,
   title,
   description,
-  crossLink
+  crossLink,
+  catalogScope,
+  onCatalogScopeChange
 }) => {
   const { showSuccess, showError } = useToast();
   const [tags, setTags] = useState([]);
@@ -139,17 +141,51 @@ const TagCatalogManagement = ({
   return (
     <div className="min-h-screen bg-light-bg py-12 px-4">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-          <div>
-            <h1 className="text-4xl font-bold text-primary">{title}</h1>
-            {description && <p className="text-gray-600 mt-2 max-w-2xl">{description}</p>}
-            {crossLink && (
-              <p className="mt-2">
-                <Link to={crossLink.to} className="text-primary hover:underline font-medium">
-                  {crossLink.label}
-                </Link>
-              </p>
-            )}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
+          <div className="flex-1 w-full">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div>
+                <h1 className="text-4xl font-bold text-primary">{title}</h1>
+                {description && <p className="text-gray-600 mt-2 max-w-2xl">{description}</p>}
+                {crossLink && !onCatalogScopeChange && (
+                  <p className="mt-2">
+                    <Link to={crossLink.to} className="text-primary hover:underline font-medium">
+                      {crossLink.label}
+                    </Link>
+                  </p>
+                )}
+              </div>
+              {onCatalogScopeChange && (
+                <div
+                  className="shrink-0 inline-flex rounded-lg border border-gray-200 bg-gray-100 p-1"
+                  role="group"
+                  aria-label="Tipo de tags"
+                >
+                  <button
+                    type="button"
+                    onClick={() => onCatalogScopeChange('public')}
+                    className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                      catalogScope === 'public'
+                        ? 'bg-white text-primary shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Normales
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onCatalogScopeChange('private')}
+                    className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                      catalogScope === 'private'
+                        ? 'bg-white text-primary shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Privados
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
           <button
             onClick={() => {

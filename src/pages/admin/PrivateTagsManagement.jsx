@@ -1,12 +1,6 @@
-import TagCatalogManagement from './TagCatalogManagement';
+import { Navigate } from 'react-router-dom';
 
-const PrivateTagsManagement = () => (
-  <TagCatalogManagement
-    apiBase="/tags-privados"
-    title="Tags privados"
-    description="Solo administración. No se envían al frontend del participante. Sirven para segmentar qué actividades privadas puede ver cada usuario."
-    crossLink={{ to: '/admin/tags', label: '← Tags públicos' }}
-  />
-);
+/** Compatibilidad: enlaces antiguos a /admin/tags-privados. */
+const PrivateTagsManagement = () => <Navigate to="/admin/tags?catalog=private" replace />;
 
 export default PrivateTagsManagement;
