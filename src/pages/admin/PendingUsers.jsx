@@ -98,13 +98,6 @@ const PendingUsers = () => {
                   </div>
                 )}
 
-                {user.categoriasArtisticas && user.categoriasArtisticas.length > 0 && (
-                  <div className="mb-4">
-                    <strong className="text-gray-700 block mb-1">Categorías:</strong>
-                    <p className="text-gray-600 text-sm">{user.categoriasArtisticas.join(', ')}</p>
-                  </div>
-                )}
-
                 <div className="flex gap-2 mt-6 flex-wrap">
                   <button
                     onClick={() => handleApprove(user._id)}

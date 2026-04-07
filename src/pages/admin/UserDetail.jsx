@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useToast } from '../../contexts/ToastContext';
+import { userPrivateTags } from '../../utils/tagFields';
 
 const UserDetail = () => {
   const { id } = useParams();
@@ -12,7 +13,9 @@ const UserDetail = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [availableTags, setAvailableTags] = useState([]);
+  const [availablePrivateTags, setAvailablePrivateTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
+  const [tagInputPrivados, setTagInputPrivados] = useState('');
   const [inscriptions, setInscriptions] = useState([]);
   const [loadingInscriptions, setLoadingInscriptions] = useState(false);
 
@@ -23,6 +26,7 @@ const UserDetail = () => {
     dni: '',
     telefono: '',
     tags: [],
+    tagsPrivados: [],
     estado: '',
     role: '',
     restriccionesAlimentarias: [],
@@ -32,6 +36,7 @@ const UserDetail = () => {
   useEffect(() => {
     fetchUser();
     fetchAvailableTags();
+    fetchAvailablePrivateTags();
   }, [id]);
 
   useEffect(() => {
@@ -57,6 +62,7 @@ const UserDetail = () => {
         dni: userData.dni || '',
         telefono: userData.telefono || '',
         tags: userData.tags || [],
+        tagsPrivados: userPrivateTags(userData),
         estado: userData.estado || '',
         role: userData.role || '',
         restriccionesAlimentarias: userData.restriccionesAlimentarias || [],
@@ -80,6 +86,16 @@ const UserDetail = () => {
       setAvailableTags(response.data.tags || []);
     } catch (error) {
       console.error('Error fetching tags:', error);
+    }
+  };
+
+  const fetchAvailablePrivateTags = async () => {
+    try {
+      const response = await axios.get('/tags-privados?activa=true');
+      setAvailablePrivateTags(response.data.tags || []);
+    } catch (error) {
+      console.error('Error fetching tags privados:', error);
+      setAvailablePrivateTags([]);
     }
   };
 
@@ -162,6 +178,26 @@ const UserDetail = () => {
     }));
   };
 
+  const handleAddPrivateTag = () => {
+    if (!tagInputPrivados) return;
+    const tagNombreLower = tagInputPrivados.toLowerCase();
+    if (formData.tagsPrivados.some(t => t.toLowerCase() === tagNombreLower)) return;
+    const tagFromBackend = availablePrivateTags.find(t => t.nombre.toLowerCase() === tagNombreLower);
+    const tagToAdd = tagFromBackend ? tagFromBackend.nombre : tagInputPrivados;
+    setFormData(prev => ({
+      ...prev,
+      tagsPrivados: [...prev.tagsPrivados, tagToAdd]
+    }));
+    setTagInputPrivados('');
+  };
+
+  const handleRemovePrivateTag = (tag) => {
+    setFormData(prev => ({
+      ...prev,
+      tagsPrivados: prev.tagsPrivados.filter(t => t !== tag)
+    }));
+  };
+
   const handleApprove = async () => {
     if (!window.confirm('¿Estás seguro de que deseas aprobar este usuario?')) {
       return;
@@ -199,6 +235,7 @@ const UserDetail = () => {
         dni: formData.dni.replace(/ /g, '').trim(),
         telefono: formData.telefono,
         tags: formData.tags,
+        tagsPrivados: formData.tagsPrivados,
         estado: 'pending'
       });
       showSuccess('Usuario puesto como pendiente');
@@ -236,6 +273,7 @@ const UserDetail = () => {
           dni: formData.dni.replace(/ /g, '').trim(),
           telefono: formData.telefono,
           tags: formData.tags,
+          tagsPrivados: formData.tagsPrivados,
           estado: 'pending'
         });
         showSuccess('Usuario puesto como pendiente');
@@ -259,7 +297,8 @@ const UserDetail = () => {
         apellido: formData.apellido,
         dni: formData.dni.replace(/ /g, '').trim(),
         telefono: formData.telefono,
-        tags: formData.tags
+        tags: formData.tags,
+        tagsPrivados: formData.tagsPrivados
       });
       showSuccess('Usuario actualizado exitosamente');
       fetchUser();
@@ -471,11 +510,15 @@ const UserDetail = () => {
             </div>
           </div>
 
-          {/* Tags */}
+          {/* Tags públicos */}
           <div className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Tags</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Tags públicos</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Intereses del participante (también puede editarlos en &quot;Mis intereses&quot;). Catálogo:{' '}
+              <a href="/admin/tags" className="text-primary hover:underline">tags públicos</a>.
+            </p>
             <div className="form-group">
-              <label>Tags del Usuario</label>
+              <label>Tags del usuario</label>
               <div className="flex gap-3 mb-3">
                 <select
                   value={tagInput}
@@ -533,6 +576,83 @@ const UserDetail = () => {
               {availableTags.length === 0 && (
                 <p className="text-sm text-gray-500 mt-2">
                   No hay tags disponibles. <a href="/admin/tags" className="text-primary hover:underline">Crear tags</a>
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Tags privados (admin) */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Tags privados</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Solo administración: segmentan qué actividades privadas puede ver este usuario. No se muestran al
+              participante. Gestioná el catálogo en{' '}
+              <a href="/admin/tags-privados" className="text-primary hover:underline">Tags privados</a>.
+            </p>
+            <div className="form-group">
+              <label>Tags privados del usuario</label>
+              <div className="flex gap-3 mb-3">
+                <select
+                  value={tagInputPrivados}
+                  onChange={(e) => setTagInputPrivados(e.target.value)}
+                  className="flex-1 bg-white"
+                >
+                  <option value="">Seleccionar tag privada</option>
+                  {availablePrivateTags.length > 0 ? (
+                    availablePrivateTags
+                      .filter(tag => {
+                        const tagNombreLower = tag.nombre.toLowerCase();
+                        return !formData.tagsPrivados.some(t => t.toLowerCase() === tagNombreLower);
+                      })
+                      .map(tag => (
+                        <option key={tag._id} value={tag.nombre}>
+                          {tag.nombre.charAt(0).toUpperCase() + tag.nombre.slice(1)}
+                          {tag.descripcion && ` - ${tag.descripcion}`}
+                        </option>
+                      ))
+                  ) : (
+                    <option value="" disabled>No hay tags privadas disponibles</option>
+                  )}
+                </select>
+                <button
+                  type="button"
+                  onClick={handleAddPrivateTag}
+                  className="btn btn-secondary"
+                  disabled={!tagInputPrivados}
+                >
+                  Agregar
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {formData.tagsPrivados.map(tagNombre => {
+                  const tag = availablePrivateTags.find(
+                    t => t.nombre.toLowerCase() === tagNombre.toLowerCase()
+                  );
+                  const tagColor = tag?.color || '#92400E';
+                  return (
+                    <span
+                      key={tagNombre}
+                      className="badge flex items-center gap-2 text-white"
+                      style={{ backgroundColor: tagColor }}
+                    >
+                      {tagNombre.charAt(0).toUpperCase() + tagNombre.slice(1)}
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePrivateTag(tagNombre)}
+                        className="bg-transparent border-none text-white cursor-pointer hover:text-gray-200 font-bold"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+              {availablePrivateTags.length === 0 && (
+                <p className="text-sm text-gray-500 mt-2">
+                  No hay tags privadas.{' '}
+                  <a href="/admin/tags-privados" className="text-primary hover:underline">
+                    Crear en catálogo privado
+                  </a>
                 </p>
               )}
             </div>

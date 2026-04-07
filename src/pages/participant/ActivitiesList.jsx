@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
+import { activityPublicTags } from '../../utils/tagFields';
 
 // Helper function to format date as YYYY-MM-DD - simple date, no timezone conversion
 // Just extract the year, month, day as simple numbers
@@ -45,13 +46,11 @@ const ActivitiesList = () => {
   const getAvailableCategories = () => {
     const allCategories = new Set();
     activities.forEach(activity => {
-      if (activity.categorias && Array.isArray(activity.categorias)) {
-        activity.categorias.forEach(cat => {
-          if (cat && cat.trim()) {
-            allCategories.add(cat);
-          }
-        });
-      }
+      activityPublicTags(activity).forEach(cat => {
+        if (cat && String(cat).trim()) {
+          allCategories.add(cat);
+        }
+      });
     });
     return Array.from(allCategories).sort();
   };
@@ -454,7 +453,7 @@ const ActivitiesList = () => {
                 <p className="text-gray-600 mb-4 line-clamp-3">{activity.descripcion}</p>
                 
                 <div className="mb-4 flex flex-wrap gap-2">
-                  {activity.categorias.map(cat => (
+                  {activityPublicTags(activity).map(cat => (
                     <span key={cat} className="badge badge-secondary">
                       {cat}
                     </span>
@@ -563,11 +562,11 @@ const ActivitiesList = () => {
                 )}
 
                 {/* Categorías */}
-                {selectedActivity.categorias && selectedActivity.categorias.length > 0 && (
+                {activityPublicTags(selectedActivity).length > 0 && (
                   <div className="mb-6">
-                    <h3 className="text-xl font-semibold text-gray-800 mb-2">Categorías</h3>
+                    <h3 className="text-xl font-semibold text-gray-800 mb-2">Tags</h3>
                     <div className="flex flex-wrap gap-2">
-                      {selectedActivity.categorias.map(cat => (
+                      {activityPublicTags(selectedActivity).map(cat => (
                         <span key={cat} className="badge badge-secondary">
                           {cat}
                         </span>

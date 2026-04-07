@@ -1,5 +1,5 @@
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useEffect } from 'react';
 
 const Dashboard = () => {
@@ -26,7 +26,13 @@ const Dashboard = () => {
           {user?.estado === 'pending' && (
             <div className="alert alert-info">
               <h2 className="text-xl font-semibold mb-2">Tu usuario está siendo validado</h2>
-              <p className="text-base">Tu cuenta está siendo validada por nuestro equipo. Este proceso puede tardar unos días. Podrás acceder a las actividades una vez que tu cuenta sea aprobada.</p>
+              <p className="text-base mb-4">
+                Tu cuenta está siendo validada por nuestro equipo. Este proceso puede tardar unos días. Podrás acceder a
+                las actividades una vez que tu cuenta sea aprobada.
+              </p>
+              <Link to="/my-interests" className="btn btn-secondary inline-block">
+                Mis intereses
+              </Link>
             </div>
           )}
         </div>

@@ -41,14 +41,37 @@
     @apply block mb-2 font-medium text-gray-700;
   }
 
-  .form-group input,
+  /* Fila checkbox/radio: misma línea y alineación vertical con el texto */
+  .form-group label:has(> input[type='checkbox']),
+  .form-group label:has(> input[type='radio']) {
+    @apply mb-0 flex items-center font-medium;
+  }
+
+  .form-group input:not([type='checkbox']):not([type='radio']):not([type='color']):not([type='range']):not([type='file']):not([type='hidden']):not(.form-input-hex),
   .form-group textarea,
   .form-group select {
     @apply w-full px-4 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all;
   }
 
+  .form-group input[type='checkbox'],
+  .form-group input[type='radio'] {
+    @apply shrink-0 cursor-pointer align-middle;
+  }
+
   .form-group textarea {
     @apply min-h-[100px] resize-y;
+  }
+
+  /* Campo de código hex (junto al color picker): mismos estilos que otros inputs pero ancho acotado */
+  .form-group input.form-input-hex {
+    @apply px-4 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all;
+    width: auto;
+    max-width: 11ch;
+    min-width: 9ch;
+    flex-grow: 0;
+    flex-shrink: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+      'Courier New', monospace;
   }
 
   .card {

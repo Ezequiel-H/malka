@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useToast } from '../../contexts/ToastContext';
+import { activityPublicTags, activityPrivateTags } from '../../utils/tagFields';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -54,7 +55,7 @@ const ActivityForm = () => {
   const [formData, setFormData] = useState({
     titulo: '',
     descripcion: '',
-    categorias: [],
+    tags: [],
     tipo: 'unica',
     fecha: '',
     hora: '',
@@ -69,7 +70,7 @@ const ActivityForm = () => {
     politicaCancelacion: '',
     recordatoriosAutomaticos: true,
     visibilidad: 'publica',
-    tagsVisibilidad: [],
+    tagsPrivados: [],
     // Recurrencia
     recurrence: {
       frequency: 'weekly',
@@ -81,13 +82,16 @@ const ActivityForm = () => {
     }
   });
 
-  const [tagInput, setTagInput] = useState('');
+  const [tagInputPublic, setTagInputPublic] = useState('');
+  const [tagInputPrivate, setTagInputPrivate] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [availableTags, setAvailableTags] = useState([]);
+  const [availablePrivateTags, setAvailablePrivateTags] = useState([]);
 
   useEffect(() => {
     fetchAvailableTags();
+    fetchAvailablePrivateTags();
     if (isEdit) {
       fetchActivity();
     }
@@ -96,12 +100,20 @@ const ActivityForm = () => {
   const fetchAvailableTags = async () => {
     try {
       const response = await axios.get('/tags?activa=true');
-      const tags = response.data.tags || [];
-      setAvailableTags(tags);
-      console.log('Tags cargadas:', tags); // Debug
+      setAvailableTags(response.data.tags || []);
     } catch (error) {
       console.error('Error fetching tags:', error);
       setAvailableTags([]);
+    }
+  };
+
+  const fetchAvailablePrivateTags = async () => {
+    try {
+      const response = await axios.get('/tags-privados?activa=true');
+      setAvailablePrivateTags(response.data.tags || []);
+    } catch (error) {
+      console.error('Error fetching tags privados:', error);
+      setAvailablePrivateTags([]);
     }
   };
 
@@ -119,8 +131,13 @@ const ActivityForm = () => {
         recurrence.dayOfMonth = [recurrence.dayOfMonth];
       }
       
+      const publicTags = activityPublicTags(activity);
+      const privateTags = activityPrivateTags(activity);
+
       setFormData({
         ...activity,
+        tags: publicTags,
+        tagsPrivados: privateTags,
         fecha: activity.fecha ? formatDateToString(activity.fecha) : '',
         cupo: activity.cupo || '',
         duracion: activity.duracion || '',
@@ -170,37 +187,43 @@ const ActivityForm = () => {
   const minutes = ['00', '10', '15', '20', '30', '40', '45', '50'];
 
 
-  const handleAddTag = () => {
-    if (tagInput.trim() && !formData.tagsVisibilidad.includes(tagInput.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        tagsVisibilidad: [...prev.tagsVisibilidad, tagInput.trim()]
-      }));
-      setTagInput('');
-    }
-  };
-
-  const handleAddTagFromSelect = (tagNombre) => {
-    if (tagNombre) {
-      const tagNombreLower = tagNombre.toLowerCase();
-      const alreadyExists = formData.tagsVisibilidad.some(t => t.toLowerCase() === tagNombreLower);
-      if (!alreadyExists) {
-        // Usar el nombre exacto de la tag del backend para mantener consistencia
-        const tagFromBackend = availableTags.find(t => t.nombre.toLowerCase() === tagNombreLower);
-        const tagToAdd = tagFromBackend ? tagFromBackend.nombre : tagNombre;
-        setFormData(prev => ({
-          ...prev,
-          tagsVisibilidad: [...prev.tagsVisibilidad, tagToAdd]
-        }));
-        setTagInput('');
-      }
-    }
-  };
-
-  const handleRemoveTag = (tag) => {
+  const addPublicTagFromSelect = () => {
+    if (!tagInputPublic) return;
+    const tagNombreLower = tagInputPublic.toLowerCase();
+    if (formData.tags.some(t => t.toLowerCase() === tagNombreLower)) return;
+    const tagFromBackend = availableTags.find(t => t.nombre.toLowerCase() === tagNombreLower);
+    const tagToAdd = tagFromBackend ? tagFromBackend.nombre : tagInputPublic;
     setFormData(prev => ({
       ...prev,
-      tagsVisibilidad: prev.tagsVisibilidad.filter(t => t !== tag)
+      tags: [...prev.tags, tagToAdd]
+    }));
+    setTagInputPublic('');
+  };
+
+  const removePublicTag = (tag) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(t => t !== tag)
+    }));
+  };
+
+  const addPrivateTagFromSelect = () => {
+    if (!tagInputPrivate) return;
+    const tagNombreLower = tagInputPrivate.toLowerCase();
+    if (formData.tagsPrivados.some(t => t.toLowerCase() === tagNombreLower)) return;
+    const tagFromBackend = availablePrivateTags.find(t => t.nombre.toLowerCase() === tagNombreLower);
+    const tagToAdd = tagFromBackend ? tagFromBackend.nombre : tagInputPrivate;
+    setFormData(prev => ({
+      ...prev,
+      tagsPrivados: [...prev.tagsPrivados, tagToAdd]
+    }));
+    setTagInputPrivate('');
+  };
+
+  const removePrivateTag = (tag) => {
+    setFormData(prev => ({
+      ...prev,
+      tagsPrivados: prev.tagsPrivados.filter(t => t !== tag)
     }));
   };
 
@@ -231,8 +254,22 @@ const ActivityForm = () => {
 
       const fechaToSend = formData.tipo === 'unica' ? formData.fecha : (formData.tipo === 'recurrente' && formData.recurrence.frequency === 'daily' ? formData.fecha : undefined);
 
+      const {
+        _id: _omitId,
+        __v,
+        createdAt,
+        updatedAt,
+        categorias: _legacyCat,
+        tagsVisibilidad: _legacyVis,
+        ...formRest
+      } = formData;
+
       const dataToSend = {
-        ...formData,
+        ...formRest,
+        tags: formData.tags,
+        categorias: formData.tags,
+        tagsPrivados: formData.tagsPrivados,
+        tagsVisibilidad: formData.tagsPrivados,
         fecha: fechaToSend,
         hora: formData.tipo === 'recurrente' ? (formData.recurrence.hora || formData.hora) : formData.hora,
         cupo: formData.cupo ? Number(formData.cupo) : null,
@@ -240,7 +277,7 @@ const ActivityForm = () => {
         precio: formData.esGratuita ? 0 : Number(formData.precio),
         recurrence: formData.tipo === 'recurrente' ? {
           ...formData.recurrence,
-          dayOfWeek: formData.recurrence.daysOfWeek?.[0], // Mantener compatibilidad con el modelo
+          dayOfWeek: formData.recurrence.daysOfWeek?.[0],
           daysOfWeek: formData.recurrence.daysOfWeek || [],
           dayOfMonth: formData.recurrence.dayOfMonth || [],
           endDate: formData.recurrence.endDate || null,
@@ -300,16 +337,14 @@ const ActivityForm = () => {
         </div>
 
         <div className="form-group">
-          <label>Tags / Categorías</label>
+          <label>Tags públicos</label>
           <p className="text-sm text-gray-600 mb-2">
-            Selecciona las tags que categorizan esta actividad
+            Temas de la actividad (visibles en cartelera y filtros). Catálogo público.
           </p>
           <div className="flex gap-3 mb-3">
             <select
-              value={tagInput}
-              onChange={(e) => {
-                setTagInput(e.target.value);
-              }}
+              value={tagInputPublic}
+              onChange={(e) => setTagInputPublic(e.target.value)}
               className="flex-1 bg-white"
             >
               <option value="">Seleccionar tag</option>
@@ -317,7 +352,7 @@ const ActivityForm = () => {
                 availableTags
                   .filter(tag => {
                     const tagNombreLower = tag.nombre.toLowerCase();
-                    return !formData.categorias.some(c => c.toLowerCase() === tagNombreLower);
+                    return !formData.tags.some(c => c.toLowerCase() === tagNombreLower);
                   })
                   .map(tag => (
                     <option key={tag._id} value={tag.nombre}>
@@ -329,48 +364,29 @@ const ActivityForm = () => {
                 <option value="" disabled>No hay tags disponibles</option>
               )}
             </select>
-            <button 
-              type="button" 
-              onClick={() => {
-                if (tagInput) {
-                  const tagNombreLower = tagInput.toLowerCase();
-                  const alreadyExists = formData.categorias.some(c => c.toLowerCase() === tagNombreLower);
-                  if (!alreadyExists) {
-                    const tagFromBackend = availableTags.find(t => t.nombre.toLowerCase() === tagNombreLower);
-                    const tagToAdd = tagFromBackend ? tagFromBackend.nombre : tagInput;
-                    setFormData(prev => ({
-                      ...prev,
-                      categorias: [...prev.categorias, tagToAdd]
-                    }));
-                    setTagInput('');
-                  }
-                }
-              }} 
+            <button
+              type="button"
+              onClick={addPublicTagFromSelect}
               className="btn btn-secondary"
-              disabled={!tagInput}
+              disabled={!tagInputPublic}
             >
               Agregar
             </button>
           </div>
           <div className="flex flex-wrap gap-2">
-            {formData.categorias.map(cat => {
+            {formData.tags.map(cat => {
               const tag = availableTags.find(t => t.nombre.toLowerCase() === cat.toLowerCase());
               const tagColor = tag?.color || '#3B82F6';
               return (
-                <span 
-                  key={cat} 
+                <span
+                  key={cat}
                   className="badge flex items-center gap-2 text-white"
                   style={{ backgroundColor: tagColor }}
                 >
                   {cat.charAt(0).toUpperCase() + cat.slice(1)}
                   <button
                     type="button"
-                    onClick={() => {
-                      setFormData(prev => ({
-                        ...prev,
-                        categorias: prev.categorias.filter(c => c !== cat)
-                      }));
-                    }}
+                    onClick={() => removePublicTag(cat)}
                     className="bg-transparent border-none text-white cursor-pointer hover:text-gray-200 font-bold"
                   >
                     ×
@@ -707,7 +723,7 @@ const ActivityForm = () => {
               name="esGratuita"
               checked={formData.esGratuita}
               onChange={handleChange}
-              className="mr-2 w-4 h-4 text-primary focus:ring-primary rounded"
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
             />
             <span>Actividad Gratuita</span>
           </label>
@@ -789,33 +805,32 @@ const ActivityForm = () => {
             <option value="publica">Pública (visible para todos los usuarios aprobados)</option>
             <option value="privada">Privada (solo visible para usuarios con las tags requeridas)</option>
           </select>
-          {formData.visibilidad === 'privada' && formData.tagsVisibilidad.length === 0 && (
+          {formData.visibilidad === 'privada' && formData.tagsPrivados.length === 0 && (
             <p className="text-sm text-yellow-600 mt-2">
-              ⚠️ Debes seleccionar al menos una tag para que la actividad privada sea visible
+              ⚠️ Debes seleccionar al menos una tag privada para que la actividad privada sea visible a quien corresponda
             </p>
           )}
         </div>
 
         {formData.visibilidad === 'privada' && (
           <div className="form-group">
-            <label>Tags de Visibilidad</label>
+            <label>Tags privados (audiencia)</label>
             <p className="text-sm text-gray-600 mb-2">
-              Selecciona las tags requeridas para que los usuarios puedan ver esta actividad
+              Catálogo privado: el servidor decide qué usuarios ven esta actividad según sus tags privados. No se envían al
+              participante.
             </p>
             <div className="flex gap-3 mb-3">
               <select
-                value={tagInput}
-                onChange={(e) => {
-                  setTagInput(e.target.value);
-                }}
+                value={tagInputPrivate}
+                onChange={(e) => setTagInputPrivate(e.target.value)}
                 className="flex-1 bg-white"
               >
-                <option value="">Seleccionar tag</option>
-                {availableTags.length > 0 ? (
-                  availableTags
+                <option value="">Seleccionar tag privada</option>
+                {availablePrivateTags.length > 0 ? (
+                  availablePrivateTags
                     .filter(tag => {
                       const tagNombreLower = tag.nombre.toLowerCase();
-                      return !formData.tagsVisibilidad.some(t => t.toLowerCase() === tagNombreLower);
+                      return !formData.tagsPrivados.some(t => t.toLowerCase() === tagNombreLower);
                     })
                     .map(tag => (
                       <option key={tag._id} value={tag.nombre}>
@@ -824,37 +839,32 @@ const ActivityForm = () => {
                       </option>
                     ))
                 ) : (
-                  <option value="" disabled>No hay tags disponibles</option>
+                  <option value="" disabled>No hay tags privadas disponibles</option>
                 )}
               </select>
-              <button 
-                type="button" 
-                onClick={() => {
-                  if (tagInput) {
-                    handleAddTagFromSelect(tagInput);
-                    setTagInput('');
-                  }
-                }} 
+              <button
+                type="button"
+                onClick={addPrivateTagFromSelect}
                 className="btn btn-secondary"
-                disabled={!tagInput}
+                disabled={!tagInputPrivate}
               >
                 Agregar
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
-              {formData.tagsVisibilidad.map(tagNombre => {
-                const tag = availableTags.find(t => t.nombre === tagNombre);
+              {formData.tagsPrivados.map(tagNombre => {
+                const tag = availablePrivateTags.find(t => t.nombre === tagNombre);
                 const tagColor = tag?.color || '#F59E0B';
                 return (
-                  <span 
-                    key={tagNombre} 
+                  <span
+                    key={tagNombre}
                     className="badge flex items-center gap-2 text-white"
                     style={{ backgroundColor: tagColor }}
                   >
                     {tagNombre.charAt(0).toUpperCase() + tagNombre.slice(1)}
                     <button
                       type="button"
-                      onClick={() => handleRemoveTag(tagNombre)}
+                      onClick={() => removePrivateTag(tagNombre)}
                       className="bg-transparent border-none text-white cursor-pointer hover:text-gray-200 font-bold"
                     >
                       ×
@@ -863,9 +873,12 @@ const ActivityForm = () => {
                 );
               })}
             </div>
-            {availableTags.length === 0 && (
+            {availablePrivateTags.length === 0 && (
               <p className="text-sm text-gray-500 mt-2">
-                No hay tags disponibles. <a href="/admin/tags" className="text-primary hover:underline">Crear tags</a>
+                No hay tags privadas.{' '}
+                <a href="/admin/tags-privados" className="text-primary hover:underline">
+                  Crear en catálogo privado
+                </a>
               </p>
             )}
           </div>

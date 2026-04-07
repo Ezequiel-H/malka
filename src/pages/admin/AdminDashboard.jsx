@@ -115,10 +115,15 @@ const AdminDashboard = () => {
             <h2 className="text-5xl font-bold text-purple-500 mb-3">
               🏷️
             </h2>
-            <p className="text-lg font-bold text-gray-800 mb-4">Gestionar Tags</p>
-            <Link to="/admin/tags" className="btn btn-primary">
-              Ver Tags
-            </Link>
+            <p className="text-lg font-bold text-gray-800 mb-4">Tags públicos y privados</p>
+            <div className="flex flex-col gap-2 items-center">
+              <Link to="/admin/tags" className="btn btn-primary w-full max-w-xs">
+                Tags públicos
+              </Link>
+              <Link to="/admin/tags-privados" className="btn btn-secondary w-full max-w-xs">
+                Tags privados
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -138,7 +143,10 @@ const AdminDashboard = () => {
               Ver Todos los Usuarios
             </Link>
             <Link to="/admin/tags" className="btn btn-primary">
-              Gestionar Tags
+              Tags públicos
+            </Link>
+            <Link to="/admin/tags-privados" className="btn btn-secondary">
+              Tags privados
             </Link>
           </div>
         </div>

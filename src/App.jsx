@@ -14,7 +14,9 @@ import UsersManagement from './pages/admin/UsersManagement';
 import InscriptionsManagement from './pages/admin/InscriptionsManagement';
 import ActivityInscriptions from './pages/admin/ActivityInscriptions';
 import TagsManagement from './pages/admin/TagsManagement';
+import PrivateTagsManagement from './pages/admin/PrivateTagsManagement';
 import UserDetail from './pages/admin/UserDetail';
+import MyInterests from './pages/participant/MyInterests';
 import PrivateRoute from './components/auth/PrivateRoute';
 import AdminRoute from './components/auth/AdminRoute';
 
@@ -60,6 +62,14 @@ function App() {
           element={
             <PrivateRoute requireApproved>
               <MyInscriptions />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/my-interests"
+          element={
+            <PrivateRoute>
+              <MyInterests />
             </PrivateRoute>
           }
         />
@@ -142,6 +152,14 @@ function App() {
           element={
             <AdminRoute>
               <TagsManagement />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/tags-privados"
+          element={
+            <AdminRoute>
+              <PrivateTagsManagement />
             </AdminRoute>
           }
         />

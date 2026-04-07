@@ -136,7 +136,17 @@ La aplicación estará disponible en `http://localhost:5173`
 - `GET /api/users` - Listar todos los usuarios (Admin)
 - `PUT /api/users/:id/approve` - Aprobar usuario (Admin)
 - `PUT /api/users/:id/reject` - Rechazar usuario (Admin)
-- `PUT /api/users/:id` - Actualizar usuario (Admin)
+- `PUT /api/users/:id` - Actualizar usuario (Admin); cuerpo puede incluir `tags` (públicos) y `tagsPrivados` (solo admin)
+- `PATCH /api/users/me` - Participante: actualizar solo `tags` (intereses públicos)
+
+### Tags (catálogos)
+- `GET /api/tags` — Catálogo público (intereses / temas de actividad). El registro usa `GET /api/tags?activa=true` sin JWT (`fetch` desde el formulario de registro); conviene permitir lectura pública o fallará la carga en signup.
+- `POST|PUT|DELETE /api/tags` — CRUD (Admin)
+- `GET|POST|PUT|DELETE /api/tags-privados` — Catálogo **privado** (solo Admin). Misma forma de respuesta que `/tags` (`{ tags: [...] }`).
+
+### Modelo de datos (tags)
+- **Usuario:** `tags` (públicos, autogestionados), `tagsPrivados` (solo admin; **no** deben enviarse al cliente participante en `GET /auth/me`).
+- **Actividad:** `tags` (públicos; el frontend también envía `categorias` igual a `tags` por compatibilidad), `tagsPrivados` (audiencia; también `tagsVisibilidad` igual a `tagsPrivados` por compatibilidad). Las respuestas al participante no deben incluir `tagsPrivados` / `tagsVisibilidad`.
 
 ### Actividades
 - `GET /api/activities` - Listar actividades
@@ -158,7 +168,7 @@ La aplicación estará disponible en `http://localhost:5173`
 
 ### Users
 - Información personal y de contacto
-- Tags e intereses
+- `tags` (públicos / intereses) y `tagsPrivados` (segmentación interna, colección aparte)
 - Estado (pending/approved/rejected)
 - Rol (participant/admin)
 
@@ -168,7 +178,7 @@ La aplicación estará disponible en `http://localhost:5173`
 - Precio y cupo
 - Tipo (única/recurrente)
 - Estado (borrador/publicada/eliminada)
-- Visibilidad y tags requeridos
+- Visibilidad; `tags` públicos y `tagsPrivados` para actividades privadas (matching en servidor)
 
 ### Inscriptions
 - Relación usuario-actividad

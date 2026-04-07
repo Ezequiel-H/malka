@@ -17,8 +17,9 @@ const PrivateRoute = ({ children, requireApproved = false }) => {
     return <Navigate to="/login" />;
   }
 
-  // Mostrar cartel de validación si el usuario no está aprobado (excepto admins)
-  if (user.role !== 'admin' && user.estado !== 'approved') {
+  const needsApproval = requireApproved && user.role !== 'admin' && user.estado !== 'approved';
+
+  if (needsApproval) {
     return (
       <div className="min-h-screen bg-light-bg py-12 px-4">
         <div className="max-w-4xl mx-auto">
@@ -28,7 +29,10 @@ const PrivateRoute = ({ children, requireApproved = false }) => {
             </h1>
             <div className="alert alert-info">
               <h2 className="text-xl font-semibold mb-2">Tu usuario está siendo validado</h2>
-              <p className="text-base">Tu cuenta está siendo validada por nuestro equipo. Este proceso puede tardar unos días. Podrás acceder a las actividades una vez que tu cuenta sea aprobada.</p>
+              <p className="text-base">
+                Tu cuenta está siendo validada por nuestro equipo. Este proceso puede tardar unos días. Podrás
+                acceder a las actividades una vez que tu cuenta sea aprobada.
+              </p>
             </div>
           </div>
         </div>

@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import PublicTagPicker from '../../components/tags/PublicTagPicker';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -13,14 +16,43 @@ const Register = () => {
     restriccionesAlimentarias: [],
     comoSeEntero: ''
   });
+  const [tags, setTags] = useState([]);
+  const [availableTags, setAvailableTags] = useState([]);
+  const [tagsLoading, setTagsLoading] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API_URL}/tags?activa=true`);
+        if (!res.ok) throw new Error('tags');
+        const data = await res.json();
+        if (!cancelled) {
+          setAvailableTags(data.tags || []);
+        }
+      } catch {
+        if (!cancelled) setAvailableTags([]);
+      } finally {
+        if (!cancelled) setTagsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const next = name === 'dni' ? value.replace(/ /g, '').trim() : value;
+    const next =
+      name === 'dni'
+        ? value.replace(/ /g, '').trim()
+        : name === 'telefono'
+          ? value.replace(/\s/g, '').trim()
+          : value;
     setFormData({
       ...formData,
       [name]: next
@@ -51,7 +83,9 @@ const Register = () => {
 
     const result = await register({
       ...formData,
-      dni: formData.dni.replace(/ /g, '').trim()
+      dni: formData.dni.replace(/ /g, '').trim(),
+      telefono: formData.telefono.replace(/\s/g, '').trim(),
+      tags
     });
     
     if (result.success) {
@@ -65,7 +99,7 @@ const Register = () => {
 
   return (
     <div className="min-h-screen bg-light-bg flex items-center justify-center px-4 py-12">
-      <div className="max-w-md w-full">
+      <div className="max-w-lg w-full">
         <div className="card">
           <h1 className="text-3xl font-bold text-center mb-6 text-primary">Registro</h1>
           
@@ -135,6 +169,13 @@ const Register = () => {
                 name="telefono"
                 value={formData.telefono}
                 onChange={handleChange}
+                required
+                inputMode="tel"
+                autoComplete="tel"
+                minLength={8}
+                maxLength={22}
+                pattern="^[+]?[0-9]{8,20}$"
+                title="Ingresá un teléfono con al menos 8 dígitos (podés usar + y código de país)"
                 className="bg-white"
               />
             </div>
@@ -158,15 +199,15 @@ const Register = () => {
                 {['Vegetariano', 'Vegano', 'Sin gluten', 'Sin lactosa', 'Sin nueces', 'Sin mariscos', 'Diabético'].map((restriccion) => (
                   <label
                     key={restriccion}
-                    className="!mb-0 !flex !max-w-none cursor-pointer items-center gap-3 font-normal"
+                    className="flex max-w-none cursor-pointer items-center gap-3 font-normal"
                   >
                     <input
                       type="checkbox"
                       checked={formData.restriccionesAlimentarias?.includes(restriccion) || false}
                       onChange={() => handleRestriccionChange(restriccion)}
-                      className="!h-4 !w-4 !max-w-none !min-h-0 !p-0 flex-shrink-0 rounded border-gray-300 text-primary focus:ring-primary"
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                     />
-                    <span className="leading-normal text-gray-700">{restriccion}</span>
+                    <span className="text-gray-700">{restriccion}</span>
                   </label>
                 ))}
               </div>
@@ -182,6 +223,27 @@ const Register = () => {
                 placeholder="Escribe cómo te enteraste..."
                 className="bg-white"
               />
+            </div>
+
+            <div className="form-group">
+              <label>¿Qué te interesa?</label>
+              <p className="text-sm text-gray-600 mb-2">
+                Elegí una o más áreas (tags públicos). Podés cambiarlas después en &quot;Mis intereses&quot;.
+              </p>
+              {tagsLoading ? (
+                <p className="text-sm text-gray-500">Cargando intereses...</p>
+              ) : (
+                <PublicTagPicker
+                  availableTags={availableTags}
+                  selectedNames={tags}
+                  onChange={setTags}
+                  emptyHint={
+                    <p className="text-sm text-gray-500 mt-2">
+                      Si no aparecen opciones, podés completar tus intereses luego desde tu cuenta.
+                    </p>
+                  }
+                />
+              )}
             </div>
 
             <button

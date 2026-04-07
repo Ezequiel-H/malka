@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
+import { activityPublicTags } from '../../utils/tagFields';
 
 const ActivitiesManagement = () => {
   const { showSuccess, showError } = useToast();
@@ -175,7 +176,7 @@ const ActivitiesManagement = () => {
                 <p className="text-gray-600 mb-4 line-clamp-3">{activity.descripcion}</p>
 
                 <div className="mb-4 flex flex-wrap gap-2">
-                  {activity.categorias.map(cat => (
+                  {activityPublicTags(activity).map(cat => (
                     <span key={cat} className="badge badge-secondary">
                       {cat}
                     </span>
