@@ -18,6 +18,9 @@ const UserDetail = () => {
   const [tagInputPrivados, setTagInputPrivados] = useState('');
   const [inscriptions, setInscriptions] = useState([]);
   const [loadingInscriptions, setLoadingInscriptions] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -286,6 +289,36 @@ const UserDetail = () => {
     }
   };
 
+  const handleChangePassword = async (e) => {
+    e?.preventDefault?.();
+    if (newPassword.length < 6) {
+      showError('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      showError('Las contraseñas no coinciden');
+      return;
+    }
+    if (!window.confirm('¿Estás seguro de que deseas cambiar la contraseña de este usuario?')) {
+      return;
+    }
+    setSavingPassword(true);
+    try {
+      await axios.put(`/users/${id}/password`, { password: newPassword });
+      showSuccess('Contraseña actualizada');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error) {
+      const msg =
+        error.response?.data?.message ||
+        error.response?.data?.errors?.[0]?.msg ||
+        'Error al cambiar la contraseña';
+      showError(msg);
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -471,6 +504,62 @@ const UserDetail = () => {
                   className="bg-gray-100 cursor-not-allowed"
                 />
                 <p className="text-sm text-gray-500 mt-1">El rol no se puede modificar desde aquí</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Contraseña (admin) */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Contraseña</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Establecé una nueva contraseña para este usuario. No podés ver la contraseña actual.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="form-group">
+                <label htmlFor="admin-new-password">Nueva contraseña</label>
+                <input
+                  id="admin-new-password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleChangePassword(e);
+                    }
+                  }}
+                  className="bg-white"
+                  minLength={6}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="admin-confirm-password">Confirmar contraseña</label>
+                <input
+                  id="admin-confirm-password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleChangePassword(e);
+                    }
+                  }}
+                  className="bg-white"
+                  minLength={6}
+                />
+              </div>
+              <div className="md:col-span-2">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  disabled={savingPassword || !newPassword || !confirmPassword}
+                  onClick={handleChangePassword}
+                >
+                  {savingPassword ? 'Guardando…' : 'Actualizar contraseña'}
+                </button>
               </div>
             </div>
           </div>
