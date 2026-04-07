@@ -4,7 +4,11 @@ import axios from 'axios';
 import { useToast } from '../../contexts/ToastContext';
 import { activityPublicTags, activityPrivateTags } from '../../utils/tagFields';
 import DatePicker from 'react-datepicker';
+import { registerLocale } from 'react-datepicker';
+import { es } from 'date-fns/locale/es';
 import 'react-datepicker/dist/react-datepicker.css';
+
+registerLocale('es', es);
 
 // Helper function to format date as YYYY-MM-DD - simple date, no timezone conversion
 // Just extract the year, month, day as simple numbers
@@ -426,6 +430,7 @@ const ActivityForm = () => {
                   const dateString = date ? formatDateToString(date) : '';
                   setFormData(prev => ({ ...prev, fecha: dateString }));
                 }}
+                locale="es"
                 dateFormat="dd/MM/yyyy"
                 placeholderText="dd/mm/yyyy"
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all bg-white cursor-pointer"
@@ -645,6 +650,7 @@ const ActivityForm = () => {
                     const dateString = date ? formatDateToString(date) : '';
                     setFormData(prev => ({ ...prev, fecha: dateString }));
                   }}
+                  locale="es"
                   dateFormat="dd/MM/yyyy"
                   placeholderText="dd/mm/yyyy"
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all bg-white cursor-pointer"
