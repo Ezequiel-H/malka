@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import PublicTagPicker from '../../components/tags/PublicTagPicker';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -28,13 +27,12 @@ const Register = () => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`${API_URL}/tags?activa=true`);
-        if (!res.ok) throw new Error('tags');
-        const data = await res.json();
+        const res = await axios.get('/tags?activa=true');
         if (!cancelled) {
-          setAvailableTags(data.tags || []);
+          setAvailableTags(res.data?.tags || []);
         }
-      } catch {
+      } catch (error) {
+        console.error('Error cargando tags públicos en registro:', error);
         if (!cancelled) setAvailableTags([]);
       } finally {
         if (!cancelled) setTagsLoading(false);
