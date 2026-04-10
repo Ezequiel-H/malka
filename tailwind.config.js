@@ -9,6 +9,10 @@ export default {
       colors: {
         'light-bg': '#f9f2e8',
         'primary': '#689b78',
+        'malka-ink': '#2c3d34',
+      },
+      fontFamily: {
+        display: ['"Cormorant Garamond"', 'Georgia', 'serif'],
       },
     },
   },

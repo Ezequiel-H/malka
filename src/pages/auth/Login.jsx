@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import logoMalka from '../../assets/logo-malka-positivo.png';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -16,7 +17,7 @@ const Login = () => {
     setLoading(true);
 
     const result = await login(email, password);
-    
+
     if (result.success) {
       const { user } = result;
       if (user.role === 'admin') {
@@ -29,54 +30,101 @@ const Login = () => {
     } else {
       setError(result.message);
     }
-    
+
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-light-bg flex items-center justify-center px-4 py-12">
-      <div className="max-w-md w-full">
-        <div className="card">
-          <h1 className="text-3xl font-bold text-center mb-6 text-primary">Iniciar Sesión</h1>
-          
-          {error && (
-            <div className="alert alert-error">{error}</div>
-          )}
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#fdfaf5] via-light-bg to-[#ebe4d8]">
+      {/* Textura suave tipo “casa” / papel */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.35]"
+        aria-hidden
+        style={{
+          backgroundImage: `radial-gradient(circle at 20% 20%, rgba(104, 155, 120, 0.12) 0%, transparent 45%),
+            radial-gradient(circle at 80% 80%, rgba(104, 155, 120, 0.08) 0%, transparent 40%),
+            radial-gradient(circle at 50% 100%, rgba(235, 228, 216, 0.9) 0%, transparent 55%)`,
+        }}
+      />
 
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label>Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="bg-white"
-              />
-            </div>
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-12 sm:px-6">
+        <header className="mb-10 flex w-full max-w-lg flex-col items-center text-center">
+          <img
+            src={logoMalka}
+            alt="Malka"
+            className="mb-8 h-14 w-auto sm:h-16"
+          />
+          <h1 className="font-display text-[1.65rem] font-semibold leading-snug tracking-tight text-malka-ink sm:text-3xl md:text-[2.15rem]">
+            El punto de encuentro para tu identidad judía
+          </h1>
+        </header>
 
-            <div className="form-group">
-              <label>Contraseña</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="bg-white"
-              />
-            </div>
+        <div className="w-full max-w-md">
+          <div className="rounded-2xl border border-primary/15 bg-white/95 p-8 shadow-xl shadow-primary/5 backdrop-blur-sm">
+            <h2 className="mb-6 text-center font-display text-2xl font-semibold text-primary">
+              Iniciar sesión
+            </h2>
 
-            <button
-              type="submit"
-              className="btn btn-primary w-full"
-              disabled={loading}
+            {error && <div className="alert alert-error">{error}</div>}
+
+            <form onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label htmlFor="login-email">Email</label>
+                <input
+                  id="login-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                  className="bg-[#fffcf7]"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="login-password">Contraseña</label>
+                <input
+                  id="login-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  className="bg-[#fffcf7]"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="btn btn-primary w-full rounded-xl py-3 text-base shadow-md"
+                disabled={loading}
+              >
+                {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
+              </button>
+            </form>
+
+            <p className="mt-8 text-center text-sm text-gray-600">
+              ¿No tenés cuenta?{' '}
+              <Link
+                to="/register"
+                className="font-medium text-primary underline decoration-primary/30 underline-offset-2 transition-colors hover:text-primary/90 hover:decoration-primary/60"
+              >
+                Registrate aquí
+              </Link>
+            </p>
+          </div>
+
+          <p className="mt-10 text-center text-xs text-gray-500">
+            <a
+              href="https://casamalka.org/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary/80 underline-offset-2 transition-colors hover:text-primary hover:underline"
             >
-              {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-            </button>
-          </form>
-
-          <p className="mt-6 text-center text-gray-600">
-            ¿No tienes cuenta? <Link to="/register" className="text-primary hover:text-primary/80 font-medium">Regístrate aquí</Link>
+              casamalka.org
+            </a>
+            {' · '}
+            Casa abierta para la comunidad
           </p>
         </div>
       </div>
@@ -85,4 +133,3 @@ const Login = () => {
 };
 
 export default Login;
-
