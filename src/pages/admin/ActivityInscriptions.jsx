@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
 import {
   formatDateEsAR,
@@ -12,6 +12,8 @@ import {
 const ActivityInscriptions = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const fechaHighlight = searchParams.get('fecha');
   const { showSuccess, showError } = useToast();
   const [activity, setActivity] = useState(null);
   const [inscriptions, setInscriptions] = useState([]);
@@ -29,6 +31,17 @@ const ActivityInscriptions = () => {
       fetchInscriptions();
     }
   }, [activity, id]);
+
+  useEffect(() => {
+    if (loading || !fechaHighlight) return;
+    const el = document.getElementById(`inscription-fecha-${fechaHighlight}`);
+    if (el) {
+      const t = window.setTimeout(() => {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 150);
+      return () => window.clearTimeout(t);
+    }
+  }, [loading, fechaHighlight, activity, groupedInscriptions, estadoFilter, allInscriptions]);
 
   const applyFilter = (inscriptionsToFilter, filter) => {
     if (filter === 'todos') {
@@ -121,6 +134,55 @@ const ActivityInscriptions = () => {
     applyFilter(allInscriptions, newFilter);
   };
 
+  const getConfirmedInscriptionEmails = () => {
+    const seen = new Set();
+    const emails = [];
+    for (const inscription of allInscriptions) {
+      if (inscription.estado !== 'aceptada') continue;
+      const raw =
+        typeof inscription.userId === 'object' && inscription.userId?.email
+          ? String(inscription.userId.email).trim()
+          : '';
+      if (!raw) continue;
+      const key = raw.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      emails.push(raw);
+    }
+    return emails;
+  };
+
+  const copyConfirmedEmailsToClipboard = async () => {
+    const emails = getConfirmedInscriptionEmails();
+    const text = emails.join(', ');
+    if (!text) {
+      showError('No hay inscripciones aceptadas con email para copiar.');
+      return;
+    }
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      showSuccess(
+        emails.length === 1
+          ? '1 email copiado al portapapeles (separado por coma para pegar en el cliente de correo).'
+          : `${emails.length} emails copiados al portapapeles (separados por coma).`
+      );
+    } catch {
+      showError('No se pudo copiar. Revisá los permisos del portapapeles en el navegador.');
+    }
+  };
+
   const getEstadoBadge = (estado) => {
     const badges = {
       aceptada: { class: 'badge-success', text: 'Aceptada' },
@@ -141,6 +203,11 @@ const ActivityInscriptions = () => {
     });
   };
 
+  const adminUserPath = (userRef) => {
+    const uid = typeof userRef === 'object' && userRef !== null ? userRef._id : userRef;
+    return uid ? `/admin/users/${uid}` : null;
+  };
+
   const inscriptionListHeader = (
     <div className="hidden sm:grid sm:grid-cols-12 sm:gap-x-3 sm:items-center px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">
       <div className="sm:col-span-4">Participante</div>
@@ -154,12 +221,27 @@ const ActivityInscriptions = () => {
       [inscription.userId?.nombre, inscription.userId?.apellido].filter(Boolean).join(' ').trim() || '—';
     const telefono = inscription.userId?.telefono || '—';
     const email = inscription.userId?.email || '—';
+    const userHref = adminUserPath(inscription.userId);
+    const participantLabel =
+      nombreCompleto !== '—'
+        ? nombreCompleto
+        : typeof inscription.userId === 'object' && inscription.userId?.email
+          ? inscription.userId.email
+          : 'Ver perfil';
     return (
       <div
         key={inscription._id}
         className="px-4 py-2.5 grid grid-cols-1 gap-2 sm:grid-cols-12 sm:gap-x-3 sm:items-center text-sm hover:bg-gray-50/80"
       >
-        <div className="sm:col-span-4 font-medium text-gray-900 truncate">{nombreCompleto}</div>
+        <div className="sm:col-span-4 font-medium text-gray-900 truncate">
+          {userHref ? (
+            <Link to={userHref} className="text-primary hover:underline">
+              {participantLabel}
+            </Link>
+          ) : (
+            nombreCompleto
+          )}
+        </div>
         <div className="sm:col-span-5 text-gray-700 min-w-0 space-y-0.5">
           <div className="break-words">{telefono}</div>
           <div className="break-words text-gray-600">{email}</div>
@@ -290,7 +372,17 @@ const ActivityInscriptions = () => {
         {/* Estadísticas */}
         <div className="card mb-8">
           <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <h2 className="text-xl font-semibold text-gray-800 sm:text-2xl">Resumen</h2>
+            <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <h2 className="text-xl font-semibold text-gray-800 sm:text-2xl">Resumen</h2>
+              <button
+                type="button"
+                onClick={copyConfirmedEmailsToClipboard}
+                className="btn btn-secondary w-full shrink-0 justify-center text-sm sm:w-auto"
+                title="Copia los correos de participantes con inscripción aceptada, separados por coma, para pegarlos en Para o CCO"
+              >
+                Copiar emails (inscripciones aceptadas)
+              </button>
+            </div>
             <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 md:w-auto">
               <label className="shrink-0 font-medium text-gray-700">Filtrar por estado:</label>
               <select
@@ -360,7 +452,7 @@ const ActivityInscriptions = () => {
               sortedDates.map(fechaStr => {
                 const fechaInscriptions = filteredGrouped[fechaStr];
                 return (
-                  <div key={fechaStr}>
+                  <div key={fechaStr} id={`inscription-fecha-${fechaStr}`}>
                     <div className="mb-2">
                       <h3 className="text-base font-bold text-gray-800 tabular-nums">
                         {formatUtcCalendarDayAndTime(new Date(`${fechaStr}T00:00:00.000Z`), activity.hora)}
@@ -380,7 +472,14 @@ const ActivityInscriptions = () => {
           </div>
         ) : (
           // Actividad única: mostrar todas juntas
-          <div className="card p-0 overflow-hidden divide-y divide-gray-100">
+          <div
+            className="card p-0 overflow-hidden divide-y divide-gray-100"
+            id={
+              activity.fecha
+                ? `inscription-fecha-${formatUtcCalendarDateToString(activity.fecha)}`
+                : undefined
+            }
+          >
             {inscriptionListHeader}
             {inscriptions.map(inscription => renderInscriptionCard(inscription))}
           </div>
