@@ -139,13 +139,13 @@ const TagCatalogManagement = ({
   }
 
   return (
-    <div className="min-h-screen bg-light-bg py-12 px-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto min-w-0">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
           <div className="flex-1 w-full">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div>
-                <h1 className="text-4xl font-bold text-primary">{title}</h1>
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary">{title}</h1>
                 {description && <p className="text-gray-600 mt-2 max-w-2xl">{description}</p>}
                 {crossLink && !onCatalogScopeChange && (
                   <p className="mt-2">
@@ -192,7 +192,7 @@ const TagCatalogManagement = ({
               resetForm();
               setShowForm(true);
             }}
-            className="btn btn-primary"
+            className="btn btn-primary w-full justify-center lg:w-auto shrink-0"
           >
             Nueva tag
           </button>
@@ -278,11 +278,11 @@ const TagCatalogManagement = ({
                 </label>
               </div>
 
-              <div className="flex gap-2">
-                <button type="submit" className="btn btn-primary">
+              <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                <button type="submit" className="btn btn-primary w-full justify-center sm:w-auto">
                   {editingTag ? 'Actualizar' : 'Crear'}
                 </button>
-                <button type="button" onClick={resetForm} className="btn btn-secondary">
+                <button type="button" onClick={resetForm} className="btn btn-secondary w-full justify-center sm:w-auto">
                   Cancelar
                 </button>
               </div>
@@ -303,12 +303,12 @@ const TagCatalogManagement = ({
                 key={tag._id}
                 className={`card hover:shadow-xl transition-shadow ${!tag.activa ? 'opacity-60' : ''}`}
               >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-3 flex-1">
-                    <div className="w-4 h-4 rounded-full" style={{ backgroundColor: tag.color }} />
-                    <h2 className="text-xl font-bold text-gray-800 capitalize">{tag.nombre}</h2>
+                <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <div className="h-4 w-4 shrink-0 rounded-full" style={{ backgroundColor: tag.color }} />
+                    <h2 className="text-xl font-bold capitalize text-gray-800">{tag.nombre}</h2>
                   </div>
-                  <span className={`badge ${tag.activa ? 'badge-success' : 'badge-secondary'}`}>
+                  <span className={`badge shrink-0 self-start ${tag.activa ? 'badge-success' : 'badge-secondary'}`}>
                     {tag.activa ? 'Activa' : 'Inactiva'}
                   </span>
                 </div>
@@ -328,17 +328,23 @@ const TagCatalogManagement = ({
                   </p>
                 </div>
 
-                <div className="flex gap-2 flex-wrap">
-                  <button onClick={() => handleEdit(tag)} className="btn btn-secondary flex-1 min-w-[100px]">
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  <button
+                    onClick={() => handleEdit(tag)}
+                    className="btn btn-secondary w-full justify-center sm:w-auto sm:min-w-[100px] sm:flex-1"
+                  >
                     Editar
                   </button>
                   <button
                     onClick={() => handleToggleActive(tag)}
-                    className={`btn flex-1 min-w-[100px] ${tag.activa ? 'btn-warning' : 'btn-success'}`}
+                    className={`btn w-full justify-center sm:w-auto sm:min-w-[100px] sm:flex-1 ${tag.activa ? 'btn-warning' : 'btn-success'}`}
                   >
                     {tag.activa ? 'Desactivar' : 'Activar'}
                   </button>
-                  <button onClick={() => handleDelete(tag._id)} className="btn btn-danger flex-1 min-w-[100px]">
+                  <button
+                    onClick={() => handleDelete(tag._id)}
+                    className="btn btn-danger w-full justify-center sm:w-auto sm:min-w-[100px] sm:flex-1"
+                  >
                     Eliminar
                   </button>
                 </div>

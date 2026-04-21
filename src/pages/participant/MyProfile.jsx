@@ -96,9 +96,9 @@ const MyProfile = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-light-bg py-12 px-4">
-      <div className="max-w-2xl mx-auto card">
-        <h1 className="text-3xl font-bold text-primary mb-2">Mi perfil</h1>
+    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
+      <div className="max-w-2xl mx-auto card min-w-0">
+        <h1 className="text-2xl sm:text-3xl font-bold text-primary mb-2">Mi perfil</h1>
         <p className="text-gray-600 mb-6">
           Actualizá tus datos. Tus intereses se administran desde <Link to="/my-interests" className="text-primary font-medium">Mis intereses</Link>.
         </p>
@@ -227,11 +227,11 @@ const MyProfile = () => {
             />
           </div>
 
-          <div className="flex items-center justify-between gap-3 mt-6">
-            <Link to="/my-interests" className="btn btn-secondary">
+          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Link to="/my-interests" className="btn btn-secondary w-full justify-center sm:w-auto">
               Mis intereses
             </Link>
-            <button type="submit" className="btn btn-primary" disabled={saving}>
+            <button type="submit" className="btn btn-primary w-full justify-center sm:w-auto" disabled={saving}>
               {saving ? 'Guardando...' : 'Guardar cambios'}
             </button>
           </div>

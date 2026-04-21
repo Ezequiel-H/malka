@@ -60,8 +60,8 @@ const Login = () => {
         </header>
 
         <div className="w-full max-w-md">
-          <div className="rounded-2xl border border-primary/15 bg-white/95 p-8 shadow-xl shadow-primary/5 backdrop-blur-sm">
-            <h2 className="mb-6 text-center font-display text-2xl font-semibold text-primary">
+          <div className="rounded-2xl border border-primary/15 bg-white/95 p-6 shadow-xl shadow-primary/5 backdrop-blur-sm sm:p-8">
+            <h2 className="mb-6 text-center font-display text-xl font-semibold text-primary sm:text-2xl">
               Iniciar sesión
             </h2>
 

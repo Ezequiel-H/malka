@@ -96,13 +96,15 @@ const InscriptionsManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-light-bg py-12 px-4">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8 text-primary">Gestión de Inscripciones</h1>
+    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto min-w-0">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8 text-primary">
+          Gestión de Inscripciones
+        </h1>
 
         {/* Filtros */}
         <div className="card mb-8">
-          <h2 className="text-2xl font-semibold mb-6 text-gray-800">Filtros</h2>
+          <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-gray-800">Filtros</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="form-group">
               <label>Estado</label>

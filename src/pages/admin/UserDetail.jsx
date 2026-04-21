@@ -364,8 +364,8 @@ const UserDetail = () => {
 
   if (!user && !loading) {
     return (
-      <div className="min-h-screen bg-light-bg py-12 px-4">
-        <div className="max-w-7xl mx-auto">
+      <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto min-w-0">
           <div className="card">
             {error ? (
               <>
@@ -385,15 +385,15 @@ const UserDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-light-bg py-12 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-4xl font-bold text-primary">
+    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto min-w-0">
+        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="min-w-0 text-2xl font-bold text-primary sm:text-3xl md:text-4xl">
             {user.nombre} {user.apellido}
           </h1>
           <button
             onClick={() => navigate('/admin/users')}
-            className="btn btn-secondary"
+            className="btn btn-secondary w-full shrink-0 justify-center sm:w-auto"
           >
             ← Volver
           </button>

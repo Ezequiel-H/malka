@@ -304,9 +304,9 @@ const ActivityForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-light-bg py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8 text-primary">
+    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
+      <div className="max-w-4xl mx-auto min-w-0">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8 text-primary">
           {isEdit ? 'Editar Actividad' : 'Nueva Actividad'}
         </h1>
 
@@ -343,11 +343,11 @@ const ActivityForm = () => {
           <p className="text-sm text-gray-600 mb-2">
             Temas de la actividad (visibles en cartelera y filtros). Catálogo público.
           </p>
-          <div className="flex gap-3 mb-3">
+          <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-stretch">
             <select
               value={tagInputPublic}
               onChange={(e) => setTagInputPublic(e.target.value)}
-              className="flex-1 bg-white"
+              className="min-w-0 flex-1 bg-white"
             >
               <option value="">Seleccionar tag</option>
               {availableTags.length > 0 ? (
@@ -369,7 +369,7 @@ const ActivityForm = () => {
             <button
               type="button"
               onClick={addPublicTagFromSelect}
-              className="btn btn-secondary"
+              className="btn btn-secondary w-full shrink-0 justify-center sm:w-auto"
               disabled={!tagInputPublic}
             >
               Agregar
@@ -600,7 +600,7 @@ const ActivityForm = () => {
                 <label>Días del Mes *</label>
                 <div className="mt-2">
                   <p className="text-sm text-gray-600 mb-2">Selecciona los días del mes (1-31):</p>
-                  <div className="grid grid-cols-8 sm:grid-cols-10 gap-2">
+                  <div className="grid grid-cols-5 gap-2 sm:grid-cols-8 md:grid-cols-10">
                     {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
                       <label key={day} className="flex items-center justify-center cursor-pointer p-2 border rounded hover:bg-gray-50">
                         <input
@@ -823,11 +823,11 @@ const ActivityForm = () => {
               Catálogo privado: el servidor decide qué usuarios ven esta actividad según sus tags privados. No se envían al
               participante.
             </p>
-            <div className="flex gap-3 mb-3">
+            <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-stretch">
               <select
                 value={tagInputPrivate}
                 onChange={(e) => setTagInputPrivate(e.target.value)}
-                className="flex-1 bg-white"
+                className="min-w-0 flex-1 bg-white"
               >
                 <option value="">Seleccionar tag privada</option>
                 {availablePrivateTags.length > 0 ? (
@@ -849,7 +849,7 @@ const ActivityForm = () => {
               <button
                 type="button"
                 onClick={addPrivateTagFromSelect}
-                className="btn btn-secondary"
+                className="btn btn-secondary w-full shrink-0 justify-center sm:w-auto"
                 disabled={!tagInputPrivate}
               >
                 Agregar
@@ -912,20 +912,20 @@ const ActivityForm = () => {
           </label>
         </div>
 
-        <div className="flex gap-4">
-          <button
-            type="submit"
-            className="btn btn-primary flex-1"
-            disabled={loading}
-          >
-            {loading ? 'Guardando...' : isEdit ? 'Actualizar' : 'Crear'} Actividad
-          </button>
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={() => navigate('/admin/activities')}
-            className="btn btn-secondary"
+            className="btn btn-secondary w-full justify-center sm:w-auto"
           >
             Cancelar
+          </button>
+          <button
+            type="submit"
+            className="btn btn-primary w-full justify-center sm:w-auto sm:flex-1 sm:max-w-xs"
+            disabled={loading}
+          >
+            {loading ? 'Guardando...' : isEdit ? 'Actualizar' : 'Crear'} Actividad
           </button>
         </div>
       </form>

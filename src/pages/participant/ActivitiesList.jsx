@@ -385,13 +385,15 @@ const ActivitiesList = () => {
   }
 
   return (
-    <div className="min-h-screen bg-light-bg py-12 px-4">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8 text-primary">Cartelera de Actividades</h1>
+    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto min-w-0">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8 text-primary">
+          Cartelera de Actividades
+        </h1>
 
         {/* Filtros */}
         <div className="card mb-8">
-          <h2 className="text-2xl font-semibold mb-6 text-gray-800">Filtros</h2>
+          <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-gray-800">Filtros</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="form-group">
               <label>Buscar</label>
@@ -486,9 +488,12 @@ const ActivitiesList = () => {
                   <p><strong>Precio:</strong> {activity.esGratuita ? 'Gratis' : `$${activity.precio}`}</p>
                 </div>
 
-                <div className="flex gap-2 mt-auto" onClick={(e) => e.stopPropagation()}>
+                <div
+                  className="mt-auto flex w-full flex-col gap-2 sm:flex-row sm:items-stretch"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   {activity.estadoInscripcion ? (
-                    <div className="flex-1 flex flex-col gap-2">
+                    <div className="flex w-full flex-1 flex-col gap-2">
                       {getEstadoInscripcionBadge(activity.estadoInscripcion)}
                       {activity.tipo === 'recurrente' && activity.fechaInscripcion && (
                         <p className="text-sm text-gray-600">
@@ -499,7 +504,7 @@ const ActivitiesList = () => {
                   ) : (
                     <button
                       onClick={(e) => handleInscribeClick(activity, e)}
-                      className="btn btn-primary flex-1"
+                      className="btn btn-primary w-full justify-center sm:w-auto sm:flex-1"
                     >
                       Inscribirse
                     </button>
@@ -509,7 +514,7 @@ const ActivitiesList = () => {
                       href={activity.ubicacionOnline}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="btn btn-secondary whitespace-nowrap"
+                      className="btn btn-secondary w-full justify-center whitespace-normal text-center sm:w-auto sm:whitespace-nowrap"
                       title="Ver ubicación en Google Maps"
                     >
                       🗺️ ¿Cómo llego?
@@ -533,10 +538,10 @@ const ActivitiesList = () => {
               }
             }}
           >
-            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <h2 className="text-3xl font-bold text-gray-800 pr-4">
+            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto min-w-0">
+              <div className="p-4 sm:p-6">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <h2 className="min-w-0 flex-1 text-xl font-bold text-gray-800 sm:text-2xl md:text-3xl">
                     {selectedActivity.titulo}
                   </h2>
                   <button
@@ -545,7 +550,7 @@ const ActivitiesList = () => {
                       setSelectedActivity(null);
                       setAvailableDates([]);
                     }}
-                    className="text-gray-500 hover:text-gray-700 text-3xl flex-shrink-0"
+                    className="flex-shrink-0 text-2xl text-gray-500 hover:text-gray-700 sm:text-3xl"
                   >
                     ×
                   </button>
@@ -710,8 +715,8 @@ const ActivitiesList = () => {
                                   : 'border-gray-200 bg-gray-100 opacity-50'
                               }`}
                             >
-                              <div className="flex justify-between items-center">
-                                <div className="flex-1">
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="min-w-0 flex-1">
                                   <p className="font-semibold text-gray-800">
                                     {formatUtcCalendarDateEsAR(dateOption.fecha, {
                                       weekday: 'long',
@@ -733,7 +738,9 @@ const ActivitiesList = () => {
                                     </p>
                                   )}
                                 </div>
-                                {getEstadoInscripcionBadge(dateOption.estadoInscripcion)}
+                                <div className="shrink-0 self-start sm:self-center">
+                                  {getEstadoInscripcionBadge(dateOption.estadoInscripcion)}
+                                </div>
                               </div>
                             </div>
                           );
@@ -749,14 +756,14 @@ const ActivitiesList = () => {
                 )}
 
                 {/* Botones de acción */}
-                <div className="flex gap-3 pt-4 flex-wrap">
+                <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:flex-wrap">
                   {!selectedActivity.estadoInscripcion && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleInscribeClick(selectedActivity, e);
                       }}
-                      className="btn btn-primary flex-1 min-w-[150px]"
+                      className="btn btn-primary w-full justify-center min-w-0 sm:w-auto sm:min-w-[140px] sm:flex-1"
                     >
                       Inscribirse
                     </button>
@@ -765,7 +772,7 @@ const ActivitiesList = () => {
                   {selectedActivity.tipo === 'unica' && selectedActivity.fecha && (
                     <button
                       onClick={() => handleAddToCalendar()}
-                      className="btn btn-secondary"
+                      className="btn btn-secondary w-full justify-center sm:w-auto"
                       title="Agregar al calendario"
                     >
                       📅 Agregar al Calendario
@@ -777,7 +784,7 @@ const ActivitiesList = () => {
                       href={selectedActivity.ubicacionOnline}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="btn btn-secondary whitespace-nowrap"
+                      className="btn btn-secondary w-full justify-center text-center sm:w-auto sm:whitespace-nowrap"
                       title="Ver ubicación en Google Maps"
                     >
                       🗺️ ¿Cómo llego?
@@ -791,7 +798,7 @@ const ActivitiesList = () => {
                         setShowDetailModal(false);
                         setShowDateModal(true);
                       }}
-                      className="btn btn-secondary"
+                      className="btn btn-secondary w-full justify-center sm:w-auto"
                     >
                       Ver todas las fechas
                     </button>
@@ -803,7 +810,7 @@ const ActivitiesList = () => {
                         e.stopPropagation();
                         setShowCancelPolicyModal(true);
                       }}
-                      className="btn btn-secondary"
+                      className="btn btn-secondary w-full justify-center sm:w-auto"
                     >
                       📋 Política de Cancelación
                     </button>
@@ -815,7 +822,7 @@ const ActivitiesList = () => {
                       setSelectedActivity(null);
                       setAvailableDates([]);
                     }}
-                    className="btn btn-outline"
+                    className="btn btn-outline w-full justify-center sm:w-auto"
                   >
                     Cerrar
                   </button>
@@ -835,27 +842,27 @@ const ActivitiesList = () => {
               }
             }}
           >
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-bold text-gray-800">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto min-w-0">
+              <div className="p-4 sm:p-6">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <h2 className="min-w-0 flex-1 text-xl font-bold text-gray-800 sm:text-2xl">
                     Política de Cancelación
                   </h2>
                   <button
                     onClick={() => setShowCancelPolicyModal(false)}
-                    className="text-gray-500 hover:text-gray-700 text-3xl flex-shrink-0"
+                    className="flex-shrink-0 text-2xl text-gray-500 hover:text-gray-700 sm:text-3xl"
                   >
                     ×
                   </button>
                 </div>
 
                 <div className="mb-4">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                  <h3 className="text-lg font-semibold text-gray-800 sm:text-xl mb-2">
                     {selectedActivity.titulo}
                   </h3>
                 </div>
 
-                <div className="bg-gray-50 p-6 rounded-lg">
+                <div className="rounded-lg bg-gray-50 p-4 sm:p-6">
                   <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
                     {selectedActivity.politicaCancelacion}
                   </p>
@@ -864,7 +871,7 @@ const ActivitiesList = () => {
                 <div className="flex justify-end pt-4">
                   <button
                     onClick={() => setShowCancelPolicyModal(false)}
-                    className="btn btn-primary"
+                    className="btn btn-primary w-full justify-center sm:w-auto"
                   >
                     Cerrar
                   </button>
@@ -877,11 +884,12 @@ const ActivitiesList = () => {
         {/* Modal de selección de fecha */}
         {showDateModal && selectedActivity && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-bold text-gray-800">
-                    Selecciona una fecha - {selectedActivity.titulo}
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto min-w-0">
+              <div className="p-4 sm:p-6">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <h2 className="min-w-0 flex-1 text-lg font-bold leading-snug text-gray-800 sm:text-xl md:text-2xl">
+                    <span className="block sm:inline">Selecciona una fecha — </span>
+                    <span className="break-words">{selectedActivity.titulo}</span>
                   </h2>
                   <button
                     onClick={() => {
@@ -891,7 +899,7 @@ const ActivitiesList = () => {
                       setSelectedDate(null);
                       setAvailableDates([]);
                     }}
-                    className="text-gray-500 hover:text-gray-700 text-2xl"
+                    className="flex-shrink-0 text-2xl text-gray-500 hover:text-gray-700"
                   >
                     ×
                   </button>
@@ -926,9 +934,9 @@ const ActivitiesList = () => {
                               : 'border-gray-200 bg-gray-100 opacity-50'
                           }`}
                         >
-                          <div className="flex justify-between items-start mb-3">
-                            <div className="flex-1">
-                              <p className="font-semibold text-gray-800 mb-2">
+                          <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="min-w-0 flex-1">
+                              <p className="mb-2 font-semibold text-gray-800">
                                 {formatUtcCalendarDateEsAR(dateOption.fecha, {
                                   weekday: 'long',
                                   year: 'numeric',
@@ -937,10 +945,10 @@ const ActivitiesList = () => {
                                 })}
                               </p>
                               {dateOption.hora && (
-                                <p className="text-sm text-gray-600 mb-2">Hora: {dateOption.hora}</p>
+                                <p className="mb-2 text-sm text-gray-600">Hora: {dateOption.hora}</p>
                               )}
                             </div>
-                            <div className="text-right ml-4 flex flex-col items-end gap-2">
+                            <div className="flex shrink-0 flex-col items-stretch gap-2 text-left sm:ml-4 sm:items-end sm:text-right">
                               {dateOption.cuposDisponibles !== null ? (
                                 <p className={`text-sm font-semibold ${
                                   dateOption.cuposDisponibles > 0 ? 'text-green-600' : 'text-red-600'
@@ -990,10 +998,10 @@ const ActivitiesList = () => {
         {/* Modal de confirmación de inscripción */}
         {showConfirmModal && selectedActivity && selectedDate && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-bold text-gray-800">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto min-w-0">
+              <div className="p-4 sm:p-6">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <h2 className="min-w-0 flex-1 text-xl font-bold text-gray-800 sm:text-2xl">
                     Confirmar Inscripción
                   </h2>
                   <button
@@ -1001,7 +1009,7 @@ const ActivitiesList = () => {
                       setShowConfirmModal(false);
                       setSelectedDate(null);
                     }}
-                    className="text-gray-500 hover:text-gray-700 text-2xl"
+                    className="flex-shrink-0 text-2xl text-gray-500 hover:text-gray-700"
                   >
                     ×
                   </button>
@@ -1017,10 +1025,10 @@ const ActivitiesList = () => {
                     )}
                   </div>
 
-                  <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                    <div className="flex items-center">
-                      <span className="font-semibold text-gray-700 w-24">Fecha:</span>
-                      <span className="text-gray-800">
+                  <div className="space-y-3 rounded-lg bg-gray-50 p-4">
+                    <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
+                      <span className="shrink-0 font-semibold text-gray-700 sm:w-24">Fecha:</span>
+                      <span className="min-w-0 text-gray-800">
                         {formatUtcCalendarDateEsAR(selectedDate.fecha, {
                           weekday: 'long',
                           year: 'numeric',
@@ -1030,48 +1038,48 @@ const ActivitiesList = () => {
                       </span>
                     </div>
                     {selectedDate.hora && (
-                      <div className="flex items-center">
-                        <span className="font-semibold text-gray-700 w-24">Hora:</span>
+                      <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
+                        <span className="shrink-0 font-semibold text-gray-700 sm:w-24">Hora:</span>
                         <span className="text-gray-800">{selectedDate.hora}</span>
                       </div>
                     )}
                     {selectedActivity.lugar && (
-                      <div className="flex items-center">
-                        <span className="font-semibold text-gray-700 w-24">Lugar:</span>
-                        <span className="text-gray-800">{selectedActivity.lugar}</span>
+                      <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
+                        <span className="shrink-0 font-semibold text-gray-700 sm:w-24">Lugar:</span>
+                        <span className="min-w-0 break-words text-gray-800">{selectedActivity.lugar}</span>
                       </div>
                     )}
                     {selectedActivity.ubicacionOnline && (
-                      <div className="flex items-center">
-                        <span className="font-semibold text-gray-700 w-24">Ubicación:</span>
+                      <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
+                        <span className="shrink-0 font-semibold text-gray-700 sm:w-24">Ubicación:</span>
                         <a 
                           href={selectedActivity.ubicacionOnline} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
+                          className="min-w-0 break-words text-blue-600 hover:underline"
                         >
                           Ver en Google Maps
                         </a>
                       </div>
                     )}
-                    <div className="flex items-center">
-                      <span className="font-semibold text-gray-700 w-24">Precio:</span>
+                    <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
+                      <span className="shrink-0 font-semibold text-gray-700 sm:w-24">Precio:</span>
                       <span className="text-gray-800">
                         {selectedActivity.esGratuita ? 'Gratis' : `$${selectedActivity.precio}`}
                       </span>
                     </div>
                     {selectedActivity.duracion && (
-                      <div className="flex items-center">
-                        <span className="font-semibold text-gray-700 w-24">Duración:</span>
+                      <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
+                        <span className="shrink-0 font-semibold text-gray-700 sm:w-24">Duración:</span>
                         <span className="text-gray-800">{selectedActivity.duracion} minutos</span>
                       </div>
                     )}
                   </div>
 
-                  <div className="flex gap-3 pt-4 flex-wrap">
+                  <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:flex-wrap">
                     <button
                       onClick={handleConfirmInscription}
-                      className="btn btn-primary flex-1 min-w-[150px]"
+                      className="btn btn-primary w-full justify-center min-w-0 sm:w-auto sm:min-w-[140px] sm:flex-1"
                     >
                       Confirmar Inscripción
                     </button>
@@ -1080,7 +1088,7 @@ const ActivitiesList = () => {
                         href={selectedActivity.ubicacionOnline}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn btn-secondary whitespace-nowrap"
+                        className="btn btn-secondary w-full justify-center text-center sm:w-auto sm:whitespace-nowrap"
                         title="Ver ubicación en Google Maps"
                       >
                         🗺️ ¿Cómo llego?
@@ -1088,7 +1096,7 @@ const ActivitiesList = () => {
                     )}
                     <button
                       onClick={() => handleAddToCalendar(selectedDate)}
-                      className="btn btn-secondary"
+                      className="btn btn-secondary w-full justify-center sm:w-auto"
                       title="Agregar al calendario"
                     >
                       📅 Agregar al Calendario
@@ -1098,7 +1106,7 @@ const ActivitiesList = () => {
                         setShowConfirmModal(false);
                         setSelectedDate(null);
                       }}
-                      className="btn btn-outline"
+                      className="btn btn-outline w-full justify-center sm:w-auto"
                     >
                       Cancelar
                     </button>

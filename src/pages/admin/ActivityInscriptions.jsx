@@ -219,21 +219,21 @@ const ActivityInscriptions = () => {
     : [];
 
   return (
-    <div className="min-h-screen bg-light-bg py-12 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center gap-4 mb-6">
+    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto min-w-0">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
           <button
             onClick={() => navigate('/admin/activities')}
-            className="btn btn-secondary"
+            className="btn btn-secondary w-full shrink-0 justify-center sm:w-auto"
           >
             ← Volver
           </button>
-          <h1 className="text-4xl font-bold text-primary">Inscripciones</h1>
+          <h1 className="text-2xl font-bold text-primary sm:text-3xl md:text-4xl">Inscripciones</h1>
         </div>
 
         {/* Información de la actividad */}
         <div className="card mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">{activity.titulo}</h2>
+          <h2 className="text-xl font-bold text-gray-800 sm:text-2xl mb-4 break-words">{activity.titulo}</h2>
           {activity.descripcion && (
             <p className="text-gray-600 mb-4">{activity.descripcion}</p>
           )}
@@ -260,7 +260,7 @@ const ActivityInscriptions = () => {
                   href={activity.ubicacionOnline}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-secondary text-sm inline-block"
+                  className="btn btn-secondary w-full justify-center text-sm sm:w-auto"
                   title="Ver ubicación en Google Maps"
                 >
                   🗺️ ¿Cómo llego?
@@ -289,14 +289,14 @@ const ActivityInscriptions = () => {
 
         {/* Estadísticas */}
         <div className="card mb-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-            <h2 className="text-2xl font-semibold text-gray-800">Resumen</h2>
-            <div className="flex items-center gap-3">
-              <label className="text-gray-700 font-medium">Filtrar por estado:</label>
+          <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <h2 className="text-xl font-semibold text-gray-800 sm:text-2xl">Resumen</h2>
+            <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 md:w-auto">
+              <label className="shrink-0 font-medium text-gray-700">Filtrar por estado:</label>
               <select
                 value={estadoFilter}
                 onChange={handleFilterChange}
-                className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full min-w-0 rounded border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary sm:w-auto sm:min-w-[12rem]"
               >
                 <option value="todos">Todos</option>
                 <option value="pendiente">Pendientes</option>
@@ -306,27 +306,27 @@ const ActivityInscriptions = () => {
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
             <div className="text-center">
-              <p className="text-3xl font-bold text-yellow-500">
+              <p className="text-2xl font-bold text-yellow-500 sm:text-3xl">
                 {allInscriptions.filter(i => i.estado === 'pendiente').length}
               </p>
               <p className="text-gray-600">Pendientes</p>
             </div>
             <div className="text-center">
-              <p className="text-3xl font-bold text-green-600">
+              <p className="text-2xl font-bold text-green-600 sm:text-3xl">
                 {allInscriptions.filter(i => i.estado === 'aceptada').length}
               </p>
               <p className="text-gray-600">Aceptadas</p>
             </div>
             <div className="text-center">
-              <p className="text-3xl font-bold text-red-600">
+              <p className="text-2xl font-bold text-red-600 sm:text-3xl">
                 {allInscriptions.filter(i => i.estado === 'cancelada').length}
               </p>
               <p className="text-gray-600">Canceladas</p>
             </div>
             <div className="text-center">
-              <p className="text-3xl font-bold text-blue-600">
+              <p className="text-2xl font-bold text-blue-600 sm:text-3xl">
                 {allInscriptions.filter(i => i.estado === 'en_espera').length}
               </p>
               <p className="text-gray-600">En espera</p>

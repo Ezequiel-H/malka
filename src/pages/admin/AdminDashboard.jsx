@@ -54,13 +54,15 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-light-bg py-12 px-4">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8 text-primary">Panel de Administración</h1>
+    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto min-w-0">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8 text-primary">
+          Panel de Administración
+        </h1>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="card text-center hover:shadow-xl transition-shadow">
-            <h2 className="text-5xl font-bold text-yellow-500 mb-3">
+            <h2 className="text-4xl sm:text-5xl font-bold text-yellow-500 mb-3">
               {stats.pendingUsers}
             </h2>
             <p className="text-lg font-bold text-gray-800 mb-4">Usuarios Pendientes</p>
@@ -70,7 +72,7 @@ const AdminDashboard = () => {
           </div>
 
           <div className="card text-center hover:shadow-xl transition-shadow">
-            <h2 className="text-5xl font-bold text-primary mb-3">
+            <h2 className="text-4xl sm:text-5xl font-bold text-primary mb-3">
               {stats.publishedActivities}
             </h2>
             <p className="text-lg font-bold text-gray-800 mb-4">Actividades Publicadas</p>
@@ -80,7 +82,7 @@ const AdminDashboard = () => {
           </div>
 
           <div className="card text-center hover:shadow-xl transition-shadow">
-            <h2 className="text-5xl font-bold text-orange-500 mb-3">
+            <h2 className="text-4xl sm:text-5xl font-bold text-orange-500 mb-3">
               {stats.pendingInscriptions}
             </h2>
             <p className="text-lg font-bold text-gray-800 mb-4">Inscripciones Pendientes</p>
@@ -90,7 +92,7 @@ const AdminDashboard = () => {
           </div>
 
           <div className="card text-center hover:shadow-xl transition-shadow">
-            <h2 className="text-5xl font-bold text-green-600 mb-3">
+            <h2 className="text-4xl sm:text-5xl font-bold text-green-600 mb-3">
               {stats.totalInscriptions}
             </h2>
             <p className="text-lg font-bold text-gray-800 mb-4">Total Inscripciones</p>
@@ -100,7 +102,7 @@ const AdminDashboard = () => {
           </div>
 
           <div className="card text-center hover:shadow-xl transition-shadow">
-            <h2 className="text-5xl font-bold text-gray-500 mb-3">
+            <h2 className="text-4xl sm:text-5xl font-bold text-gray-500 mb-3">
               <Link to="/admin/users" className="no-underline text-inherit hover:text-gray-600 transition-colors">
                 👥
               </Link>
@@ -112,7 +114,7 @@ const AdminDashboard = () => {
           </div>
 
           <div className="card text-center hover:shadow-xl transition-shadow">
-            <h2 className="text-5xl font-bold text-purple-500 mb-3">
+            <h2 className="text-4xl sm:text-5xl font-bold text-purple-500 mb-3">
               🏷️
             </h2>
             <p className="text-lg font-bold text-gray-800 mb-4">Tags (normales y privados)</p>
@@ -123,21 +125,21 @@ const AdminDashboard = () => {
         </div>
 
         <div className="card">
-          <h2 className="text-2xl font-semibold mb-6 text-gray-800">Acciones Rápidas</h2>
-          <div className="flex flex-wrap gap-4">
-            <Link to="/admin/activities/new" className="btn btn-primary">
+          <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-gray-800">Acciones Rápidas</h2>
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <Link to="/admin/activities/new" className="btn btn-primary w-full justify-center sm:w-auto">
               Crear Nueva Actividad
             </Link>
-            <Link to="/admin/users/pending" className="btn btn-warning">
+            <Link to="/admin/users/pending" className="btn btn-warning w-full justify-center sm:w-auto">
               Revisar Usuarios Pendientes
             </Link>
-            <Link to="/admin/inscriptions?estado=pendiente" className="btn btn-warning">
+            <Link to="/admin/inscriptions?estado=pendiente" className="btn btn-warning w-full justify-center sm:w-auto">
               Confirmar Inscripciones
             </Link>
-            <Link to="/admin/users" className="btn btn-secondary">
+            <Link to="/admin/users" className="btn btn-secondary w-full justify-center sm:w-auto">
               Ver Todos los Usuarios
             </Link>
-            <Link to="/admin/tags" className="btn btn-primary">
+            <Link to="/admin/tags" className="btn btn-primary w-full justify-center sm:w-auto">
               Tags
             </Link>
           </div>

@@ -57,9 +57,9 @@ const MyInterests = () => {
   }
 
   return (
-    <div className="min-h-screen bg-light-bg py-12 px-4">
-      <div className="max-w-2xl mx-auto card">
-        <h1 className="text-3xl font-bold text-primary mb-2">Mis intereses</h1>
+    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
+      <div className="max-w-2xl mx-auto card min-w-0">
+        <h1 className="text-2xl sm:text-3xl font-bold text-primary mb-2">Mis intereses</h1>
         <p className="text-gray-600 mb-6">
           Elegí las áreas que te interesan. Las usamos para mostrarte actividades alineadas a tus preferencias.
           Podés cambiar esta lista cuando quieras.
@@ -76,7 +76,7 @@ const MyInterests = () => {
               </p>
             }
           />
-          <button type="submit" className="btn btn-primary mt-6" disabled={saving}>
+          <button type="submit" className="btn btn-primary mt-6 w-full sm:w-auto" disabled={saving}>
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
         </form>

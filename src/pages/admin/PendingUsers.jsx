@@ -61,9 +61,11 @@ const PendingUsers = () => {
   }
 
   return (
-    <div className="min-h-screen bg-light-bg py-12 px-4">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8 text-primary">Usuarios Pendientes de Aprobación</h1>
+    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto min-w-0">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8 text-primary">
+          Usuarios Pendientes de Aprobación
+        </h1>
 
         {users.length === 0 ? (
           <div className="card">
@@ -98,22 +100,22 @@ const PendingUsers = () => {
                   </div>
                 )}
 
-                <div className="flex gap-2 mt-6 flex-wrap">
+                <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                   <button
                     onClick={() => handleApprove(user._id)}
-                    className="btn btn-success flex-1 min-w-[100px]"
+                    className="btn btn-success w-full justify-center sm:w-auto sm:min-w-[100px] sm:flex-1"
                   >
                     Aprobar
                   </button>
                   <button
                     onClick={() => handleReject(user._id)}
-                    className="btn btn-danger flex-1 min-w-[100px]"
+                    className="btn btn-danger w-full justify-center sm:w-auto sm:min-w-[100px] sm:flex-1"
                   >
                     Rechazar
                   </button>
                   <button
                     onClick={() => handleEdit(user._id)}
-                    className="btn btn-secondary flex-1 min-w-[100px]"
+                    className="btn btn-secondary w-full justify-center sm:w-auto sm:min-w-[100px] sm:flex-1"
                   >
                     Editar
                   </button>

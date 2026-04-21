@@ -96,10 +96,12 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-light-bg flex items-center justify-center px-4 py-12">
-      <div className="max-w-lg w-full">
+    <div className="min-h-screen bg-light-bg flex items-center justify-center px-4 py-10 sm:px-6 sm:py-12">
+      <div className="max-w-lg w-full min-w-0">
         <div className="card">
-          <h1 className="text-3xl font-bold text-center mb-6 text-primary">Registro</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-center mb-5 sm:mb-6 text-primary">
+            Registro
+          </h1>
           
           {error && (
             <div className="alert alert-error">{error}</div>

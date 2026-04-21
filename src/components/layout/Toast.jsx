@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 
 const Toast = ({ toasts, removeToast }) => {
   return (
-    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-md">
+    <div className="fixed top-4 left-4 right-4 z-[100] flex flex-col gap-2 sm:left-auto sm:right-4 sm:max-w-md sm:w-full pointer-events-none">
       {toasts.map(toast => (
         <ToastItem key={toast.id} toast={toast} removeToast={removeToast} />
       ))}
@@ -20,7 +20,8 @@ const ToastItem = ({ toast, removeToast }) => {
   }, [toast.id, toast.duration, removeToast]);
 
   const getToastStyles = (type) => {
-    const baseStyles = 'p-4 rounded-lg shadow-lg flex items-center justify-between gap-4 min-w-[300px] max-w-md animate-slide-in';
+    const baseStyles =
+      'pointer-events-auto p-4 rounded-lg shadow-lg flex items-center justify-between gap-3 sm:gap-4 w-full min-w-0 max-w-full sm:max-w-md sm:min-w-[280px] animate-slide-in';
     
     switch (type) {
       case 'success':
@@ -69,7 +70,7 @@ const ToastItem = ({ toast, removeToast }) => {
     <div className={getToastStyles(toast.type)}>
       <div className="flex items-start gap-3 flex-1">
         {getIcon(toast.type)}
-        <p className="flex-1 text-sm font-medium whitespace-pre-line">{toast.message}</p>
+        <p className="min-w-0 flex-1 text-sm font-medium whitespace-pre-line break-words">{toast.message}</p>
       </div>
       <button
         onClick={() => removeToast(toast.id)}
