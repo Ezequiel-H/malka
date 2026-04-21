@@ -8,10 +8,9 @@ import { formatAuthError, normalizePhone } from '../../utils/authErrors';
 const RESTRICCIONES = [
   'Vegetariano',
   'Vegano',
-  'Sin gluten',
+  'Sin TACC',
   'Sin lactosa',
   'Sin nueces',
-  'Sin mariscos',
   'Diabético'
 ];
 

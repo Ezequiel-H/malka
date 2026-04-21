@@ -194,7 +194,7 @@ const Register = () => {
             <div className="form-group">
               <label className="mb-2 block">Toda la comida es Kosher. ¿Tenés algún tipo de restricción?</label>
               <div className="space-y-2.5">
-                {['Vegetariano', 'Vegano', 'Sin gluten', 'Sin lactosa', 'Sin nueces', 'Sin mariscos', 'Diabético'].map((restriccion) => (
+                {['Vegetariano', 'Vegano', 'Sin TACC', 'Sin lactosa', 'Sin nueces', 'Diabético'].map((restriccion) => (
                   <label
                     key={restriccion}
                     className="flex max-w-none cursor-pointer items-center gap-3 font-normal"

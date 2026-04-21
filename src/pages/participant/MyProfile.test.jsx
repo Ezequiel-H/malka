@@ -52,7 +52,7 @@ describe('MyProfile', () => {
       dni: '12345678',
       email: 'ana@example.com',
       telefono: '+5491112345678',
-      restriccionesAlimentarias: ['Sin gluten'],
+      restriccionesAlimentarias: ['Sin TACC'],
       comoSeEntero: 'Instagram',
       estado: 'approved',
       role: 'participant'
@@ -76,7 +76,7 @@ describe('MyProfile', () => {
     expect(screen.getByLabelText('Email')).toBeDisabled();
 
     expect(screen.getByLabelText('¿Cómo te enteraste de esta propuesta?')).toHaveValue('Instagram');
-    expect(screen.getByLabelText('Sin gluten')).toBeChecked();
+    expect(screen.getByLabelText('Sin TACC')).toBeChecked();
   });
 
   it('envía PATCH /users/me y actualiza el user cuando el API devuelve user', async () => {
@@ -99,7 +99,7 @@ describe('MyProfile', () => {
 
     await u.clear(screen.getByLabelText('Teléfono'));
     await u.type(screen.getByLabelText('Teléfono'), '+5491100000000');
-    await u.click(screen.getByLabelText('Sin gluten'));
+    await u.click(screen.getByLabelText('Sin TACC'));
     await u.click(screen.getByLabelText('Vegano'));
 
     await u.click(screen.getByRole('button', { name: 'Guardar cambios' }));
