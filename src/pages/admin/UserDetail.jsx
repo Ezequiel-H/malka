@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useToast } from '../../contexts/ToastContext';
 import { userPrivateTags } from '../../utils/tagFields';
-import { formatDateEsAR, formatUtcCalendarDateEsAR } from '../../utils/dateUtils';
+import { formatUtcCalendarDayAndTime } from '../../utils/dateUtils';
 
 const UserDetail = () => {
   const { id } = useParams();
@@ -341,17 +341,6 @@ const UserDetail = () => {
     } finally {
       setSaving(false);
     }
-  };
-
-  const getEstadoBadgeInscription = (estado) => {
-    const badges = {
-      aceptada: { class: 'badge-success', text: 'Aceptada' },
-      pendiente: { class: 'badge-warning', text: 'Pendiente' },
-      cancelada: { class: 'badge-danger', text: 'Cancelada' },
-      en_espera: { class: 'badge-secondary', text: 'En Espera' }
-    };
-    const badge = badges[estado] || badges.pendiente;
-    return <span className={`badge ${badge.class}`}>{badge.text}</span>;
   };
 
   const getEstadoBadge = (estado) => {
@@ -750,7 +739,14 @@ const UserDetail = () => {
 
           {/* Inscripciones Recientes */}
           <div className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Inscripciones Recientes</h2>
+            <h2 className="text-2xl font-semibold mb-2 text-gray-800">Inscripciones Recientes</h2>
+            <p className="text-sm text-gray-600 mb-4 break-words">
+              {[formData.nombre, formData.apellido].filter(Boolean).join(' ').trim() || '—'}
+              {' · '}
+              {formData.telefono || '—'}
+              {' · '}
+              {formData.email || '—'}
+            </p>
             {loadingInscriptions ? (
               <div className="text-center py-8">
                 <div className="spinner mx-auto"></div>
@@ -765,12 +761,9 @@ const UserDetail = () => {
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b-2 border-gray-300">
-                      <th className="p-4 text-left font-semibold text-gray-700">Actividad</th>
-                      <th className="p-4 text-left font-semibold text-gray-700">Fecha</th>
-                      <th className="p-4 text-left font-semibold text-gray-700">Hora</th>
-                      <th className="p-4 text-left font-semibold text-gray-700">Estado</th>
-                      <th className="p-4 text-left font-semibold text-gray-700">Fecha Inscripción</th>
-                      <th className="p-4 text-left font-semibold text-gray-700">Acciones</th>
+                      <th className="p-3 text-left align-middle font-semibold text-gray-700 text-sm">Evento</th>
+                      <th className="p-3 text-left align-middle font-semibold text-gray-700 text-sm">Fecha y hora</th>
+                      <th className="p-3 text-right align-middle font-semibold text-gray-700 text-sm w-28">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -780,45 +773,20 @@ const UserDetail = () => {
                         className="border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
                         onClick={() => handleRowClick(inscription)}
                       >
-                        <td className="p-4">
+                        <td className="p-3 text-sm align-middle">
                           <div className="font-medium text-gray-800">
                             {inscription.activityId?.titulo || 'Actividad eliminada'}
                           </div>
-                          {inscription.activityId?.lugar && (
-                            <div className="text-sm text-gray-500 mt-1">
-                              📍 {inscription.activityId.lugar}
-                            </div>
+                        </td>
+                        <td className="p-3 text-sm align-middle text-gray-700 tabular-nums whitespace-nowrap">
+                          {formatUtcCalendarDayAndTime(
+                            inscription.fecha,
+                            inscription.hora || inscription.activityId?.hora
                           )}
                         </td>
-                        <td className="p-4">
-                          {inscription.fecha 
-                            ? formatUtcCalendarDateEsAR(inscription.fecha, {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                              })
-                            : '-'}
-                        </td>
-                        <td className="p-4">
-                          {inscription.hora || inscription.activityId?.hora || '-'}
-                        </td>
-                        <td className="p-4">
-                          {getEstadoBadgeInscription(inscription.estado)}
-                        </td>
-                        <td className="p-4">
-                          {inscription.fechaInscripcion 
-                            ? new Date(inscription.fechaInscripcion).toLocaleDateString('es-AR', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })
-                            : '-'}
-                        </td>
-                        <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                        <td className="p-3 text-sm align-middle text-right" onClick={(e) => e.stopPropagation()}>
                           {inscription.estado === 'pendiente' ? (
-                            <div className="flex gap-2">
+                            <div className="flex items-center justify-end gap-2">
                               <button
                                 onClick={(e) => handleApproveInscription(e, inscription._id)}
                                 className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-full transition-colors"

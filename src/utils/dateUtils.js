@@ -68,3 +68,19 @@ export const formatUtcCalendarDateEsAR = (value, options) => {
   if (Number.isNaN(d.getTime())) return '';
   return d.toLocaleDateString('es-AR', { timeZone: 'UTC', ...options });
 };
+
+/** Día del evento (UTC) + hora en una sola cadena breve, p. ej. `21/04/2026 · 18:30`. */
+export const formatUtcCalendarDayAndTime = (fechaValue, hora) => {
+  const day = fechaValue
+    ? formatUtcCalendarDateEsAR(fechaValue, {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      })
+    : '';
+  const t = typeof hora === 'string' && hora.trim() ? hora.trim() : '';
+  if (!day && !t) return '—';
+  if (!day) return t;
+  if (!t) return day;
+  return `${day} · ${t}`;
+};

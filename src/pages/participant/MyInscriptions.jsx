@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useToast } from '../../contexts/ToastContext';
-import { formatLocalDateToString, formatUtcCalendarDateEsAR, formatUtcCalendarDateToString } from '../../utils/dateUtils';
+import {
+  formatLocalDateToString,
+  formatUtcCalendarDateToString,
+  formatUtcCalendarDayAndTime,
+} from '../../utils/dateUtils';
 
 const MyInscriptions = () => {
   const { showSuccess, showError } = useToast();
@@ -104,74 +108,35 @@ const MyInscriptions = () => {
             <p className="text-gray-600 text-center py-4">No tienes inscripciones registradas.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="card divide-y divide-gray-200 p-0 overflow-hidden">
             {inscriptions.map(inscription => {
               const activity = inscription.activityId;
+              const horaEv = inscription.hora || activity?.hora || '';
               return (
-                <div key={inscription._id} className="card hover:shadow-xl transition-shadow flex flex-col">
-                  <div className="flex justify-between items-start mb-4">
-                    <h2 className="text-xl font-bold text-gray-800 flex-1">{activity?.titulo || 'Actividad eliminada'}</h2>
-                    {getEstadoBadge(inscription.estado)}
+                <div
+                  key={inscription._id}
+                  className="px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 hover:bg-gray-50/80"
+                >
+                  <div className="min-w-0 flex-1 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-6">
+                    <div className="font-semibold text-gray-900 truncate text-base sm:max-w-[42%] sm:shrink-0 sm:pr-2">
+                      {activity?.titulo || 'Actividad eliminada'}
+                    </div>
+                    <div className="text-gray-800 tabular-nums text-base font-medium sm:text-lg sm:flex-1 sm:min-w-0">
+                      {formatUtcCalendarDayAndTime(inscription.fecha, horaEv)}
+                    </div>
                   </div>
-
-                  {activity && (
-                    <>
-                      <p className="text-gray-600 mb-4 line-clamp-3">{activity.descripcion}</p>
-                      
-                      <div className="mb-4 text-sm text-gray-600 space-y-1">
-                        {inscription.fecha && (
-                          <p><strong>Fecha:</strong> {formatUtcCalendarDateEsAR(inscription.fecha, {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}</p>
-                        )}
-                        {inscription.hora && <p><strong>Hora:</strong> {inscription.hora}</p>}
-                        {activity.lugar && <p><strong>Lugar:</strong> {activity.lugar}</p>}
-                        <p><strong>Precio:</strong> {activity.esGratuita ? 'Gratis' : `$${activity.precio}`}</p>
-                      </div>
-
-                      {activity.ubicacionOnline && (
-                        <div className="mb-4">
-                          <a
-                            href={activity.ubicacionOnline}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn btn-secondary w-full"
-                            title="Ver ubicación en Google Maps"
-                          >
-                            🗺️ ¿Cómo llego?
-                          </a>
-                        </div>
-                      )}
-
-                      <div className="mb-4 text-xs text-gray-500 space-y-1">
-                        <p>Inscrito el: {new Date(inscription.fechaInscripcion).toLocaleDateString('es-AR')}</p>
-                        {inscription.fechaAprobacion && (
-                          <p>Aprobado el: {new Date(inscription.fechaAprobacion).toLocaleDateString('es-AR')}</p>
-                        )}
-                        {inscription.fechaCancelacion && (
-                          <p>Cancelado el: {new Date(inscription.fechaCancelacion).toLocaleDateString('es-AR')}</p>
-                        )}
-                      </div>
-
-                      {inscription.notas && (
-                        <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                          <strong className="text-gray-700">Notas:</strong> <span className="text-gray-600">{inscription.notas}</span>
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {inscription.estado !== 'cancelada' && (
-                    <button
-                      onClick={() => handleCancel(inscription._id)}
-                      className="btn btn-danger w-full mt-auto"
-                    >
-                      Cancelar Inscripción
-                    </button>
-                  )}
+                  <div className="flex flex-wrap items-center gap-2 shrink-0 sm:justify-end text-sm">
+                    {getEstadoBadge(inscription.estado)}
+                    {inscription.estado !== 'cancelada' && (
+                      <button
+                        type="button"
+                        onClick={() => handleCancel(inscription._id)}
+                        className="btn btn-danger text-xs py-1.5 px-3"
+                      >
+                        Cancelar
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}

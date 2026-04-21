@@ -2,7 +2,12 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
-import { formatDateEsAR, formatLocalDateToString, formatUtcCalendarDateToString, parseDateSafely } from '../../utils/dateUtils';
+import {
+  formatDateEsAR,
+  formatLocalDateToString,
+  formatUtcCalendarDateToString,
+  formatUtcCalendarDayAndTime,
+} from '../../utils/dateUtils';
 
 const ActivityInscriptions = () => {
   const { id } = useParams();
@@ -90,29 +95,6 @@ const ActivityInscriptions = () => {
     }
   };
 
-  const handleApprove = async (inscriptionId) => {
-    try {
-      await axios.put(`/inscriptions/${inscriptionId}/approve`);
-      showSuccess('Inscripción aprobada exitosamente');
-      fetchInscriptions();
-    } catch (error) {
-      showError(error.response?.data?.message || 'Error al aprobar inscripción');
-    }
-  };
-
-  const handleReject = async (inscriptionId) => {
-    if (!window.confirm('¿Estás seguro de que deseas rechazar esta inscripción?')) {
-      return;
-    }
-    try {
-      await axios.put(`/inscriptions/${inscriptionId}/reject`);
-      showSuccess('Inscripción rechazada');
-      fetchInscriptions();
-    } catch (error) {
-      showError(error.response?.data?.message || 'Error al rechazar inscripción');
-    }
-  };
-
   const handleStatusChange = async (inscriptionId, newStatus) => {
     try {
       await axios.put(`/inscriptions/${inscriptionId}/status`, { estado: newStatus });
@@ -159,72 +141,45 @@ const ActivityInscriptions = () => {
     });
   };
 
-  const renderInscriptionCard = (inscription) => (
-    <div key={inscription._id} className="card hover:shadow-xl transition-shadow">
-      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-        <div className="flex-1">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
-              <h4 className="text-lg font-bold text-gray-800 mb-2">
-                {inscription.userId?.nombre} {inscription.userId?.apellido}
-              </h4>
-              <div className="flex items-center gap-3">
-                {getEstadoBadge(inscription.estado)}
-                <select
-                  value={inscription.estado}
-                  onChange={(e) => handleStatusChange(inscription._id, e.target.value)}
-                  className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary transition-colors cursor-pointer"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <option value="pendiente">Pendiente</option>
-                  <option value="aceptada">Aceptada</option>
-                  <option value="cancelada">Cancelada</option>
-                  <option value="en_espera">En lista de espera</option>
-                </select>
-              </div>
-            </div>
+  const renderInscriptionCard = (inscription) => {
+    const horaEv = inscription.hora || activity?.hora || '';
+    const nombreCompleto = [inscription.userId?.nombre, inscription.userId?.apellido].filter(Boolean).join(' ').trim();
+    const contacto = [
+      nombreCompleto || '—',
+      inscription.userId?.telefono || '—',
+      inscription.userId?.email || '—',
+    ].join(' · ');
+    return (
+      <div
+        key={inscription._id}
+        className="px-4 py-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 text-sm hover:bg-gray-50/80"
+      >
+        <div className="min-w-0 flex-1 grid gap-1 sm:grid-cols-12 sm:gap-x-3 sm:items-center">
+          <div className="sm:col-span-4 font-medium text-gray-900 truncate">
+            {activity?.titulo || 'Actividad'}
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-600 mb-1"><strong>Email:</strong></p>
-              <p className="text-gray-800">{inscription.userId?.email}</p>
-            </div>
-            {inscription.userId?.telefono && (
-              <div>
-                <p className="text-sm text-gray-600 mb-1"><strong>Teléfono:</strong></p>
-                <p className="text-gray-800">{inscription.userId.telefono}</p>
-              </div>
-            )}
-            <div>
-              <p className="text-sm text-gray-600 mb-1"><strong>Fecha de inscripción:</strong></p>
-              <p className="text-gray-800">
-                {formatDateEsAR(inscription.fechaInscripcion)}
-              </p>
-            </div>
-            {inscription.notas && (
-              <div className="md:col-span-2">
-                <p className="text-sm text-gray-600 mb-1"><strong>Notas:</strong></p>
-                <p className="text-gray-800">{inscription.notas}</p>
-              </div>
-            )}
-            {inscription.userId?.tags && inscription.userId.tags.length > 0 && (
-              <div className="md:col-span-2">
-                <p className="text-sm text-gray-600 mb-1"><strong>Tags:</strong></p>
-                <div className="flex flex-wrap gap-2">
-                  {inscription.userId.tags.map(tag => (
-                    <span key={tag} className="badge badge-secondary">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+          <div className="sm:col-span-3 text-gray-600 tabular-nums whitespace-nowrap">
+            {formatUtcCalendarDayAndTime(inscription.fecha, horaEv)}
           </div>
+          <div className="sm:col-span-5 text-gray-700 min-w-0 break-words">{contacto}</div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {getEstadoBadge(inscription.estado)}
+          <select
+            value={inscription.estado}
+            onChange={(e) => handleStatusChange(inscription._id, e.target.value)}
+            className="px-2 py-1 border border-gray-300 rounded text-xs bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <option value="pendiente">Pendiente</option>
+            <option value="aceptada">Aceptada</option>
+            <option value="cancelada">Cancelada</option>
+            <option value="en_espera">En lista de espera</option>
+          </select>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -403,22 +358,17 @@ const ActivityInscriptions = () => {
             ) : (
               sortedDates.map(fechaStr => {
                 const fechaInscriptions = filteredGrouped[fechaStr];
-                const fecha = parseDateSafely(fechaStr);
-                
                 return (
                   <div key={fechaStr}>
-                    <div className="mb-4">
-                      <h3 className="text-2xl font-bold text-gray-800 mb-2">
-                        {formatDate(fecha)}
+                    <div className="mb-2">
+                      <h3 className="text-base font-bold text-gray-800 tabular-nums">
+                        {formatUtcCalendarDayAndTime(new Date(`${fechaStr}T00:00:00.000Z`), activity.hora)}
                       </h3>
-                      {activity.hora && (
-                        <p className="text-gray-600">Hora: {activity.hora}</p>
-                      )}
-                      <p className="text-sm text-gray-500">
+                      <p className="text-xs text-gray-500">
                         {fechaInscriptions.length} inscripción{fechaInscriptions.length !== 1 ? 'es' : ''}
                       </p>
                     </div>
-                    <div className="space-y-4">
+                    <div className="card p-0 overflow-hidden divide-y divide-gray-100">
                       {fechaInscriptions.map(inscription => renderInscriptionCard(inscription))}
                     </div>
                   </div>
@@ -428,7 +378,7 @@ const ActivityInscriptions = () => {
           </div>
         ) : (
           // Actividad única: mostrar todas juntas
-          <div className="space-y-4">
+          <div className="card p-0 overflow-hidden divide-y divide-gray-100">
             {inscriptions.map(inscription => renderInscriptionCard(inscription))}
           </div>
         )}

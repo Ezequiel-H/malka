@@ -140,12 +140,12 @@ const UsersManagement = () => {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b-2 border-gray-300">
-                  <th className="p-4 text-left font-semibold text-gray-700">Nombre</th>
-                  <th className="p-4 text-left font-semibold text-gray-700">Email</th>
-                  <th className="p-4 text-left font-semibold text-gray-700">Rol</th>
-                  <th className="p-4 text-left font-semibold text-gray-700">Estado</th>
-                  <th className="p-4 text-left font-semibold text-gray-700">Tags</th>
-                  <th className="p-4 text-left font-semibold text-gray-700">Acciones</th>
+                  <th className="p-4 text-left align-middle font-semibold text-gray-700">Nombre</th>
+                  <th className="p-4 text-left align-middle font-semibold text-gray-700">Email</th>
+                  <th className="p-4 text-left align-middle font-semibold text-gray-700">Rol</th>
+                  <th className="p-4 text-left align-middle font-semibold text-gray-700">Estado</th>
+                  <th className="p-4 text-left align-middle font-semibold text-gray-700">Tags</th>
+                  <th className="p-4 text-left align-middle font-semibold text-gray-700">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -155,15 +155,15 @@ const UsersManagement = () => {
                     className="border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
                     onClick={() => navigate(`/admin/users/${user._id}`)}
                   >
-                    <td className="p-4">{user.nombre} {user.apellido}</td>
-                    <td className="p-4">{user.email}</td>
-                    <td className="p-4">
+                    <td className="p-4 align-middle">{user.nombre} {user.apellido}</td>
+                    <td className="p-4 align-middle">{user.email}</td>
+                    <td className="p-4 align-middle">
                       <span className="badge badge-secondary">
                         {user.role === 'admin' ? 'Admin' : 'Participante'}
                       </span>
                     </td>
-                    <td className="p-4">{getEstadoBadge(user.estado)}</td>
-                    <td className="p-4">
+                    <td className="p-4 align-middle">{getEstadoBadge(user.estado)}</td>
+                    <td className="p-4 align-middle">
                       {user.tags && user.tags.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                           {user.tags.slice(0, 3).map(tag => (
@@ -181,9 +181,9 @@ const UsersManagement = () => {
                         <span className="text-gray-400">Sin tags</span>
                       )}
                     </td>
-                    <td className="p-4">
+                    <td className="p-4 align-middle">
                       {user.estado === 'pending' && (
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-2">
                           <button
                             onClick={(e) => handleApprove(user._id, e)}
                             className="btn btn-success btn-sm"
