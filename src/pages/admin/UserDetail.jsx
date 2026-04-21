@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useToast } from '../../contexts/ToastContext';
 import { userPrivateTags } from '../../utils/tagFields';
+import { formatDateEsAR, formatUtcCalendarDateEsAR } from '../../utils/dateUtils';
 
 const UserDetail = () => {
   const { id } = useParams();
@@ -791,7 +792,7 @@ const UserDetail = () => {
                         </td>
                         <td className="p-4">
                           {inscription.fecha 
-                            ? new Date(inscription.fecha).toLocaleDateString('es-AR', {
+                            ? formatUtcCalendarDateEsAR(inscription.fecha, {
                                 year: 'numeric',
                                 month: 'long',
                                 day: 'numeric'

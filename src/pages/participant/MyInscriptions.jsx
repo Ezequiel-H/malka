@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useToast } from '../../contexts/ToastContext';
+import { formatLocalDateToString, formatUtcCalendarDateEsAR, formatUtcCalendarDateToString } from '../../utils/dateUtils';
 
 const MyInscriptions = () => {
   const { showSuccess, showError } = useToast();
@@ -23,11 +24,13 @@ const MyInscriptions = () => {
       yesterday.setDate(yesterday.getDate() - 1);
       yesterday.setHours(0, 0, 0, 0);
       
-      const filteredInscriptions = response.data.inscriptions.filter(inscription => {
+      const yesterdayStr = formatLocalDateToString(yesterday);
+
+      const filteredInscriptions = response.data.inscriptions.filter((inscription) => {
         if (!inscription.fecha) return false;
-        const inscriptionDate = new Date(inscription.fecha);
-        inscriptionDate.setHours(0, 0, 0, 0);
-        return inscriptionDate >= yesterday;
+        const dayStr = formatUtcCalendarDateToString(inscription.fecha);
+        if (!dayStr) return false;
+        return dayStr >= yesterdayStr;
       });
       
       setInscriptions(filteredInscriptions);
@@ -117,7 +120,7 @@ const MyInscriptions = () => {
                       
                       <div className="mb-4 text-sm text-gray-600 space-y-1">
                         {inscription.fecha && (
-                          <p><strong>Fecha:</strong> {new Date(inscription.fecha).toLocaleDateString('es-AR', {
+                          <p><strong>Fecha:</strong> {formatUtcCalendarDateEsAR(inscription.fecha, {
                             weekday: 'long',
                             year: 'numeric',
                             month: 'long',

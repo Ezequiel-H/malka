@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
 import { activityPublicTags } from '../../utils/tagFields';
+import { formatDateToString, formatUtcCalendarDateEsAR, formatUtcCalendarDateToString } from '../../utils/dateUtils';
 
 const ActivitiesManagement = () => {
   const { showSuccess, showError } = useToast();
@@ -75,11 +76,7 @@ const ActivitiesManagement = () => {
       // Build filename the same way as backend
       const formatDateForFilename = (date) => {
         if (!date) return 'sin-fecha';
-        const d = new Date(date);
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
+        return formatUtcCalendarDateToString(date);
       };
 
       const formatDateTimeForFilename = (date) => {
@@ -185,7 +182,7 @@ const ActivitiesManagement = () => {
 
                 <div className="mb-4 text-sm text-gray-600 space-y-1">
                   {activity.fecha && (
-                    <p><strong>Fecha:</strong> {new Date(activity.fecha).toLocaleDateString('es-AR')}</p>
+                    <p><strong>Fecha:</strong> {formatUtcCalendarDateEsAR(activity.fecha)}</p>
                   )}
                   {activity.hora && <p><strong>Hora:</strong> {activity.hora}</p>}
                   {activity.lugar && <p><strong>Lugar:</strong> {activity.lugar}</p>}

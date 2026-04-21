@@ -2,24 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
-
-// Helper function to format date as YYYY-MM-DD - simple date, no timezone conversion
-// Just extract the year, month, day as simple numbers
-const formatDateToString = (date) => {
-  if (!date) return '';
-  
-  // If it's already a string in YYYY-MM-DD format, return it as-is
-  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
-    return date.substring(0, 10);
-  }
-  
-  // For Date objects, extract year, month, day as simple numbers
-  const d = new Date(date);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
+import { formatDateEsAR, formatLocalDateToString, formatUtcCalendarDateToString, parseDateSafely } from '../../utils/dateUtils';
 
 const ActivityInscriptions = () => {
   const { id } = useParams();
@@ -72,11 +55,12 @@ const ActivityInscriptions = () => {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       yesterday.setHours(0, 0, 0, 0);
-      
-      const filteredInscriptions = allInscriptions.filter(inscription => {
-        const inscriptionDate = new Date(inscription.fecha);
-        inscriptionDate.setHours(0, 0, 0, 0);
-        return inscriptionDate >= yesterday;
+      const yesterdayStr = formatLocalDateToString(yesterday);
+
+      const filteredInscriptions = allInscriptions.filter((inscription) => {
+        const dayStr = formatUtcCalendarDateToString(inscription.fecha);
+        if (!dayStr) return false;
+        return dayStr >= yesterdayStr;
       });
 
       setAllInscriptions(filteredInscriptions);
@@ -85,7 +69,7 @@ const ActivityInscriptions = () => {
       if (activity?.tipo === 'recurrente') {
         const grouped = {};
         filteredInscriptions.forEach(inscription => {
-          const fechaStr = formatDateToString(inscription.fecha);
+          const fechaStr = formatUtcCalendarDateToString(inscription.fecha);
           if (!grouped[fechaStr]) {
             grouped[fechaStr] = [];
           }
@@ -167,7 +151,7 @@ const ActivityInscriptions = () => {
   };
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('es-AR', {
+    return formatDateEsAR(date, {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -215,7 +199,7 @@ const ActivityInscriptions = () => {
             <div>
               <p className="text-sm text-gray-600 mb-1"><strong>Fecha de inscripción:</strong></p>
               <p className="text-gray-800">
-                {new Date(inscription.fechaInscripcion).toLocaleDateString('es-AR')}
+                {formatDateEsAR(inscription.fechaInscripcion)}
               </p>
             </div>
             {inscription.notas && (
@@ -275,7 +259,7 @@ const ActivityInscriptions = () => {
   // Ordenar fechas para actividades recurrentes
   const filteredGrouped = activity.tipo === 'recurrente' ? getFilteredGroupedInscriptions() : {};
   const sortedDates = activity.tipo === 'recurrente' 
-    ? Object.keys(filteredGrouped).sort((a, b) => new Date(a) - new Date(b))
+    ? Object.keys(filteredGrouped).sort()
     : [];
 
   return (
@@ -419,7 +403,7 @@ const ActivityInscriptions = () => {
             ) : (
               sortedDates.map(fechaStr => {
                 const fechaInscriptions = filteredGrouped[fechaStr];
-                const fecha = new Date(fechaStr);
+                const fecha = parseDateSafely(fechaStr);
                 
                 return (
                   <div key={fechaStr}>

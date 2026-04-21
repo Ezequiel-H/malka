@@ -3,24 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
 import { activityPublicTags, publicTagColor } from '../../utils/tagFields';
-
-// Helper function to format date as YYYY-MM-DD - simple date, no timezone conversion
-// Just extract the year, month, day as simple numbers
-const formatDateToString = (date) => {
-  if (!date) return '';
-  
-  // If it's already a string in YYYY-MM-DD format, return it as-is
-  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
-    return date.substring(0, 10);
-  }
-  
-  // For Date objects, extract year, month, day as simple numbers
-  const d = new Date(date);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
+import { formatDateEsAR, formatDateToString, formatUtcCalendarDateEsAR, formatUtcCalendarDateToString } from '../../utils/dateUtils';
 
 const ActivitiesList = () => {
   const { showSuccess, showError } = useToast();
@@ -162,8 +145,7 @@ const ActivitiesList = () => {
     if (!fechaDesde || !fechaHasta) return 'Todos los períodos';
     
     const formatDate = (dateStr) => {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
+      return formatDateEsAR(dateStr, { day: '2-digit', month: '2-digit' });
     };
     
     const desde = formatDate(fechaDesde);
@@ -288,7 +270,7 @@ const ActivitiesList = () => {
     // Parsear fecha de forma estable (YYYY-MM-DD) sin depender del timezone del navegador.
     const baseDateStr = typeof baseDate === 'string'
       ? baseDate.substring(0, 10)
-      : formatDateToString(baseDate);
+      : formatUtcCalendarDateToString(baseDate);
     const [year, month, day] = baseDateStr.split('-').map(Number);
     if (!year || !month || !day) return;
 
@@ -362,7 +344,7 @@ const ActivitiesList = () => {
     }
     // Si es actividad única, inscribirse directamente
     if (activity.tipo === 'unica') {
-      const fecha = activity.fecha ? formatDateToString(activity.fecha) : null;
+      const fecha = activity.fecha ? formatUtcCalendarDateToString(activity.fecha) : null;
       await handleInscribe(activity._id, fecha);
       return;
     }
@@ -495,9 +477,9 @@ const ActivitiesList = () => {
 
                 <div className="mb-4 text-sm text-gray-600 space-y-1">
                   {activity.tipo === 'recurrente' && activity.proximaOcurrencia ? (
-                    <p><strong>Próxima fecha:</strong> {new Date(activity.proximaOcurrencia).toLocaleDateString('es-AR')}</p>
+                    <p><strong>Próxima fecha:</strong> {formatUtcCalendarDateEsAR(activity.proximaOcurrencia)}</p>
                   ) : activity.fecha && (
-                    <p><strong>Fecha:</strong> {new Date(activity.fecha).toLocaleDateString('es-AR')}</p>
+                    <p><strong>Fecha:</strong> {formatUtcCalendarDateEsAR(activity.fecha)}</p>
                   )}
                   {activity.hora && <p><strong>Hora:</strong> {activity.hora}</p>}
                   {activity.lugar && <p><strong>Lugar:</strong> {activity.lugar}</p>}
@@ -510,7 +492,7 @@ const ActivitiesList = () => {
                       {getEstadoInscripcionBadge(activity.estadoInscripcion)}
                       {activity.tipo === 'recurrente' && activity.fechaInscripcion && (
                         <p className="text-sm text-gray-600">
-                          Inscrito para: {new Date(activity.fechaInscripcion).toLocaleDateString('es-AR')}
+                          Inscrito para: {formatUtcCalendarDateEsAR(activity.fechaInscripcion)}
                         </p>
                       )}
                     </div>
@@ -620,7 +602,7 @@ const ActivitiesList = () => {
                       <div>
                         <span className="font-semibold text-gray-700">Próxima fecha:</span>
                         <span className="ml-2 text-gray-800">
-                          {new Date(selectedActivity.proximaOcurrencia).toLocaleDateString('es-AR', {
+                          {formatUtcCalendarDateEsAR(selectedActivity.proximaOcurrencia, {
                             weekday: 'long',
                             year: 'numeric',
                             month: 'long',
@@ -632,7 +614,7 @@ const ActivitiesList = () => {
                       <div>
                         <span className="font-semibold text-gray-700">Fecha:</span>
                         <span className="ml-2 text-gray-800">
-                          {new Date(selectedActivity.fecha).toLocaleDateString('es-AR', {
+                          {formatUtcCalendarDateEsAR(selectedActivity.fecha, {
                             weekday: 'long',
                             year: 'numeric',
                             month: 'long',
@@ -692,7 +674,7 @@ const ActivitiesList = () => {
                     {getEstadoInscripcionBadge(selectedActivity.estadoInscripcion)}
                     {selectedActivity.tipo === 'recurrente' && selectedActivity.fechaInscripcion && (
                       <p className="text-sm text-gray-600 mt-2">
-                        Inscrito para: {new Date(selectedActivity.fechaInscripcion).toLocaleDateString('es-AR')}
+                        Inscrito para: {formatUtcCalendarDateEsAR(selectedActivity.fechaInscripcion)}
                       </p>
                     )}
                   </div>
@@ -710,7 +692,7 @@ const ActivitiesList = () => {
                     ) : availableDates.length === 0 ? (
                       <p className="text-gray-600 text-center py-4">No hay fechas disponibles en los próximos 30 días.</p>
                     ) : (
-                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                      <div className="space-y-2">
                         {availableDates.slice(0, 5).map((dateOption, index) => {
                           const isInscribed = !!dateOption.estadoInscripcion;
                           return (
@@ -731,7 +713,7 @@ const ActivitiesList = () => {
                               <div className="flex justify-between items-center">
                                 <div className="flex-1">
                                   <p className="font-semibold text-gray-800">
-                                    {new Date(dateOption.fecha).toLocaleDateString('es-AR', {
+                                    {formatUtcCalendarDateEsAR(dateOption.fecha, {
                                       weekday: 'long',
                                       year: 'numeric',
                                       month: 'long',
@@ -947,7 +929,7 @@ const ActivitiesList = () => {
                           <div className="flex justify-between items-start mb-3">
                             <div className="flex-1">
                               <p className="font-semibold text-gray-800 mb-2">
-                                {new Date(dateOption.fecha).toLocaleDateString('es-AR', {
+                                {formatUtcCalendarDateEsAR(dateOption.fecha, {
                                   weekday: 'long',
                                   year: 'numeric',
                                   month: 'long',
@@ -1039,7 +1021,7 @@ const ActivitiesList = () => {
                     <div className="flex items-center">
                       <span className="font-semibold text-gray-700 w-24">Fecha:</span>
                       <span className="text-gray-800">
-                        {new Date(selectedDate.fecha).toLocaleDateString('es-AR', {
+                        {formatUtcCalendarDateEsAR(selectedDate.fecha, {
                           weekday: 'long',
                           year: 'numeric',
                           month: 'long',

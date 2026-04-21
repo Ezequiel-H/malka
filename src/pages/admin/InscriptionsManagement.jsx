@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useSearchParams } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
+import { formatDateEsAR, formatUtcCalendarDateEsAR } from '../../utils/dateUtils';
 
 const InscriptionsManagement = () => {
   const { showSuccess, showError } = useToast();
@@ -219,7 +220,7 @@ const InscriptionsManagement = () => {
                       <div>
                         <p className="text-sm text-gray-600 mb-1"><strong>Fecha del evento:</strong></p>
                         <p className="text-gray-800">
-                          {new Date(inscription.fecha).toLocaleDateString('es-AR', {
+                          {formatUtcCalendarDateEsAR(inscription.fecha, {
                             weekday: 'long',
                             year: 'numeric',
                             month: 'long',
