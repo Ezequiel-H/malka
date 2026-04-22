@@ -118,29 +118,28 @@ const UserDetail = () => {
     }
   };
 
-  const handleApproveInscription = async (e, inscriptionId) => {
-    e.stopPropagation(); // Evitar que se active el click de la fila
-    try {
-      await axios.put(`/inscriptions/${inscriptionId}/approve`);
-      showSuccess('Inscripción aprobada exitosamente');
-      fetchUserInscriptions();
-    } catch (error) {
-      showError(error.response?.data?.message || 'Error al aprobar inscripción');
-    }
+  const getEstadoLabel = (estado) => {
+    const labels = {
+      aceptada: 'Aceptada',
+      pendiente: 'Pendiente',
+      cancelada: 'Cancelada',
+      en_espera: 'En lista de espera'
+    };
+    return labels[estado] || estado || '—';
   };
 
-  const handleRejectInscription = async (e, inscriptionId) => {
-    e.stopPropagation(); // Evitar que se active el click de la fila
-    if (!window.confirm('¿Estás seguro de que deseas rechazar esta inscripción?')) {
-      return;
-    }
-    try {
-      await axios.put(`/inscriptions/${inscriptionId}/reject`);
-      showSuccess('Inscripción rechazada');
-      fetchUserInscriptions();
-    } catch (error) {
-      showError(error.response?.data?.message || 'Error al rechazar inscripción');
-    }
+  const getEstadoBadge = (estado) => {
+    const badges = {
+      aceptada: { class: 'badge-success', text: 'Aceptada' },
+      pendiente: { class: 'badge-warning', text: 'Pendiente' },
+      cancelada: { class: 'badge-danger', text: 'Cancelada' },
+      en_espera: { class: 'badge-info', text: 'En lista de espera' },
+      approved: { class: 'badge-success', text: 'Aprobado' },
+      pending: { class: 'badge-warning', text: 'Pendiente' },
+      rejected: { class: 'badge-danger', text: 'Rechazado' }
+    };
+    const badge = badges[estado] || { class: 'badge-secondary', text: getEstadoLabel(estado) };
+    return <span className={`badge ${badge.class}`}>{badge.text}</span>;
   };
 
   const handleRowClick = (inscription) => {
@@ -341,16 +340,6 @@ const UserDetail = () => {
     } finally {
       setSaving(false);
     }
-  };
-
-  const getEstadoBadge = (estado) => {
-    const badges = {
-      approved: { class: 'badge-success', text: 'Aprobado' },
-      pending: { class: 'badge-warning', text: 'Pendiente' },
-      rejected: { class: 'badge-danger', text: 'Rechazado' }
-    };
-    const badge = badges[estado] || badges.pending;
-    return <span className={`badge ${badge.class}`}>{badge.text}</span>;
   };
 
   if (loading) {
@@ -763,7 +752,7 @@ const UserDetail = () => {
                     <tr className="border-b-2 border-gray-300">
                       <th className="p-3 text-left align-middle font-semibold text-gray-700 text-sm">Evento</th>
                       <th className="p-3 text-left align-middle font-semibold text-gray-700 text-sm">Fecha y hora</th>
-                      <th className="p-3 text-right align-middle font-semibold text-gray-700 text-sm w-28">Acciones</th>
+                      <th className="p-3 text-left align-middle font-semibold text-gray-700 text-sm whitespace-nowrap">Estado</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -784,31 +773,8 @@ const UserDetail = () => {
                             inscription.hora || inscription.activityId?.hora
                           )}
                         </td>
-                        <td className="p-3 text-sm align-middle text-right" onClick={(e) => e.stopPropagation()}>
-                          {inscription.estado === 'pendiente' ? (
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                onClick={(e) => handleApproveInscription(e, inscription._id)}
-                                className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-full transition-colors"
-                                title="Aprobar inscripción"
-                              >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                              </button>
-                              <button
-                                onClick={(e) => handleRejectInscription(e, inscription._id)}
-                                className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors"
-                                title="Rechazar inscripción"
-                              >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-gray-400 text-sm">-</span>
-                          )}
+                        <td className="p-3 text-sm align-middle" onClick={(e) => e.stopPropagation()}>
+                          {getEstadoBadge(inscription.estado)}
                         </td>
                       </tr>
                     ))}
