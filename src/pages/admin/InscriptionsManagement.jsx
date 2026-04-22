@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
 import { formatUtcCalendarDayAndTime } from '../../utils/dateUtils';
+
+const adminUserPath = (userRef) => {
+  const uid = typeof userRef === 'object' && userRef !== null ? userRef._id : userRef;
+  return uid ? `/admin/users/${uid}` : null;
+};
 
 const InscriptionsManagement = () => {
   const { showSuccess, showError } = useToast();
@@ -164,10 +169,17 @@ const InscriptionsManagement = () => {
                 .filter(Boolean)
                 .join(' ')
                 .trim();
-              const contacto = [
+              const tel = inscription.userId?.telefono || '—';
+              const mail = inscription.userId?.email || '—';
+              const userHref = adminUserPath(inscription.userId);
+              const linkLabel =
+                nombreCompleto ||
+                (typeof inscription.userId === 'object' && inscription.userId?.email) ||
+                'Ver perfil';
+              const contactoSinLink = [
                 nombreCompleto || '—',
-                inscription.userId?.telefono || '—',
-                inscription.userId?.email || '—',
+                tel,
+                mail,
               ].join(' · ');
               return (
                 <div
@@ -181,7 +193,23 @@ const InscriptionsManagement = () => {
                     <div className="sm:col-span-3 text-gray-600 tabular-nums whitespace-nowrap">
                       {formatUtcCalendarDayAndTime(inscription.fecha, horaEv)}
                     </div>
-                    <div className="sm:col-span-5 text-gray-700 min-w-0 break-words">{contacto}</div>
+                    <div className="sm:col-span-5 text-gray-700 min-w-0 break-words">
+                      {userHref ? (
+                        <>
+                          <Link to={userHref} className="text-primary font-medium hover:underline">
+                            {linkLabel}
+                          </Link>
+                          <span>
+                            {' · '}
+                            {tel}
+                            {' · '}
+                            {mail}
+                          </span>
+                        </>
+                      ) : (
+                        contactoSinLink
+                      )}
+                    </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
                     {getEstadoBadge(inscription.estado)}

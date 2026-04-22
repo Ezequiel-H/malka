@@ -12,6 +12,9 @@ export const handlers = [
   http.get(`${API}/inscriptions`, () =>
     HttpResponse.json({ inscriptions: [], count: 0 })
   ),
+  http.get(`${API}/inscriptions/stats/accepted-last-30-days`, () =>
+    HttpResponse.json({ count: 0 })
+  ),
   http.get(`${API}/users/pending`, () => HttpResponse.json({ users: [] })),
   http.get(`${API}/tags`, () => HttpResponse.json({ tags: [], count: 0 }))
 ];
