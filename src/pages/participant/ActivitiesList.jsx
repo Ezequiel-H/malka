@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
 import { activityPublicTags, publicTagColor } from '../../utils/tagFields';
 import { formatDateEsAR, formatDateToString, formatUtcCalendarDateEsAR, formatUtcCalendarDateToString } from '../../utils/dateUtils';
+import { buildGoogleCalendarTemplateUrl } from '../../utils/googleCalendarActivityUrl';
 
 const ActivitiesList = () => {
   const { showSuccess, showError } = useToast();
@@ -260,43 +261,8 @@ const ActivitiesList = () => {
 
   const handleAddToCalendar = (dateOption = null) => {
     if (!selectedActivity) return;
-
-    // Para recurrentes usamos la fecha seleccionada; para únicas usamos la fecha propia de la actividad.
-    const baseDate = dateOption?.fecha || selectedActivity.fecha;
-    if (!baseDate) return;
-
-    const [hours, minutes] = (dateOption?.hora || selectedActivity.hora || '19:00').split(':');
-
-    // Parsear fecha de forma estable (YYYY-MM-DD) sin depender del timezone del navegador.
-    const baseDateStr = typeof baseDate === 'string'
-      ? baseDate.substring(0, 10)
-      : formatUtcCalendarDateToString(baseDate);
-    const [year, month, day] = baseDateStr.split('-').map(Number);
-    if (!year || !month || !day) return;
-
-    // Tratar fecha/hora como "hora local de Argentina" (naive) y delegar el timezone a Google Calendar con ctz.
-    const startTs = Date.UTC(year, month - 1, day, parseInt(hours) || 19, parseInt(minutes) || 0, 0);
-    const duration = selectedActivity.duracion || 60; // Duración en minutos, default 60
-    const endTs = startTs + duration * 60000;
-
-    const pad = (n) => String(n).padStart(2, '0');
-    const formatCalendarDate = (timestamp) => {
-      const d = new Date(timestamp);
-      return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00`;
-    };
-
-    const start = formatCalendarDate(startTs);
-    const end = formatCalendarDate(endTs);
-
-    // Crear descripción
-    const description = `${selectedActivity.descripcion || ''}\n\n${selectedActivity.lugar ? `Lugar: ${selectedActivity.lugar}\n` : ''}${selectedActivity.ubicacionOnline ? `Ubicación: ${selectedActivity.ubicacionOnline}\n` : ''}Precio: ${selectedActivity.esGratuita ? 'Gratis' : `$${selectedActivity.precio}`}`;
-    
-    // Crear URL para Google Calendar forzando timezone de Argentina.
-    const location = selectedActivity.ubicacionOnline || selectedActivity.lugar || '';
-    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(selectedActivity.titulo)}&dates=${start}/${end}&ctz=${encodeURIComponent('America/Argentina/Buenos_Aires')}&details=${encodeURIComponent(description)}&location=${encodeURIComponent(location)}`;
-
-    // Abrir en nueva pestaña
-    window.open(googleCalendarUrl, '_blank');
+    const url = buildGoogleCalendarTemplateUrl(selectedActivity, dateOption);
+    if (url) window.open(url, '_blank');
   };
 
   const getEstadoInscripcionBadge = (estado) => {

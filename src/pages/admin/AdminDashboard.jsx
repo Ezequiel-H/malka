@@ -45,6 +45,7 @@ const AdminDashboard = () => {
   const [topOccurrences, setTopOccurrences] = useState([]);
   const [activities, setActivities] = useState([]);
   const [selectedActivityId, setSelectedActivityId] = useState('');
+  const [showReturnInfo, setShowReturnInfo] = useState(false);
 
   const fetchStats = async () => {
     try {
@@ -187,41 +188,41 @@ const AdminDashboard = () => {
         </h1>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
-          <div className="card text-center hover:shadow-xl transition-shadow">
+          <div className="card text-center hover:shadow-xl transition-shadow flex flex-col">
             <h2 className="text-4xl sm:text-5xl font-bold text-yellow-500 mb-3">{stats.pendingUsers}</h2>
             <p className="text-lg font-bold text-gray-800 mb-4">Usuarios Pendientes</p>
-            <Link to="/admin/users/pending" className="btn btn-warning">
+            <Link to="/admin/users/pending" className="btn btn-warning mt-auto">
               Ver Pendientes
             </Link>
           </div>
 
-          <div className="card text-center hover:shadow-xl transition-shadow">
+          <div className="card text-center hover:shadow-xl transition-shadow flex flex-col">
             <h2 className="text-4xl sm:text-5xl font-bold text-primary mb-3">{stats.publishedActivities}</h2>
             <p className="text-lg font-bold text-gray-800 mb-4">Actividades Publicadas</p>
-            <Link to="/admin/activities" className="btn btn-primary">
+            <Link to="/admin/activities" className="btn btn-primary mt-auto">
               Gestionar Actividades
             </Link>
           </div>
 
-          <div className="card text-center hover:shadow-xl transition-shadow">
+          <div className="card text-center hover:shadow-xl transition-shadow flex flex-col">
             <h2 className="text-4xl sm:text-5xl font-bold text-orange-500 mb-3">{stats.pendingInscriptions}</h2>
             <p className="text-lg font-bold text-gray-800 mb-4">Inscripciones Pendientes</p>
-            <Link to="/admin/inscriptions?estado=pendiente" className="btn btn-warning">
+            <Link to="/admin/inscriptions?estado=pendiente" className="btn btn-warning mt-auto">
               Gestionar Inscripciones
             </Link>
           </div>
 
-          <div className="card text-center hover:shadow-xl transition-shadow">
+          <div className="card text-center hover:shadow-xl transition-shadow flex flex-col">
             <h2 className="text-4xl sm:text-5xl font-bold text-green-600 mb-3">
               {stats.acceptedInscriptionsLast30Days}
             </h2>
             <p className="text-lg font-bold text-gray-800 mb-4">Inscripciones aceptadas (últimos 30 días)</p>
-            <Link to="/admin/inscriptions?estado=aceptada" className="btn btn-success">
+            <Link to="/admin/inscriptions?estado=aceptada" className="btn btn-success mt-auto">
               Ver aceptadas
             </Link>
           </div>
 
-          <div className="card text-center hover:shadow-xl transition-shadow">
+          <div className="card text-center hover:shadow-xl transition-shadow flex flex-col">
             <h2 className="text-3xl sm:text-4xl font-bold text-teal-600 mb-1 tabular-nums">
               {stats.firstInscriptionRepeat.withMoreThanOneInscription}
               <span className="text-2xl font-semibold text-gray-500"> / </span>
@@ -232,15 +233,36 @@ const AdminDashboard = () => {
                 ? `${(stats.firstInscriptionRepeat.rate * 100).toFixed(1)} % con más de una inscripción`
                 : '—'}
             </p>
-            <p className="text-lg font-bold text-gray-800 mb-2">
-              Retorno tras primera inscripción ({stats.firstInscriptionRepeat.minDaysSinceFirstInscription}+ días)
-            </p>
-            <p className="text-xs text-gray-500 mb-4 px-1">
-              Entre quienes se anotaron a un evento por primera vez hace al menos{' '}
-              {stats.firstInscriptionRepeat.minDaysSinceFirstInscription} días, cuántos
-              tienen más de un evento total. Cualquier estado de inscripción.
-            </p>
-            <Link to="/admin/inscriptions" className="btn btn-outline btn-sm border-teal-600 text-teal-700">
+            <div className="mb-4 flex items-center justify-center gap-2">
+              <p className="text-lg font-bold text-gray-800">
+                Retorno tras primera inscripción ({stats.firstInscriptionRepeat.minDaysSinceFirstInscription}+ días)
+              </p>
+              <div className="relative">
+                <button
+                  type="button"
+                  className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-gray-300 text-gray-500 cursor-help"
+                  onClick={() => setShowReturnInfo((prev) => !prev)}
+                  aria-expanded={showReturnInfo}
+                  aria-label="Mostrar información sobre esta métrica"
+                >
+                  i
+                </button>
+                {showReturnInfo && (
+                  <div
+                    className="absolute right-0 z-20 mt-2 w-64 rounded-md border border-gray-200 bg-white p-3 text-left text-xs leading-relaxed text-gray-600 shadow-lg"
+                    role="tooltip"
+                  >
+                    Entre quienes se anotaron a un evento por primera vez hace al menos{' '}
+                    {stats.firstInscriptionRepeat.minDaysSinceFirstInscription} días, cuántos tienen más de un evento
+                    total. Cualquier estado de inscripción.
+                  </div>
+                )}
+              </div>
+            </div>
+            <Link
+              to="/admin/inscriptions"
+              className="btn btn-outline btn-sm border-teal-600 text-teal-700 mt-auto"
+            >
               Ver inscripciones
             </Link>
           </div>

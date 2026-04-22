@@ -8,6 +8,158 @@ import {
   formatUtcCalendarDateToString,
   formatUtcCalendarDayAndTime,
 } from '../../utils/dateUtils';
+import { buildGoogleCalendarTemplateUrl } from '../../utils/googleCalendarActivityUrl';
+
+const GMAIL_INVITE_BODY_MAX = 7500;
+
+/** Día concreto para el enlace «Agregar a calendario» (única = actividad; recurrente = primera fecha de la vista). */
+const getCalendarDateOptionForEmail = (activity, sortedDateStrings) => {
+  if (!activity) return null;
+  if (activity.tipo === 'unica' && activity.fecha) {
+    return { fecha: activity.fecha, hora: activity.hora };
+  }
+  if (activity.tipo === 'recurrente' && sortedDateStrings?.length) {
+    return {
+      fecha: new Date(`${sortedDateStrings[0]}T00:00:00.000Z`),
+      hora: activity.hora,
+    };
+  }
+  return null;
+};
+
+const buildGmailInvitationSubject = (activity, sortedDateStrings) => {
+  const titulo = activity?.titulo?.trim() || 'Actividad';
+  if (activity.tipo === 'unica' && activity.fecha) {
+    const datePart = formatDateEsAR(activity.fecha, {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+    const timePart = activity.hora?.trim() ? ` · ${activity.hora.trim()}` : '';
+    return `${titulo} — ${datePart}${timePart}`;
+  }
+  if (activity.tipo === 'recurrente' && sortedDateStrings?.length) {
+    const first = new Date(`${sortedDateStrings[0]}T00:00:00.000Z`);
+    const line = formatUtcCalendarDayAndTime(first, activity.hora);
+    return `${titulo} — ${line}`;
+  }
+  return titulo;
+};
+
+const buildCompactGoogleCalendarUrl = (activity, dateOption = null) => {
+  if (!activity) return null;
+  const baseDate = dateOption?.fecha ?? activity.fecha;
+  if (!baseDate) return null;
+
+  const horaStr = dateOption?.hora || activity.hora || '19:00';
+  const [hours, minutes] = String(horaStr).split(':');
+  const baseDateStr =
+    typeof baseDate === 'string'
+      ? baseDate.substring(0, 10)
+      : formatUtcCalendarDateToString(baseDate);
+  const [year, month, day] = baseDateStr.split('-').map(Number);
+  if (!year || !month || !day) return null;
+
+  const startTs = Date.UTC(
+    year,
+    month - 1,
+    day,
+    parseInt(hours, 10) || 19,
+    parseInt(minutes, 10) || 0,
+    0
+  );
+  const duration = activity.duracion || 60;
+  const endTs = startTs + duration * 60000;
+
+  const pad = (n) => String(n).padStart(2, '0');
+  const formatCalendarDate = (timestamp) => {
+    const d = new Date(timestamp);
+    return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(
+      d.getUTCHours()
+    )}${pad(d.getUTCMinutes())}00`;
+  };
+
+  const params = new URLSearchParams();
+  params.set('action', 'TEMPLATE');
+  params.set('text', activity.titulo || 'Actividad');
+  params.set('dates', `${formatCalendarDate(startTs)}/${formatCalendarDate(endTs)}`);
+  params.set('ctz', 'America/Argentina/Buenos_Aires');
+  // Para email usamos versión corta: sin "details" para evitar URLs enormes no clickeables.
+  params.set('location', activity.ubicacionOnline || activity.lugar || '');
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+};
+
+const buildFechaHoraBodyBlock = (activity, sortedDateStrings) => {
+  if (activity.tipo === 'unica' && activity.fecha) {
+    const d = formatDateEsAR(activity.fecha, {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+    const t = activity.hora?.trim();
+    return t ? `${d} · ${t}` : d;
+  }
+  if (activity.tipo === 'recurrente' && sortedDateStrings?.length) {
+    const max = 8;
+    const bullets = sortedDateStrings.slice(0, max).map((fechaStr) => {
+      const day = new Date(`${fechaStr}T00:00:00.000Z`);
+      return `• ${formatUtcCalendarDayAndTime(day, activity.hora)}`;
+    });
+    if (sortedDateStrings.length > max) {
+      bullets.push(
+        `• … y ${sortedDateStrings.length - max} fecha(s) más (según inscripciones de esta vista).`
+      );
+    }
+    return ['Actividad recurrente — fechas con inscripciones en esta vista:', ...bullets].join('\n');
+  }
+  return '— (definir en la plataforma)';
+};
+
+const buildGmailInvitationBody = (activity, sortedDateStrings, calendarUrl, mapsUrl) => {
+  const lines = [];
+  lines.push('¡Hola! ¿Cómo estás? Espero que muy bien 💫');
+  lines.push('Soy Tami de Malka.');
+  lines.push(
+    `Te escribo para confirmar tu lugar para ${activity.titulo ? `la actividad "${activity.titulo}"` : 'la actividad'} ✨`
+  );
+  lines.push('');
+  lines.push(`📍¿Dónde? ${activity.lugar?.trim() || 'A confirmar'}`);
+  lines.push(`🕐¿Cuándo? ${buildFechaHoraBodyBlock(activity, sortedDateStrings)}`);
+  lines.push(
+    `💳${activity.esGratuita ? 'Actividad gratuita' : `Valor: $${activity.precio ?? '—'}`}`
+  );
+  if (typeof activity.duracion === 'number' && activity.duracion > 0) {
+    lines.push(`⏱️Duración estimada: ${activity.duracion} minutos`);
+  }
+  if (activity.cupo) {
+    lines.push(`👥Cupo: ${activity.cupo}`);
+  }
+  if (activity.descripcion?.trim()) {
+    lines.push('');
+    lines.push('📝Sobre la actividad:');
+    lines.push(activity.descripcion.trim());
+  }
+  lines.push('');
+  lines.push('📅 Agregar a Google Calendar:');
+  lines.push(
+    calendarUrl || '(No hay fecha suficiente para generar el enlace.)'
+  );
+  lines.push('');
+  lines.push('🗺️ Mapa / cómo llegar:');
+  lines.push(
+    mapsUrl?.trim() || '(Sin enlace cargado en la actividad.)'
+  );
+  lines.push('');
+  lines.push('¡Te mando un beso grande y ojalá tengas una semana hermosa! 🌿');
+
+  let text = lines.join('\n');
+  if (text.length > GMAIL_INVITE_BODY_MAX) {
+    text = `${text.slice(0, GMAIL_INVITE_BODY_MAX - 1)}…`;
+  }
+  return text;
+};
 
 const ActivityInscriptions = () => {
   const { id } = useParams();
@@ -300,6 +452,70 @@ const ActivityInscriptions = () => {
     ? Object.keys(filteredGrouped).sort()
     : [];
 
+  const getConfirmedGmailComposePayload = (sortedDateStrings) => {
+    const emails = getConfirmedInscriptionEmails();
+    if (!emails.length || !activity) return null;
+    const dateOption = getCalendarDateOptionForEmail(activity, sortedDateStrings);
+    const calendarUrl =
+      buildCompactGoogleCalendarUrl(activity, dateOption) ||
+      buildGoogleCalendarTemplateUrl(activity, dateOption);
+    const mapsUrl = activity.ubicacionOnline?.trim() || '';
+    const subject = buildGmailInvitationSubject(activity, sortedDateStrings);
+    const body = buildGmailInvitationBody(
+      activity,
+      sortedDateStrings,
+      calendarUrl,
+      mapsUrl
+    );
+    const params = new URLSearchParams();
+    params.set('view', 'cm');
+    params.set('fs', '1');
+    params.set('bcc', emails.join(','));
+    params.set('su', subject);
+    return {
+      href: `https://mail.google.com/mail/?${params.toString()}`,
+      body,
+    };
+  };
+
+  const confirmedGmailComposePayload = getConfirmedGmailComposePayload(sortedDates);
+
+  const copyTextToClipboard = async (text) => {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  };
+
+  const handleOpenGmailCompose = async () => {
+    if (!confirmedGmailComposePayload) {
+      showError('No hay inscripciones aceptadas con email para redactar el correo.');
+      return;
+    }
+
+    window.open(confirmedGmailComposePayload.href, '_blank', 'noopener,noreferrer');
+
+    try {
+      await copyTextToClipboard(confirmedGmailComposePayload.body);
+      showSuccess(
+        'Gmail abierto. El texto de invitacion se copio al portapapeles para pegarlo (Cmd/Ctrl+V) y conservar links clickeables.'
+      );
+    } catch {
+      showError(
+        'Gmail abierto. No se pudo copiar el cuerpo automaticamente; pegalo manualmente desde la app.'
+      );
+    }
+  };
+
   return (
     <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto min-w-0">
@@ -374,14 +590,24 @@ const ActivityInscriptions = () => {
           <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <h2 className="text-xl font-semibold text-gray-800 sm:text-2xl">Resumen</h2>
-              <button
-                type="button"
-                onClick={copyConfirmedEmailsToClipboard}
-                className="btn btn-secondary w-full shrink-0 justify-center text-sm sm:w-auto"
-                title="Copia los correos de participantes con inscripción aceptada, separados por coma, para pegarlos en Para o CCO"
-              >
-                Copiar emails (inscripciones aceptadas)
-              </button>
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:gap-2">
+                <button
+                  type="button"
+                  onClick={copyConfirmedEmailsToClipboard}
+                  className="btn btn-secondary w-full shrink-0 justify-center text-sm sm:w-auto"
+                  title="Copia los correos de participantes con inscripción aceptada, separados por coma, para pegarlos en Para o CCO"
+                >
+                  Copiar emails (inscripciones aceptadas)
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenGmailCompose}
+                  className="btn btn-secondary w-full shrink-0 justify-center text-sm sm:w-auto no-underline"
+                  title="Abre Gmail con CCO y asunto del evento. El cuerpo se copia al portapapeles para pegarlo y mantener links clickeables."
+                >
+                  Redactar en Gmail (CCO)
+                </button>
+              </div>
             </div>
             <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 md:w-auto">
               <label className="shrink-0 font-medium text-gray-700">Filtrar por estado:</label>
