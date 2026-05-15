@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { Route, Routes } from 'react-router-dom';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -6,10 +6,16 @@ import { http, HttpResponse } from 'msw';
 import { server } from '../../test/msw/server.js';
 import { AppTestShell } from '../../test/AppTestShell.jsx';
 import { locationStub } from '../../test/setup.js';
-import Login from './Login.jsx';
+import LoginGate from '../../components/auth/LoginGate.jsx';
 
 describe('Login', () => {
-  it('submits credentials and navigates for approved participant', async () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+
+  it('redirects to saved activity path after login', async () => {
+    sessionStorage.setItem('authRedirect', '/activities/event-123');
+
     server.use(
       http.post('http://localhost:5001/api/auth/login', async () =>
         HttpResponse.json({
@@ -30,7 +36,44 @@ describe('Login', () => {
     render(
       <AppTestShell initialEntries={['/login']}>
         <Routes>
-          <Route path="/login" element={<Login />} />
+          <Route path="/login" element={<LoginGate />} />
+          <Route path="/activities/:id" element={<div>At Event</div>} />
+        </Routes>
+      </AppTestShell>
+    );
+
+    const form = document.querySelector('form');
+    const [emailInput, passInput] = form.querySelectorAll('input');
+
+    await user.type(emailInput, 'user@test.com');
+    await user.type(passInput, 'password123');
+    await user.click(screen.getByRole('button', { name: /Iniciar sesión/i }));
+
+    expect(await screen.findByText('At Event')).toBeInTheDocument();
+  });
+
+  it('redirects to activities when no saved path', async () => {
+    server.use(
+      http.post('http://localhost:5001/api/auth/login', async () =>
+        HttpResponse.json({
+          token: 'test-token',
+          user: {
+            id: 'u1',
+            email: 'user@test.com',
+            role: 'participant',
+            estado: 'approved',
+            nombre: 'U',
+            apellido: 'Ser'
+          }
+        })
+      )
+    );
+
+    const user = userEvent.setup();
+    render(
+      <AppTestShell initialEntries={['/login']}>
+        <Routes>
+          <Route path="/login" element={<LoginGate />} />
           <Route path="/activities" element={<div>At Activities</div>} />
         </Routes>
       </AppTestShell>
@@ -59,7 +102,7 @@ describe('Login', () => {
     render(
       <AppTestShell initialEntries={['/login']}>
         <Routes>
-          <Route path="/login" element={<Login />} />
+          <Route path="/login" element={<LoginGate />} />
         </Routes>
       </AppTestShell>
     );

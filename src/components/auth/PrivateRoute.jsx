@@ -1,8 +1,10 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { setAuthRedirect } from '../../utils/authRedirect';
 
 const PrivateRoute = ({ children, requireApproved = false }) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -14,7 +16,9 @@ const PrivateRoute = ({ children, requireApproved = false }) => {
   }
 
   if (!user) {
-    return <Navigate to="/login" />;
+    const returnPath = `${location.pathname}${location.search}`;
+    setAuthRedirect(returnPath);
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   const needsApproval = requireApproved && user.role !== 'admin' && user.estado !== 'approved';

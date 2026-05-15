@@ -21,8 +21,6 @@ const ActivitiesList = () => {
   const [showDateModal, setShowDateModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [showCancelPolicyModal, setShowCancelPolicyModal] = useState(false);
   const [publicTagCatalog, setPublicTagCatalog] = useState([]);
 
   const navigate = useNavigate();
@@ -61,17 +59,10 @@ const ActivitiesList = () => {
     };
   }, []);
 
-  // Cerrar modal con ESC
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') {
-        if (showCancelPolicyModal) {
-          setShowCancelPolicyModal(false);
-        } else if (showDetailModal) {
-          setShowDetailModal(false);
-          setSelectedActivity(null);
-          setAvailableDates([]);
-        } else if (showDateModal) {
+        if (showDateModal) {
           setShowDateModal(false);
           setSelectedActivity(null);
           setAvailableDates([]);
@@ -83,7 +74,7 @@ const ActivitiesList = () => {
     };
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [showDetailModal, showDateModal, showConfirmModal, showCancelPolicyModal]);
+  }, [showDateModal, showConfirmModal]);
 
   const getDateRange = (periodo) => {
     const today = new Date();
@@ -238,9 +229,7 @@ const ActivitiesList = () => {
         }
       } else {
         setShowDateModal(false);
-        if (!showDetailModal) {
-          setSelectedActivity(null);
-        }
+        setSelectedActivity(null);
         setAvailableDates([]);
       }
     } catch (error) {
@@ -281,27 +270,10 @@ const ActivitiesList = () => {
   };
 
   const handleActivityClick = (activity, e) => {
-    // Evitar que se abra el modal si se hace clic en un botón o enlace
     if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) {
       return;
     }
-    setSelectedActivity(activity);
-    setShowDetailModal(true);
-    
-    // Si es actividad recurrente, cargar fechas disponibles
-    if (activity.tipo === 'recurrente') {
-      setLoadingDates(true);
-      axios.get(`/inscriptions/activity/${activity._id}/available-dates`)
-        .then(response => {
-          setAvailableDates(response.data.availableDates);
-        })
-        .catch(error => {
-          console.error('Error fetching available dates:', error);
-        })
-        .finally(() => {
-          setLoadingDates(false);
-        });
-    }
+    navigate(`/activities/${activity._id}`);
   };
 
   const handleInscribeClick = async (activity, e) => {
@@ -320,7 +292,6 @@ const ActivitiesList = () => {
       setSelectedActivity(activity);
       setLoadingDates(true);
       setShowDateModal(true);
-      setShowDetailModal(false);
       try {
         const response = await axios.get(`/inscriptions/activity/${activity._id}/available-dates`);
         setAvailableDates(response.data.availableDates);
@@ -492,360 +463,6 @@ const ActivitiesList = () => {
           </div>
         )}
 
-        {/* Modal de detalles de actividad */}
-        {showDetailModal && selectedActivity && (
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowDetailModal(false);
-                setSelectedActivity(null);
-                setAvailableDates([]);
-              }
-            }}
-          >
-            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto min-w-0">
-              <div className="p-4 sm:p-6">
-                <div className="mb-4 flex items-start justify-between gap-3">
-                  <h2 className="min-w-0 flex-1 text-xl font-bold text-gray-800 sm:text-2xl md:text-3xl">
-                    {selectedActivity.titulo}
-                  </h2>
-                  <button
-                    onClick={() => {
-                      setShowDetailModal(false);
-                      setSelectedActivity(null);
-                      setAvailableDates([]);
-                    }}
-                    className="flex-shrink-0 text-2xl text-gray-500 hover:text-gray-700 sm:text-3xl"
-                  >
-                    ×
-                  </button>
-                </div>
-
-                {/* Imágenes */}
-                {selectedActivity.fotos && selectedActivity.fotos.length > 0 && (
-                  <div className="mb-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {selectedActivity.fotos.map((foto, index) => (
-                        <img
-                          key={index}
-                          src={foto}
-                          alt={`${selectedActivity.titulo} - Imagen ${index + 1}`}
-                          className="w-full h-64 object-cover rounded-lg"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Descripción completa */}
-                {selectedActivity.descripcion && (
-                  <div className="mb-6">
-                    <h3 className="text-xl font-semibold text-gray-800 mb-2">Descripción</h3>
-                    <p className="text-gray-600 whitespace-pre-wrap">{selectedActivity.descripcion}</p>
-                  </div>
-                )}
-
-                {/* Categorías */}
-                {activityPublicTags(selectedActivity).length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="text-xl font-semibold text-gray-800 mb-2">Tags</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {activityPublicTags(selectedActivity).map(cat => (
-                        <span
-                          key={cat}
-                          className="badge text-white"
-                          style={{ backgroundColor: publicTagColor(publicTagCatalog, cat) }}
-                        >
-                          {cat}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Información detallada */}
-                <div className="bg-gray-50 p-6 rounded-lg mb-6 space-y-3">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-4">Información</h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {selectedActivity.tipo === 'recurrente' && selectedActivity.proximaOcurrencia ? (
-                      <div>
-                        <span className="font-semibold text-gray-700">Próxima fecha:</span>
-                        <span className="ml-2 text-gray-800">
-                          {formatUtcCalendarDateEsAR(selectedActivity.proximaOcurrencia, {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
-                        </span>
-                      </div>
-                    ) : selectedActivity.fecha && (
-                      <div>
-                        <span className="font-semibold text-gray-700">Fecha:</span>
-                        <span className="ml-2 text-gray-800">
-                          {formatUtcCalendarDateEsAR(selectedActivity.fecha, {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
-                        </span>
-                      </div>
-                    )}
-                    
-                    {selectedActivity.hora && (
-                      <div>
-                        <span className="font-semibold text-gray-700">Hora:</span>
-                        <span className="ml-2 text-gray-800">{selectedActivity.hora}</span>
-                      </div>
-                    )}
-                    
-                    {selectedActivity.duracion && (
-                      <div>
-                        <span className="font-semibold text-gray-700">Duración:</span>
-                        <span className="ml-2 text-gray-800">{selectedActivity.duracion} minutos</span>
-                      </div>
-                    )}
-                    
-                    {selectedActivity.lugar && (
-                      <div>
-                        <span className="font-semibold text-gray-700">Lugar:</span>
-                        <span className="ml-2 text-gray-800">{selectedActivity.lugar}</span>
-                      </div>
-                    )}
-                    
-                    {selectedActivity.ubicacionOnline && (
-                      <div>
-                        <span className="font-semibold text-gray-700">Ubicación:</span>
-                        <a 
-                          href={selectedActivity.ubicacionOnline} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="ml-2 text-blue-600 hover:underline"
-                        >
-                          Ver en Google Maps
-                        </a>
-                      </div>
-                    )}
-                    
-                    <div>
-                      <span className="font-semibold text-gray-700">Precio:</span>
-                      <span className="ml-2 text-gray-800">
-                        {selectedActivity.esGratuita ? 'Gratis' : `$${selectedActivity.precio}`}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Estado de inscripción */}
-                {selectedActivity.estadoInscripcion && (
-                  <div className="mb-6">
-                    {getEstadoInscripcionBadge(selectedActivity.estadoInscripcion)}
-                    {selectedActivity.tipo === 'recurrente' && selectedActivity.fechaInscripcion && (
-                      <p className="text-sm text-gray-600 mt-2">
-                        Inscrito para: {formatUtcCalendarDateEsAR(selectedActivity.fechaInscripcion)}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* Fechas disponibles para actividades recurrentes */}
-                {selectedActivity.tipo === 'recurrente' && (
-                  <div className="mb-6">
-                    <h3 className="text-xl font-semibold text-gray-800 mb-4">Fechas Disponibles</h3>
-                    {loadingDates ? (
-                      <div className="text-center py-8">
-                        <div className="spinner mx-auto"></div>
-                        <p className="mt-4 text-gray-600">Cargando fechas disponibles...</p>
-                      </div>
-                    ) : availableDates.length === 0 ? (
-                      <p className="text-gray-600 text-center py-4">No hay fechas disponibles en los próximos 30 días.</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {availableDates.slice(0, 5).map((dateOption, index) => {
-                          const isInscribed = !!dateOption.estadoInscripcion;
-                          return (
-                            <div
-                              key={index}
-                              className={`p-3 rounded-lg border-2 ${
-                                dateOption.estadoInscripcion === 'aceptada'
-                                  ? 'border-green-500 bg-green-50'
-                                  : dateOption.estadoInscripcion === 'pendiente'
-                                  ? 'border-yellow-500 bg-yellow-50'
-                                  : dateOption.estadoInscripcion === 'en_espera'
-                                  ? 'border-blue-500 bg-blue-50'
-                                  : dateOption.tieneCupo
-                                  ? 'border-gray-300 bg-white'
-                                  : 'border-gray-200 bg-gray-100 opacity-50'
-                              }`}
-                            >
-                              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="min-w-0 flex-1">
-                                  <p className="font-semibold text-gray-800">
-                                    {formatUtcCalendarDateEsAR(dateOption.fecha, {
-                                      weekday: 'long',
-                                      year: 'numeric',
-                                      month: 'long',
-                                      day: 'numeric'
-                                    })}
-                                  </p>
-                                  {dateOption.hora && (
-                                    <p className="text-sm text-gray-600">Hora: {dateOption.hora}</p>
-                                  )}
-                                  {dateOption.cuposDisponibles !== null && (
-                                    <p className={`text-sm font-semibold ${
-                                      dateOption.cuposDisponibles > 0 ? 'text-green-600' : 'text-red-600'
-                                    }`}>
-                                      {dateOption.cuposDisponibles > 0
-                                        ? `${dateOption.cuposDisponibles} cupos disponibles`
-                                        : 'Sin cupo'}
-                                    </p>
-                                  )}
-                                </div>
-                                <div className="shrink-0 self-start sm:self-center">
-                                  {getEstadoInscripcionBadge(dateOption.estadoInscripcion)}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                        {availableDates.length > 5 && (
-                          <p className="text-sm text-gray-600 text-center mt-2">
-                            Y {availableDates.length - 5} fecha(s) más...
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Botones de acción */}
-                <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:flex-wrap">
-                  {!selectedActivity.estadoInscripcion && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleInscribeClick(selectedActivity, e);
-                      }}
-                      className="btn btn-primary w-full justify-center min-w-0 sm:w-auto sm:min-w-[140px] sm:flex-1"
-                    >
-                      Inscribirse
-                    </button>
-                  )}
-
-                  {selectedActivity.tipo === 'unica' && selectedActivity.fecha && (
-                    <button
-                      onClick={() => handleAddToCalendar()}
-                      className="btn btn-secondary w-full justify-center sm:w-auto"
-                      title="Agregar al calendario"
-                    >
-                      📅 Agregar al Calendario
-                    </button>
-                  )}
-                  
-                  {selectedActivity.ubicacionOnline && (
-                    <a
-                      href={selectedActivity.ubicacionOnline}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-secondary w-full justify-center text-center sm:w-auto sm:whitespace-nowrap"
-                      title="Ver ubicación en Google Maps"
-                    >
-                      🗺️ ¿Cómo llego?
-                    </a>
-                  )}
-                  
-                  {selectedActivity.tipo === 'recurrente' && availableDates.length > 0 && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowDetailModal(false);
-                        setShowDateModal(true);
-                      }}
-                      className="btn btn-secondary w-full justify-center sm:w-auto"
-                    >
-                      Ver todas las fechas
-                    </button>
-                  )}
-                  
-                  {selectedActivity.politicaCancelacion && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowCancelPolicyModal(true);
-                      }}
-                      className="btn btn-secondary w-full justify-center sm:w-auto"
-                    >
-                      📋 Política de Cancelación
-                    </button>
-                  )}
-                  
-                  <button
-                    onClick={() => {
-                      setShowDetailModal(false);
-                      setSelectedActivity(null);
-                      setAvailableDates([]);
-                    }}
-                    className="btn btn-outline w-full justify-center sm:w-auto"
-                  >
-                    Cerrar
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Modal de Política de Cancelación */}
-        {showCancelPolicyModal && selectedActivity && (
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowCancelPolicyModal(false);
-              }
-            }}
-          >
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto min-w-0">
-              <div className="p-4 sm:p-6">
-                <div className="mb-4 flex items-start justify-between gap-3">
-                  <h2 className="min-w-0 flex-1 text-xl font-bold text-gray-800 sm:text-2xl">
-                    Política de Cancelación
-                  </h2>
-                  <button
-                    onClick={() => setShowCancelPolicyModal(false)}
-                    className="flex-shrink-0 text-2xl text-gray-500 hover:text-gray-700 sm:text-3xl"
-                  >
-                    ×
-                  </button>
-                </div>
-
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800 sm:text-xl mb-2">
-                    {selectedActivity.titulo}
-                  </h3>
-                </div>
-
-                <div className="rounded-lg bg-gray-50 p-4 sm:p-6">
-                  <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                    {selectedActivity.politicaCancelacion}
-                  </p>
-                </div>
-
-                <div className="flex justify-end pt-4">
-                  <button
-                    onClick={() => setShowCancelPolicyModal(false)}
-                    className="btn btn-primary w-full justify-center sm:w-auto"
-                  >
-                    Cerrar
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Modal de selección de fecha */}
         {showDateModal && selectedActivity && (

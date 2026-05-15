@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import logoMalka from '../../assets/logo-malka-positivo.png';
 
@@ -9,8 +9,6 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
-  const navigate = useNavigate();
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -18,18 +16,10 @@ const Login = () => {
 
     const result = await login(email, password);
 
-    if (result.success) {
-      const { user } = result;
-      if (user.role === 'admin') {
-        navigate('/admin');
-      } else if (user.estado === 'approved') {
-        navigate('/activities');
-      } else {
-        navigate('/dashboard');
-      }
-    } else {
+    if (!result.success) {
       setError(result.message);
     }
+    // Tras login exitoso, App renderiza PostAuthRedirect en /login
 
     setLoading(false);
   };

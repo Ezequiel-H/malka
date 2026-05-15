@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import { formatAuthError, normalizePhone } from '../utils/authErrors.js';
+import { setAuthRedirect } from '../utils/authRedirect.js';
 
 const AuthContext = createContext();
 
@@ -44,6 +45,8 @@ axios.interceptors.response.use(
       clearSession();
       // Only redirect if we're not already on login/register page
       if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
+        const returnPath = `${window.location.pathname}${window.location.search}`;
+        setAuthRedirect(returnPath);
         window.location.href = '/login';
       }
     }

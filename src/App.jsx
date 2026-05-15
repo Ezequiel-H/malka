@@ -1,10 +1,11 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import Navbar from './components/layout/Navbar';
-import Login from './pages/auth/Login';
+import LoginGate from './components/auth/LoginGate';
 import Register from './pages/auth/Register';
 import Dashboard from './pages/Dashboard';
 import ActivitiesList from './pages/participant/ActivitiesList';
+import ActivityDetail from './pages/participant/ActivityDetail';
 import MyInscriptions from './pages/participant/MyInscriptions';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import PendingUsers from './pages/admin/PendingUsers';
@@ -37,8 +38,8 @@ function App() {
     <div className="App min-h-screen bg-light-bg">
       {user && <Navbar />}
       <Routes>
-        <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
-        <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
+        <Route path="/login" element={<LoginGate />} />
+        <Route path="/register" element={!user ? <Register /> : <LoginGate />} />
 
         <Route
           path="/dashboard"
@@ -55,6 +56,14 @@ function App() {
           element={
             <PrivateRoute requireApproved>
               <ActivitiesList />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/activities/:id"
+          element={
+            <PrivateRoute requireApproved>
+              <ActivityDetail />
             </PrivateRoute>
           }
         />

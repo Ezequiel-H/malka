@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
 import { activityPublicTags } from '../../utils/tagFields';
 import { formatDateToString, formatUtcCalendarDateEsAR, formatUtcCalendarDateToString } from '../../utils/dateUtils';
+import { getActivityShareUrl } from '../../utils/activityShareUrl';
 
 const ActivitiesManagement = () => {
   const { showSuccess, showError } = useToast();
@@ -64,6 +65,16 @@ const ActivitiesManagement = () => {
         ? 'Error al reactivar actividad'
         : 'Error al eliminar actividad';
       showError(error.response?.data?.message || errorMessage);
+    }
+  };
+
+  const handleCopyLink = async (activityId) => {
+    const url = getActivityShareUrl(activityId);
+    try {
+      await navigator.clipboard.writeText(url);
+      showSuccess('Link copiado al portapapeles');
+    } catch {
+      showError('No se pudo copiar el link');
     }
   };
 
@@ -192,6 +203,14 @@ const ActivitiesManagement = () => {
                 </div>
 
                 <div className="mt-auto flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  {activity.estado === 'publicada' && (
+                    <button
+                      onClick={() => handleCopyLink(activity._id)}
+                      className="btn btn-secondary w-full justify-center sm:w-auto sm:min-w-[100px] sm:flex-1"
+                    >
+                      Copiar link
+                    </button>
+                  )}
                   <button
                     onClick={() => navigate(`/admin/activities/${activity._id}/inscriptions`)}
                     className="btn btn-primary w-full justify-center sm:w-auto sm:min-w-[100px] sm:flex-1"

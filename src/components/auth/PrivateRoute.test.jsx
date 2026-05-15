@@ -49,9 +49,11 @@ describe('PrivateRoute', () => {
     });
 
     render(
-      <PrivateRoute requireApproved>
-        <div>Activities</div>
-      </PrivateRoute>
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+        <PrivateRoute requireApproved>
+          <div>Activities</div>
+        </PrivateRoute>
+      </MemoryRouter>
     );
 
     expect(screen.getByText(/Tu usuario está siendo validado/i)).toBeInTheDocument();
@@ -64,9 +66,11 @@ describe('PrivateRoute', () => {
     });
 
     render(
-      <PrivateRoute requireApproved>
-        <div>Activities</div>
-      </PrivateRoute>
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+        <PrivateRoute requireApproved>
+          <div>Activities</div>
+        </PrivateRoute>
+      </MemoryRouter>
     );
 
     expect(screen.getByText('Activities')).toBeInTheDocument();
