@@ -6,12 +6,15 @@ import {
   formatUtcCalendarDateToString,
   formatUtcCalendarDayAndTime,
 } from '../../utils/dateUtils';
+import { getPagoEstadoLabel, getPagoEstadoBadgeClass, putComprobante } from '../../utils/paymentUtils';
 
 const MyInscriptions = () => {
   const { showSuccess, showError } = useToast();
   const [inscriptions, setInscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
+  const [reuploadingId, setReuploadingId] = useState(null);
+  const [reuploadFile, setReuploadFile] = useState(null);
 
   useEffect(() => {
     fetchInscriptions();
@@ -23,7 +26,6 @@ const MyInscriptions = () => {
       const params = filter ? `?estado=${filter}` : '';
       const response = await axios.get(`/inscriptions/my${params}`);
       
-      // Filtrar inscripciones: solo las que son de ayer o futuras
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       yesterday.setHours(0, 0, 0, 0);
@@ -59,6 +61,22 @@ const MyInscriptions = () => {
     }
   };
 
+  const handleReupload = async (inscriptionId) => {
+    if (!reuploadFile) {
+      showError('Seleccioná un comprobante para subir');
+      return;
+    }
+    try {
+      const response = await putComprobante(axios, inscriptionId, reuploadFile);
+      showSuccess(response.data.message || 'Comprobante actualizado');
+      setReuploadingId(null);
+      setReuploadFile(null);
+      fetchInscriptions();
+    } catch (error) {
+      showError(error.response?.data?.message || 'Error al subir comprobante');
+    }
+  };
+
   const getEstadoBadge = (estado) => {
     const badges = {
       aceptada: { class: 'badge-success', text: 'Confirmada' },
@@ -84,7 +102,6 @@ const MyInscriptions = () => {
       <div className="max-w-7xl mx-auto min-w-0">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8 text-primary">Mis Inscripciones</h1>
 
-        {/* Filtro */}
         <div className="card mb-8">
           <div className="form-group">
             <label>Filtrar por estado</label>
@@ -102,7 +119,6 @@ const MyInscriptions = () => {
           </div>
         </div>
 
-        {/* Lista de inscripciones */}
         {inscriptions.length === 0 ? (
           <div className="card">
             <p className="text-gray-600 text-center py-4">No tienes inscripciones registradas.</p>
@@ -112,18 +128,76 @@ const MyInscriptions = () => {
             {inscriptions.map(inscription => {
               const activity = inscription.activityId;
               const horaEv = inscription.hora || activity?.hora || '';
+              const hasPago = !!inscription.pago?.comprobante?.url;
               return (
                 <div
                   key={inscription._id}
-                  className="px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 hover:bg-gray-50/80"
+                  className="px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4 hover:bg-gray-50/80"
                 >
-                  <div className="min-w-0 flex-1 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-6">
-                    <div className="font-semibold text-gray-900 truncate text-base sm:max-w-[42%] sm:shrink-0 sm:pr-2">
-                      {activity?.titulo || 'Actividad eliminada'}
+                  <div className="min-w-0 flex-1 flex flex-col gap-2">
+                    <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-6">
+                      <div className="font-semibold text-gray-900 truncate text-base sm:max-w-[42%] sm:shrink-0 sm:pr-2">
+                        {activity?.titulo || 'Actividad eliminada'}
+                      </div>
+                      <div className="text-gray-800 tabular-nums text-base font-medium sm:text-lg sm:flex-1 sm:min-w-0">
+                        {formatUtcCalendarDayAndTime(inscription.fecha, horaEv)}
+                      </div>
                     </div>
-                    <div className="text-gray-800 tabular-nums text-base font-medium sm:text-lg sm:flex-1 sm:min-w-0">
-                      {formatUtcCalendarDayAndTime(inscription.fecha, horaEv)}
-                    </div>
+                    {hasPago && (
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <span className={`badge ${getPagoEstadoBadgeClass(inscription.pago.estadoPago)}`}>
+                          {getPagoEstadoLabel(inscription.pago.estadoPago)}
+                        </span>
+                        {inscription.pago.estadoPago === 'rechazado' && inscription.pago.motivoRechazo && (
+                          <p className="text-red-600">Motivo: {inscription.pago.motivoRechazo}</p>
+                        )}
+                        {inscription.pago.estadoPago === 'pendiente' && inscription.estado === 'pendiente' && (
+                          <p>Tu comprobante está en revisión. Te avisaremos cuando se confirme la inscripción.</p>
+                        )}
+                      </div>
+                    )}
+                    {hasPago && inscription.pago.estadoPago === 'rechazado' && (
+                      <div className="mt-1 space-y-2">
+                        {reuploadingId === inscription._id ? (
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <input
+                              type="file"
+                              accept="image/*,application/pdf"
+                              onChange={(e) => setReuploadFile(e.target.files?.[0] || null)}
+                              className="text-sm"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleReupload(inscription._id)}
+                              className="btn btn-primary text-xs py-1.5 px-3"
+                            >
+                              Enviar nuevo comprobante
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setReuploadingId(null);
+                                setReuploadFile(null);
+                              }}
+                              className="btn btn-outline text-xs py-1.5 px-3"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setReuploadingId(inscription._id);
+                              setReuploadFile(null);
+                            }}
+                            className="btn btn-secondary text-xs py-1.5 px-3"
+                          >
+                            Volver a subir comprobante
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-wrap items-center gap-2 shrink-0 sm:justify-end text-sm">
                     {getEstadoBadge(inscription.estado)}
@@ -148,4 +222,3 @@ const MyInscriptions = () => {
 };
 
 export default MyInscriptions;
-

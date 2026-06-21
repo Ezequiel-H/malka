@@ -9,6 +9,7 @@ import {
   formatUtcCalendarDayAndTime,
 } from '../../utils/dateUtils';
 import { buildGoogleCalendarTemplateUrl } from '../../utils/googleCalendarActivityUrl';
+import { getPagoEstadoLabel, getPagoEstadoBadgeClass } from '../../utils/paymentUtils';
 
 const GMAIL_INVITE_BODY_MAX = 7500;
 
@@ -270,6 +271,27 @@ const ActivityInscriptions = () => {
     }
   };
 
+  const handleApprovePayment = async (inscriptionId) => {
+    try {
+      const response = await axios.put(`/inscriptions/${inscriptionId}/payment/approve`);
+      showSuccess(response.data.message || 'Pago aprobado');
+      fetchInscriptions();
+    } catch (error) {
+      showError(error.response?.data?.message || 'Error al aprobar pago');
+    }
+  };
+
+  const handleRejectPayment = async (inscriptionId) => {
+    const motivoRechazo = window.prompt('Motivo del rechazo (opcional):') ?? '';
+    try {
+      const response = await axios.put(`/inscriptions/${inscriptionId}/payment/reject`, { motivoRechazo });
+      showSuccess(response.data.message || 'Pago rechazado');
+      fetchInscriptions();
+    } catch (error) {
+      showError(error.response?.data?.message || 'Error al rechazar pago');
+    }
+  };
+
   const getEstadoLabel = (estado) => {
     const labels = {
       aceptada: 'Aceptada',
@@ -400,6 +422,39 @@ const ActivityInscriptions = () => {
         </div>
         <div className="sm:col-span-3 flex flex-wrap items-center gap-2 sm:justify-end shrink-0">
           {getEstadoBadge(inscription.estado)}
+          {inscription.pago?.comprobante?.url && (
+            <>
+              <span className={`badge ${getPagoEstadoBadgeClass(inscription.pago.estadoPago)}`}>
+                {getPagoEstadoLabel(inscription.pago.estadoPago)}
+              </span>
+              <a
+                href={inscription.pago.comprobante.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-primary hover:underline"
+              >
+                Ver comprobante
+              </a>
+              {inscription.pago.estadoPago === 'pendiente' && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleApprovePayment(inscription._id)}
+                    className="btn btn-primary text-xs py-1 px-2"
+                  >
+                    Aprobar pago
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleRejectPayment(inscription._id)}
+                    className="btn btn-danger text-xs py-1 px-2"
+                  >
+                    Rechazar pago
+                  </button>
+                </>
+              )}
+            </>
+          )}
           <select
             value={inscription.estado}
             onChange={(e) => handleStatusChange(inscription._id, e.target.value)}

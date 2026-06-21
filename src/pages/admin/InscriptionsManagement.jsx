@@ -3,6 +3,8 @@ import axios from 'axios';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
 import { formatUtcCalendarDayAndTime } from '../../utils/dateUtils';
+import { getPagoEstadoLabel, getPagoEstadoBadgeClass } from '../../utils/paymentUtils';
+import PendingPaymentProofsModal from '../../components/admin/PendingPaymentProofsModal';
 
 const adminUserPath = (userRef) => {
   const uid = typeof userRef === 'object' && userRef !== null ? userRef._id : userRef;
@@ -15,6 +17,8 @@ const InscriptionsManagement = () => {
   const [inscriptions, setInscriptions] = useState([]);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pendingPaymentsCount, setPendingPaymentsCount] = useState(0);
+  const [showProofsModal, setShowProofsModal] = useState(false);
   const [filters, setFilters] = useState({
     estado: searchParams.get('estado') || 'pendiente',
     activityId: searchParams.get('activityId') || '',
@@ -24,7 +28,17 @@ const InscriptionsManagement = () => {
   useEffect(() => {
     fetchActivities();
     fetchInscriptions();
+    fetchPendingCount();
   }, [filters]);
+
+  const fetchPendingCount = async () => {
+    try {
+      const response = await axios.get('/inscriptions/pending-payments');
+      setPendingPaymentsCount(response.data.count ?? response.data.inscriptions?.length ?? 0);
+    } catch {
+      setPendingPaymentsCount(0);
+    }
+  };
 
   const fetchActivities = async () => {
     try {
@@ -39,7 +53,7 @@ const InscriptionsManagement = () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      
+
       if (filters.estado) {
         params.append('estado', filters.estado);
       }
@@ -65,9 +79,15 @@ const InscriptionsManagement = () => {
       await axios.put(`/inscriptions/${inscriptionId}/status`, { estado: newStatus });
       showSuccess(`Estado actualizado a ${getEstadoLabel(newStatus)}`);
       fetchInscriptions();
+      fetchPendingCount();
     } catch (error) {
       showError(error.response?.data?.message || 'Error al actualizar estado');
     }
+  };
+
+  const handleProofReviewed = () => {
+    fetchInscriptions();
+    fetchPendingCount();
   };
 
   const getEstadoLabel = (estado) => {
@@ -103,11 +123,24 @@ const InscriptionsManagement = () => {
   return (
     <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto min-w-0">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8 text-primary">
-          Gestión de Inscripciones
-        </h1>
+        <div className="mb-6 sm:mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary">
+            Gestión de Inscripciones
+          </h1>
+          <button
+            type="button"
+            onClick={() => setShowProofsModal(true)}
+            className="btn btn-secondary w-full sm:w-auto justify-center relative"
+          >
+            Revisar comprobantes
+            {pendingPaymentsCount > 0 && (
+              <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-yellow-500 text-white text-xs font-bold">
+                {pendingPaymentsCount}
+              </span>
+            )}
+          </button>
+        </div>
 
-        {/* Filtros */}
         <div className="card mb-8">
           <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-gray-800">Filtros</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -154,7 +187,6 @@ const InscriptionsManagement = () => {
           </div>
         </div>
 
-        {/* Lista de inscripciones */}
         {inscriptions.length === 0 ? (
           <div className="card">
             <p className="text-gray-600 text-center py-4">
@@ -213,6 +245,11 @@ const InscriptionsManagement = () => {
                   </div>
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
                     {getEstadoBadge(inscription.estado)}
+                    {inscription.pago?.comprobante?.url && (
+                      <span className={`badge ${getPagoEstadoBadgeClass(inscription.pago.estadoPago)}`}>
+                        {getPagoEstadoLabel(inscription.pago.estadoPago)}
+                      </span>
+                    )}
                     <select
                       value={inscription.estado}
                       onChange={(e) => handleStatusChange(inscription._id, e.target.value)}
@@ -231,7 +268,6 @@ const InscriptionsManagement = () => {
           </div>
         )}
 
-        {/* Estadísticas */}
         <div className="card mt-8">
           <h2 className="text-2xl font-semibold mb-4 text-gray-800">Resumen</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -262,9 +298,14 @@ const InscriptionsManagement = () => {
           </div>
         </div>
       </div>
+
+      <PendingPaymentProofsModal
+        open={showProofsModal}
+        onClose={() => setShowProofsModal(false)}
+        onReviewed={handleProofReviewed}
+      />
     </div>
   );
 };
 
 export default InscriptionsManagement;
-

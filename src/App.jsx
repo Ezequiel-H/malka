@@ -16,6 +16,7 @@ import InscriptionsManagement from './pages/admin/InscriptionsManagement';
 import ActivityInscriptions from './pages/admin/ActivityInscriptions';
 import TagsManagement from './pages/admin/TagsManagement';
 import PrivateTagsManagement from './pages/admin/PrivateTagsManagement';
+import Settings from './pages/admin/Settings';
 import UserDetail from './pages/admin/UserDetail';
 import MyInterests from './pages/participant/MyInterests';
 import MyProfile from './pages/participant/MyProfile';
@@ -178,6 +179,14 @@ function App() {
           element={
             <AdminRoute>
               <PrivateTagsManagement />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/settings"
+          element={
+            <AdminRoute>
+              <Settings />
             </AdminRoute>
           }
         />

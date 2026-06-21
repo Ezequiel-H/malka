@@ -5,6 +5,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { activityPublicTags, publicTagColor } from '../../utils/tagFields';
 import { formatDateEsAR, formatDateToString, formatUtcCalendarDateEsAR, formatUtcCalendarDateToString } from '../../utils/dateUtils';
 import { buildGoogleCalendarTemplateUrl } from '../../utils/googleCalendarActivityUrl';
+import { postInscription } from '../../utils/paymentUtils';
 
 const ActivitiesList = () => {
   const { showSuccess, showError } = useToast();
@@ -22,6 +23,7 @@ const ActivitiesList = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [publicTagCatalog, setPublicTagCatalog] = useState([]);
+  const [comprobanteFile, setComprobanteFile] = useState(null);
 
   const navigate = useNavigate();
 
@@ -209,12 +211,18 @@ const ActivitiesList = () => {
     }
   };
 
-  const handleInscribe = async (activityId, fecha = null) => {
+  const handleInscribe = async (activityData, fecha = null, file = null) => {
     try {
-      await axios.post('/inscriptions', { activityId, fecha });
-      showSuccess('Inscripción realizada exitosamente');
+      const response = await postInscription(axios, {
+        activityId: activityData._id,
+        fecha,
+        comprobanteFile: file,
+        esGratuita: activityData.esGratuita,
+      });
+      showSuccess(response.data.message || 'Inscripción realizada exitosamente');
       setShowConfirmModal(false);
       setSelectedDate(null);
+      setComprobanteFile(null);
       
       // Recargar las actividades primero (esto actualizará selectedActivity automáticamente)
       await fetchActivities();
@@ -222,8 +230,8 @@ const ActivitiesList = () => {
       // Recargar las fechas disponibles para actualizar el estado de inscripción
       if (selectedActivity && selectedActivity.tipo === 'recurrente') {
         try {
-          const response = await axios.get(`/inscriptions/activity/${activityId}/available-dates`);
-          setAvailableDates(response.data.availableDates);
+          const responseDates = await axios.get(`/inscriptions/activity/${activityData._id}/available-dates`);
+          setAvailableDates(responseDates.data.availableDates);
         } catch (error) {
           console.error('Error reloading available dates:', error);
         }
@@ -237,15 +245,31 @@ const ActivitiesList = () => {
     }
   };
 
+  const openConfirmForUnica = (activity) => {
+    const fechaStr = activity.fecha ? formatUtcCalendarDateToString(activity.fecha) : null;
+    setSelectedActivity(activity);
+    setSelectedDate({
+      fecha: activity.fecha,
+      fechaStr,
+      hora: activity.hora,
+    });
+    setComprobanteFile(null);
+    setShowConfirmModal(true);
+  };
+
   const handleInscribeButtonClick = (dateOption) => {
     setSelectedDate(dateOption);
+    setComprobanteFile(null);
     setShowConfirmModal(true);
   };
 
   const handleConfirmInscription = () => {
-    if (selectedDate && selectedActivity) {
-      handleInscribe(selectedActivity._id, selectedDate.fechaStr);
+    if (!selectedDate || !selectedActivity) return;
+    if (!selectedActivity.esGratuita && !comprobanteFile) {
+      showError('Debes subir un comprobante de transferencia');
+      return;
     }
+    handleInscribe(selectedActivity, selectedDate.fechaStr, comprobanteFile);
   };
 
   const handleAddToCalendar = (dateOption = null) => {
@@ -280,10 +304,14 @@ const ActivitiesList = () => {
     if (e) {
       e.stopPropagation();
     }
-    // Si es actividad única, inscribirse directamente
+    // Si es actividad única, inscribirse directamente o abrir confirmación si es paga
     if (activity.tipo === 'unica') {
+      if (!activity.esGratuita) {
+        openConfirmForUnica(activity);
+        return;
+      }
       const fecha = activity.fecha ? formatUtcCalendarDateToString(activity.fecha) : null;
-      await handleInscribe(activity._id, fecha);
+      await handleInscribe(activity, fecha);
       return;
     }
 
@@ -591,6 +619,7 @@ const ActivitiesList = () => {
                     onClick={() => {
                       setShowConfirmModal(false);
                       setSelectedDate(null);
+                      setComprobanteFile(null);
                     }}
                     className="flex-shrink-0 text-2xl text-gray-500 hover:text-gray-700"
                   >
@@ -658,6 +687,31 @@ const ActivitiesList = () => {
                       </div>
                     )}
                   </div>
+
+                  {!selectedActivity.esGratuita && (
+                    <div className="space-y-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+                      <h4 className="font-semibold text-gray-800">Instrucciones de pago</h4>
+                      {selectedActivity.instruccionesPagoResueltas ? (
+                        <p className="text-gray-700 whitespace-pre-wrap">{selectedActivity.instruccionesPagoResueltas}</p>
+                      ) : (
+                        <p className="text-gray-600 text-sm">
+                          Realizá la transferencia por el monto indicado y subí el comprobante.
+                        </p>
+                      )}
+                      <div>
+                        <label className="block font-semibold text-gray-700 mb-1">
+                          Comprobante de transferencia *
+                        </label>
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          onChange={(e) => setComprobanteFile(e.target.files?.[0] || null)}
+                          className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-primary file:text-white hover:file:opacity-90"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Imagen o PDF, máximo 5MB</p>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:flex-wrap">
                     <button

@@ -5,6 +5,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { activityPublicTags, publicTagColor } from '../../utils/tagFields';
 import { formatUtcCalendarDateEsAR, formatUtcCalendarDateToString } from '../../utils/dateUtils';
 import { buildGoogleCalendarTemplateUrl } from '../../utils/googleCalendarActivityUrl';
+import { postInscription } from '../../utils/paymentUtils';
 
 const ActivityDetail = () => {
   const { id } = useParams();
@@ -20,6 +21,7 @@ const ActivityDetail = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [showCancelPolicyModal, setShowCancelPolicyModal] = useState(false);
   const [publicTagCatalog, setPublicTagCatalog] = useState([]);
+  const [comprobanteFile, setComprobanteFile] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,23 +86,44 @@ const ActivityDetail = () => {
     }
   };
 
-  const handleInscribe = async (activityId, fecha = null) => {
+  const handleInscribe = async (activityData, fecha = null, file = null) => {
     try {
-      await axios.post('/inscriptions', { activityId, fecha });
-      showSuccess('Inscripción realizada exitosamente');
+      const response = await postInscription(axios, {
+        activityId: activityData._id,
+        fecha,
+        comprobanteFile: file,
+        esGratuita: activityData.esGratuita,
+      });
+      showSuccess(response.data.message || 'Inscripción realizada exitosamente');
       setShowConfirmModal(false);
       setShowDateModal(false);
       setSelectedDate(null);
+      setComprobanteFile(null);
       await fetchActivity();
     } catch (error) {
       showError(error.response?.data?.message || 'Error al inscribirse');
     }
   };
 
+  const openConfirmForUnica = (act) => {
+    const fechaStr = act.fecha ? formatUtcCalendarDateToString(act.fecha) : null;
+    setSelectedDate({
+      fecha: act.fecha,
+      fechaStr,
+      hora: act.hora,
+    });
+    setComprobanteFile(null);
+    setShowConfirmModal(true);
+  };
+
   const handleInscribeClick = async () => {
     if (activity.tipo === 'unica') {
+      if (!activity.esGratuita) {
+        openConfirmForUnica(activity);
+        return;
+      }
       const fecha = activity.fecha ? formatUtcCalendarDateToString(activity.fecha) : null;
-      await handleInscribe(activity._id, fecha);
+      await handleInscribe(activity, fecha);
       return;
     }
 
@@ -122,13 +145,17 @@ const ActivityDetail = () => {
 
   const handleInscribeButtonClick = (dateOption) => {
     setSelectedDate(dateOption);
+    setComprobanteFile(null);
     setShowConfirmModal(true);
   };
 
   const handleConfirmInscription = () => {
-    if (selectedDate && activity) {
-      handleInscribe(activity._id, selectedDate.fechaStr);
+    if (!selectedDate || !activity) return;
+    if (!activity.esGratuita && !comprobanteFile) {
+      showError('Debes subir un comprobante de transferencia');
+      return;
     }
+    handleInscribe(activity, selectedDate.fechaStr, comprobanteFile);
   };
 
   const handleAddToCalendar = (dateOption = null) => {
@@ -291,14 +318,11 @@ const ActivityDetail = () => {
               </div>
             </div>
 
-            {activity.estadoInscripcion && (
+            {activity.estadoInscripcion && activity.tipo === 'recurrente' && activity.fechaInscripcion && (
               <div className="mb-6">
-                {getEstadoInscripcionBadge(activity.estadoInscripcion)}
-                {activity.tipo === 'recurrente' && activity.fechaInscripcion && (
-                  <p className="text-sm text-gray-600 mt-2">
-                    Inscrito para: {formatUtcCalendarDateEsAR(activity.fechaInscripcion)}
-                  </p>
-                )}
+                <p className="text-sm text-gray-600">
+                  Inscrito para: {formatUtcCalendarDateEsAR(activity.fechaInscripcion)}
+                </p>
               </div>
             )}
 
@@ -369,7 +393,11 @@ const ActivityDetail = () => {
             )}
 
             <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:flex-wrap">
-              {!activity.estadoInscripcion && (
+              {activity.estadoInscripcion ? (
+                <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-1">
+                  {getEstadoInscripcionBadge(activity.estadoInscripcion)}
+                </div>
+              ) : (
                 <button
                   onClick={handleInscribeClick}
                   className="btn btn-primary w-full justify-center min-w-0 sm:w-auto sm:min-w-[140px] sm:flex-1"
@@ -580,6 +608,7 @@ const ActivityDetail = () => {
                     onClick={() => {
                       setShowConfirmModal(false);
                       setSelectedDate(null);
+                      setComprobanteFile(null);
                     }}
                     className="flex-shrink-0 text-2xl text-gray-500 hover:text-gray-700"
                   >
@@ -626,6 +655,31 @@ const ActivityDetail = () => {
                       </span>
                     </div>
                   </div>
+
+                  {!activity.esGratuita && (
+                    <div className="space-y-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+                      <h4 className="font-semibold text-gray-800">Instrucciones de pago</h4>
+                      {activity.instruccionesPagoResueltas ? (
+                        <p className="text-gray-700 whitespace-pre-wrap">{activity.instruccionesPagoResueltas}</p>
+                      ) : (
+                        <p className="text-gray-600 text-sm">
+                          Realizá la transferencia por el monto indicado y subí el comprobante.
+                        </p>
+                      )}
+                      <div>
+                        <label className="block font-semibold text-gray-700 mb-1">
+                          Comprobante de transferencia *
+                        </label>
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          onChange={(e) => setComprobanteFile(e.target.files?.[0] || null)}
+                          className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-primary file:text-white hover:file:opacity-90"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Imagen o PDF, máximo 5MB</p>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:flex-wrap">
                     <button

@@ -67,6 +67,7 @@ const ActivityForm = () => {
     ubicacionOnline: 'https://maps.app.goo.gl/Wd2mjrQy7MJiKmMZ8',
     precio: 0,
     esGratuita: true,
+    instruccionesPago: '',
     cupo: '',
     requiereAprobacion: false,
     estado: 'borrador',
@@ -92,14 +93,40 @@ const ActivityForm = () => {
   const [error, setError] = useState('');
   const [availableTags, setAvailableTags] = useState([]);
   const [availablePrivateTags, setAvailablePrivateTags] = useState([]);
+  const [defaultInstruccionesPago, setDefaultInstruccionesPago] = useState('');
 
   useEffect(() => {
     fetchAvailableTags();
     fetchAvailablePrivateTags();
+    fetchDefaultInstruccionesPago();
     if (isEdit) {
       fetchActivity();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (!defaultInstruccionesPago) return;
+    setFormData(prev => {
+      if (prev.esGratuita || prev.instruccionesPago?.trim()) return prev;
+      return { ...prev, instruccionesPago: defaultInstruccionesPago };
+    });
+  }, [defaultInstruccionesPago]);
+
+  const fetchDefaultInstruccionesPago = async () => {
+    try {
+      const response = await axios.get('/settings');
+      const defaultText = response.data.settings?.instruccionesPagoDefault || '';
+      setDefaultInstruccionesPago(defaultText);
+      if (!isEdit && defaultText) {
+        setFormData(prev => ({
+          ...prev,
+          instruccionesPago: prev.instruccionesPago?.trim() ? prev.instruccionesPago : defaultText,
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching default payment instructions:', error);
+    }
+  };
 
   const fetchAvailableTags = async () => {
     try {
@@ -123,6 +150,17 @@ const ActivityForm = () => {
 
   const fetchActivity = async () => {
     try {
+      let defaultText = defaultInstruccionesPago;
+      if (!defaultText) {
+        try {
+          const settingsRes = await axios.get('/settings');
+          defaultText = settingsRes.data.settings?.instruccionesPagoDefault || '';
+          setDefaultInstruccionesPago(defaultText);
+        } catch {
+          defaultText = '';
+        }
+      }
+
       const response = await axios.get(`/activities/${id}`);
       const activity = response.data.activity;
       const recurrence = activity.recurrence || formData.recurrence;
@@ -146,6 +184,9 @@ const ActivityForm = () => {
         cupo: activity.cupo || '',
         duracion: activity.duracion || '',
         hora: activity.hora || (recurrence?.hora || ''),
+        instruccionesPago: activity.instruccionesPago?.trim()
+          || defaultText
+          || '',
         recurrence: {
           ...formData.recurrence,
           ...recurrence,
@@ -163,10 +204,16 @@ const ActivityForm = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    setFormData(prev => {
+      const next = {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      };
+      if (name === 'esGratuita' && !checked && !prev.instruccionesPago?.trim()) {
+        next.instruccionesPago = defaultInstruccionesPago;
+      }
+      return next;
+    });
   };
 
   // Helper para convertir hora en formato HH:mm a horas y minutos
@@ -744,6 +791,23 @@ const ActivityForm = () => {
               min="0"
               step="0.01"
               className="bg-white"
+            />
+          </div>
+        )}
+
+        {!formData.esGratuita && (
+          <div className="form-group">
+            <label>Instrucciones de pago</label>
+            <p className="text-sm text-gray-500 mb-2">
+              Se completan automáticamente desde Ajustes. Podés editarlas para esta actividad.
+            </p>
+            <textarea
+              name="instruccionesPago"
+              value={formData.instruccionesPago || ''}
+              onChange={handleChange}
+              rows={5}
+              className="bg-white"
+              placeholder={defaultInstruccionesPago || 'Datos de transferencia (alias, CBU, titular...)'}
             />
           </div>
         )}

@@ -53,6 +53,9 @@ const Navbar = () => {
       <button type="button" onClick={() => go('/admin/tags')} className={navLinkClass}>
         Tags
       </button>
+      <button type="button" onClick={() => go('/admin/settings')} className={navLinkClass}>
+        Ajustes
+      </button>
     </>
   );
 
