@@ -427,7 +427,7 @@ const ActivitiesList = () => {
                   />
                 )}
                 <h2 className="text-xl font-bold mb-3 text-gray-800">{activity.titulo}</h2>
-                <p className="text-gray-600 mb-4 line-clamp-3">{activity.descripcion}</p>
+                <p className="text-gray-600 mb-4 line-clamp-3 whitespace-pre-wrap">{activity.descripcion}</p>
                 
                 <div className="mb-4 flex flex-wrap gap-2">
                   {activityPublicTags(activity).map(cat => (
@@ -633,7 +633,7 @@ const ActivitiesList = () => {
                       {selectedActivity.titulo}
                     </h3>
                     {selectedActivity.descripcion && (
-                      <p className="text-gray-600 mb-4">{selectedActivity.descripcion}</p>
+                      <p className="text-gray-600 mb-4 whitespace-pre-wrap">{selectedActivity.descripcion}</p>
                     )}
                   </div>
 
