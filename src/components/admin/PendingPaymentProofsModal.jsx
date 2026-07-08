@@ -6,6 +6,7 @@ import { formatUtcCalendarDayAndTime } from '../../utils/dateUtils';
 import { isPdfComprobante } from '../../utils/paymentUtils';
 import { formatPrice } from '../../utils/priceUtils';
 import PdfFirstPageViewer from './PdfFirstPageViewer';
+import Modal from '../layout/Modal';
 
 const adminUserPath = (userRef) => {
   const uid = typeof userRef === 'object' && userRef !== null ? userRef._id : userRef;
@@ -160,9 +161,7 @@ const PendingPaymentProofsModal = ({ open, onClose, onReviewed }) => {
   useEffect(() => {
     if (!open || inscriptions.length === 0) return undefined;
     const onKey = (e) => {
-      if (e.key === 'Escape') {
-        onClose();
-      } else if (e.key === 'ArrowLeft') {
+      if (e.key === 'ArrowLeft') {
         goPrev();
       } else if (e.key === 'ArrowRight') {
         goNext();
@@ -170,7 +169,7 @@ const PendingPaymentProofsModal = ({ open, onClose, onReviewed }) => {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose, goPrev, goNext, inscriptions.length]);
+  }, [open, goPrev, goNext, inscriptions.length]);
 
   const handleApprove = async (inscriptionId) => {
     try {
@@ -209,84 +208,77 @@ const PendingPaymentProofsModal = ({ open, onClose, onReviewed }) => {
   const canGoNext = currentIndex < inscriptions.length - 1;
 
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="bg-white rounded-lg w-full max-w-6xl max-h-[90vh] flex flex-col min-w-0">
-        <div className="p-4 sm:p-6 border-b border-gray-100 flex items-start justify-between gap-3 shrink-0">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-              Revisar comprobantes
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">
-              {loading
-                ? 'Cargando...'
-                : inscriptions.length === 0
-                  ? 'No hay comprobantes pendientes'
-                  : hasMultiple
-                    ? `${currentIndex + 1} de ${inscriptions.length} pendientes`
-                    : '1 pendiente'}
-            </p>
-          </div>
+    <Modal onClose={onClose} maxWidth="max-w-6xl">
+      <div className="p-4 sm:p-6 border-b border-gray-100 flex items-start justify-between gap-3 shrink-0">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+            Revisar comprobantes
+          </h2>
+          <p className="text-sm text-gray-600 mt-1">
+            {loading
+              ? 'Cargando...'
+              : inscriptions.length === 0
+                ? 'No hay comprobantes pendientes'
+                : hasMultiple
+                  ? `${currentIndex + 1} de ${inscriptions.length} pendientes`
+                  : '1 pendiente'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-2xl text-gray-500 hover:text-gray-700 shrink-0"
+          aria-label="Cerrar"
+        >
+          ×
+        </button>
+      </div>
+
+      {hasMultiple && !loading && inscriptions.length > 0 && (
+        <div className="px-4 sm:px-6 py-3 border-b border-gray-100 flex items-center justify-between gap-3 shrink-0 bg-gray-50">
           <button
             type="button"
-            onClick={onClose}
-            className="text-2xl text-gray-500 hover:text-gray-700 shrink-0"
-            aria-label="Cerrar"
+            onClick={goPrev}
+            disabled={!canGoPrev}
+            className="btn btn-secondary text-sm py-1.5 px-3 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            ×
+            ← Anterior
+          </button>
+          <span className="text-sm text-gray-600 tabular-nums">
+            {currentIndex + 1} / {inscriptions.length}
+          </span>
+          <button
+            type="button"
+            onClick={goNext}
+            disabled={!canGoNext}
+            className="btn btn-secondary text-sm py-1.5 px-3 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Siguiente →
           </button>
         </div>
+      )}
 
-        {hasMultiple && !loading && inscriptions.length > 0 && (
-          <div className="px-4 sm:px-6 py-3 border-b border-gray-100 flex items-center justify-between gap-3 shrink-0 bg-gray-50">
-            <button
-              type="button"
-              onClick={goPrev}
-              disabled={!canGoPrev}
-              className="btn btn-secondary text-sm py-1.5 px-3 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              ← Anterior
-            </button>
-            <span className="text-sm text-gray-600 tabular-nums">
-              {currentIndex + 1} / {inscriptions.length}
-            </span>
-            <button
-              type="button"
-              onClick={goNext}
-              disabled={!canGoNext}
-              className="btn btn-secondary text-sm py-1.5 px-3 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Siguiente →
-            </button>
+      <div className="overflow-y-auto flex-1 p-4 sm:p-6">
+        {loading ? (
+          <div className="flex flex-col items-center py-12">
+            <div className="spinner" />
+            <p className="mt-4 text-gray-600">Cargando comprobantes...</p>
           </div>
-        )}
-
-        <div className="overflow-y-auto flex-1 p-4 sm:p-6">
-          {loading ? (
-            <div className="flex flex-col items-center py-12">
-              <div className="spinner" />
-              <p className="mt-4 text-gray-600">Cargando comprobantes...</p>
-            </div>
-          ) : inscriptions.length === 0 ? (
-            <p className="text-gray-600 text-center py-8">
-              No hay comprobantes por revisar en este momento.
-            </p>
-          ) : inscription ? (
-            <ProofReviewCard
-              inscription={inscription}
-              processingId={processingId}
-              onClose={onClose}
-              onApprove={handleApprove}
-              onReject={handleReject}
-            />
-          ) : null}
-        </div>
+        ) : inscriptions.length === 0 ? (
+          <p className="text-gray-600 text-center py-8">
+            No hay comprobantes por revisar en este momento.
+          </p>
+        ) : inscription ? (
+          <ProofReviewCard
+            inscription={inscription}
+            processingId={processingId}
+            onClose={onClose}
+            onApprove={handleApprove}
+            onReject={handleReject}
+          />
+        ) : null}
       </div>
-    </div>
+    </Modal>
   );
 };
 

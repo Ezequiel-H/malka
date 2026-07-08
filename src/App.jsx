@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import Navbar from './components/layout/Navbar';
+import LoadingScreen from './components/layout/LoadingScreen';
 import LoginGate from './components/auth/LoginGate';
 import Register from './pages/auth/Register';
 import Dashboard from './pages/Dashboard';
@@ -27,12 +28,7 @@ function App() {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-light-bg flex flex-col items-center justify-center">
-        <div className="spinner"></div>
-        <p className="mt-4 text-gray-600">Cargando...</p>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   return (

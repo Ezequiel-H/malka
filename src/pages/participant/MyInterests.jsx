@@ -4,6 +4,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import PublicTagPicker from '../../components/tags/PublicTagPicker';
 import { userPublicTags } from '../../utils/tagFields';
+import LoadingScreen from '../../components/layout/LoadingScreen';
+import PageContainer from '../../components/layout/PageContainer';
 
 const MyInterests = () => {
   const { user, fetchUser, updateMyTags } = useAuth();
@@ -48,17 +50,11 @@ const MyInterests = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-light-bg flex flex-col items-center justify-center">
-        <div className="spinner" />
-        <p className="mt-4 text-gray-600">Cargando...</p>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   return (
-    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
-      <div className="max-w-2xl mx-auto card min-w-0">
+    <PageContainer maxWidth="2xl" className="card">
         <h1 className="text-2xl sm:text-3xl font-bold text-primary mb-2">Mis intereses</h1>
         <p className="text-gray-600 mb-6">
           Elegí las áreas que te interesan. Las usamos para mostrarte actividades alineadas a tus preferencias.
@@ -80,8 +76,7 @@ const MyInterests = () => {
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
         </form>
-      </div>
-    </div>
+    </PageContainer>
   );
 };
 

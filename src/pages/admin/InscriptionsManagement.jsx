@@ -5,6 +5,10 @@ import { useToast } from '../../contexts/ToastContext';
 import { formatUtcCalendarDayAndTime } from '../../utils/dateUtils';
 import { getPagoEstadoLabel, getPagoEstadoBadgeClass } from '../../utils/paymentUtils';
 import PendingPaymentProofsModal from '../../components/admin/PendingPaymentProofsModal';
+import LoadingScreen from '../../components/layout/LoadingScreen';
+import PageContainer from '../../components/layout/PageContainer';
+import EmptyState from '../../components/common/EmptyState';
+import InscriptionStatusTag from '../../components/activities/InscriptionStatusTag';
 
 const adminUserPath = (userRef) => {
   const uid = typeof userRef === 'object' && userRef !== null ? userRef._id : userRef;
@@ -100,46 +104,28 @@ const InscriptionsManagement = () => {
     return labels[estado] || estado;
   };
 
-  const getEstadoBadge = (estado) => {
-    const badges = {
-      aceptada: { class: 'badge-success', text: 'Aceptada' },
-      pendiente: { class: 'badge-warning', text: 'Pendiente' },
-      cancelada: { class: 'badge-danger', text: 'Cancelada' },
-      en_espera: { class: 'badge-info', text: 'En lista de espera' }
-    };
-    const badge = badges[estado] || badges.pendiente;
-    return <span className={`badge ${badge.class}`}>{badge.text}</span>;
-  };
-
   if (loading) {
-    return (
-      <div className="min-h-screen bg-light-bg flex flex-col items-center justify-center">
-        <div className="spinner"></div>
-        <p className="mt-4 text-gray-600">Cargando inscripciones...</p>
-      </div>
-    );
+    return <LoadingScreen message="Cargando inscripciones..." />;
   }
 
   return (
-    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
-      <div className="max-w-7xl mx-auto min-w-0">
-        <div className="mb-6 sm:mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary">
-            Gestión de Inscripciones
-          </h1>
-          <button
-            type="button"
-            onClick={() => setShowProofsModal(true)}
-            className="btn btn-secondary w-full sm:w-auto justify-center relative"
-          >
-            Revisar comprobantes
-            {pendingPaymentsCount > 0 && (
-              <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-yellow-500 text-white text-xs font-bold">
-                {pendingPaymentsCount}
-              </span>
-            )}
-          </button>
-        </div>
+    <PageContainer
+      title="Gestión de Inscripciones"
+      actions={
+        <button
+          type="button"
+          onClick={() => setShowProofsModal(true)}
+          className="btn btn-secondary w-full sm:w-auto justify-center relative"
+        >
+          Revisar comprobantes
+          {pendingPaymentsCount > 0 && (
+            <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-yellow-500 text-white text-xs font-bold">
+              {pendingPaymentsCount}
+            </span>
+          )}
+        </button>
+      }
+    >
 
         <div className="card mb-8">
           <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-gray-800">Filtros</h2>
@@ -188,11 +174,7 @@ const InscriptionsManagement = () => {
         </div>
 
         {inscriptions.length === 0 ? (
-          <div className="card">
-            <p className="text-gray-600 text-center py-4">
-              No se encontraron inscripciones con los filtros seleccionados.
-            </p>
-          </div>
+          <EmptyState message="No se encontraron inscripciones con los filtros seleccionados." />
         ) : (
           <div className="card divide-y divide-gray-200 p-0 overflow-hidden">
             {inscriptions.map(inscription => {
@@ -244,7 +226,7 @@ const InscriptionsManagement = () => {
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
-                    {getEstadoBadge(inscription.estado)}
+                    <InscriptionStatusTag estado={inscription.estado} />
                     {inscription.pago?.comprobante?.url && (
                       <span className={`badge ${getPagoEstadoBadgeClass(inscription.pago.estadoPago)}`}>
                         {getPagoEstadoLabel(inscription.pago.estadoPago)}
@@ -297,14 +279,13 @@ const InscriptionsManagement = () => {
             </div>
           </div>
         </div>
-      </div>
 
       <PendingPaymentProofsModal
         open={showProofsModal}
         onClose={() => setShowProofsModal(false)}
         onReviewed={handleProofReviewed}
       />
-    </div>
+    </PageContainer>
   );
 };
 

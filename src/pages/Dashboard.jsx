@@ -1,6 +1,7 @@
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { useEffect } from 'react';
+import PageContainer from '../components/layout/PageContainer';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -17,8 +18,7 @@ const Dashboard = () => {
   }, [user, navigate]);
 
   return (
-    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
-      <div className="max-w-4xl mx-auto min-w-0">
+    <PageContainer maxWidth="4xl">
         <div className="card">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-5 sm:mb-6 text-primary break-words">
             Bienvenido, {user?.nombre} {user?.apellido}
@@ -36,8 +36,7 @@ const Dashboard = () => {
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </PageContainer>
   );
 };
 

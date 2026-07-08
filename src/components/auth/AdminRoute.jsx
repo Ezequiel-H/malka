@@ -1,16 +1,12 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import LoadingScreen from '../layout/LoadingScreen';
 
 const AdminRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-light-bg">
-        <div className="spinner" />
-        <p className="mt-4 text-gray-600">Cargando...</p>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!user) {

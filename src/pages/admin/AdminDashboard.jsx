@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { DateTime } from 'luxon';
+import LoadingScreen from '../../components/layout/LoadingScreen';
+import PageContainer from '../../components/layout/PageContainer';
 import {
   Bar,
   BarChart,
@@ -172,20 +174,11 @@ const AdminDashboard = () => {
   }, []);
 
   if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-light-bg flex flex-col items-center justify-center">
-        <div className="spinner"></div>
-        <p className="mt-4 text-gray-600">Cargando...</p>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   return (
-    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
-      <div className="max-w-7xl mx-auto min-w-0">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8 text-primary">
-          Panel de Administración
-        </h1>
+    <PageContainer title="Panel de Administración">
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
           <div className="card text-center hover:shadow-xl transition-shadow flex flex-col">
@@ -403,8 +396,7 @@ const AdminDashboard = () => {
             </table>
           )}
         </section>
-      </div>
-    </div>
+    </PageContainer>
   );
 };
 

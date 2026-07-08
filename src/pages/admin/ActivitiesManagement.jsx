@@ -6,6 +6,9 @@ import { activityPublicTags, publicTagColor } from '../../utils/tagFields';
 import { formatDateToString, formatUtcCalendarDateEsAR, formatUtcCalendarDateToString } from '../../utils/dateUtils';
 import { getActivityShareUrl } from '../../utils/activityShareUrl';
 import { formatActivityPrice } from '../../utils/priceUtils';
+import LoadingScreen from '../../components/layout/LoadingScreen';
+import PageContainer from '../../components/layout/PageContainer';
+import EmptyState from '../../components/common/EmptyState';
 
 const ActivitiesManagement = () => {
   const { showSuccess, showError } = useToast();
@@ -13,7 +16,23 @@ const ActivitiesManagement = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('publicada');
   const [publicTagCatalog, setPublicTagCatalog] = useState([]);
+  const [selectedTags, setSelectedTags] = useState([]);
   const navigate = useNavigate();
+
+  const toggleTag = (tagName) => {
+    setSelectedTags(prev =>
+      prev.includes(tagName)
+        ? prev.filter(t => t !== tagName)
+        : [...prev, tagName]
+    );
+  };
+
+  const filteredActivities = selectedTags.length === 0
+    ? activities
+    : activities.filter(activity => {
+        const tags = activityPublicTags(activity);
+        return selectedTags.some(sel => tags.includes(sel));
+      });
 
   useEffect(() => {
     fetchActivities();
@@ -149,23 +168,18 @@ const ActivitiesManagement = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-light-bg flex flex-col items-center justify-center">
-        <div className="spinner"></div>
-        <p className="mt-4 text-gray-600">Cargando actividades...</p>
-      </div>
-    );
+    return <LoadingScreen message="Cargando actividades..." />;
   }
 
   return (
-    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
-      <div className="max-w-7xl mx-auto min-w-0">
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary">Gestión de Actividades</h1>
-          <Link to="/admin/activities/new" className="btn btn-primary w-full justify-center sm:w-auto shrink-0">
-            Nueva Actividad
-          </Link>
-        </div>
+    <PageContainer
+      title="Gestión de Actividades"
+      actions={
+        <Link to="/admin/activities/new" className="btn btn-primary w-full justify-center sm:w-auto shrink-0">
+          Nueva Actividad
+        </Link>
+      }
+    >
 
         {/* Filtro */}
         <div className="card mb-8">
@@ -182,16 +196,56 @@ const ActivitiesManagement = () => {
               <option value="eliminada">Eliminadas</option>
             </select>
           </div>
+
+          {publicTagCatalog.length > 0 && (
+            <div className="form-group mb-0">
+              <div className="flex items-center justify-between">
+                <label>Filtrar por tags</label>
+                {selectedTags.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTags([])}
+                    className="text-sm text-primary underline"
+                  >
+                    Limpiar
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {publicTagCatalog.map(tag => {
+                  const isSelected = selectedTags.includes(tag.nombre);
+                  const color = publicTagColor(publicTagCatalog, tag.nombre);
+                  return (
+                    <button
+                      key={tag.nombre}
+                      type="button"
+                      onClick={() => toggleTag(tag.nombre)}
+                      className={`badge transition-opacity ${isSelected ? 'text-white' : 'text-gray-700'}`}
+                      style={{
+                        backgroundColor: isSelected ? color : 'transparent',
+                        border: `1px solid ${color}`
+                      }}
+                    >
+                      {tag.nombre}
+                    </button>
+                  );
+                })}
+              </div>
+              {selectedTags.length > 0 && (
+                <p className="mt-2 text-sm text-gray-500">
+                  Mostrando actividades con al menos uno de los tags seleccionados.
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Lista de actividades */}
-        {activities.length === 0 ? (
-          <div className="card">
-            <p className="text-gray-600 text-center py-4">No hay actividades con el filtro seleccionado.</p>
-          </div>
+        {filteredActivities.length === 0 ? (
+          <EmptyState message="No hay actividades con el filtro seleccionado." />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {activities.map(activity => (
+            {filteredActivities.map(activity => (
               <div key={activity._id} className="card hover:shadow-xl transition-shadow flex flex-col">
                 <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <h2 className="min-w-0 flex-1 text-xl font-bold text-gray-800">{activity.titulo}</h2>
@@ -269,8 +323,7 @@ const ActivitiesManagement = () => {
             ))}
           </div>
         )}
-      </div>
-    </div>
+    </PageContainer>
   );
 };
 

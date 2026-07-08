@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useToast } from '../../contexts/ToastContext';
+import LoadingScreen from '../../components/layout/LoadingScreen';
+import PageContainer from '../../components/layout/PageContainer';
 
 const Settings = () => {
   const { showSuccess, showError } = useToast();
@@ -38,20 +40,11 @@ const Settings = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-light-bg flex flex-col items-center justify-center">
-        <div className="spinner"></div>
-        <p className="mt-4 text-gray-600">Cargando ajustes...</p>
-      </div>
-    );
+    return <LoadingScreen message="Cargando ajustes..." />;
   }
 
   return (
-    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
-      <div className="max-w-3xl mx-auto min-w-0">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8 text-primary">
-          Ajustes
-        </h1>
+    <PageContainer title="Ajustes" maxWidth="3xl">
 
         <form onSubmit={handleSubmit} className="card">
           <div className="form-group">
@@ -75,8 +68,7 @@ const Settings = () => {
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </PageContainer>
   );
 };
 

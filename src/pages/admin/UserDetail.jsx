@@ -4,6 +4,10 @@ import axios from 'axios';
 import { useToast } from '../../contexts/ToastContext';
 import { userPrivateTags } from '../../utils/tagFields';
 import { formatUtcCalendarDayAndTime } from '../../utils/dateUtils';
+import LoadingScreen from '../../components/layout/LoadingScreen';
+import PageContainer from '../../components/layout/PageContainer';
+import EmptyState from '../../components/common/EmptyState';
+import InscriptionStatusTag from '../../components/activities/InscriptionStatusTag';
 
 const UserDetail = () => {
   const { id } = useParams();
@@ -116,30 +120,6 @@ const UserDetail = () => {
     } finally {
       setLoadingInscriptions(false);
     }
-  };
-
-  const getEstadoLabel = (estado) => {
-    const labels = {
-      aceptada: 'Aceptada',
-      pendiente: 'Pendiente',
-      cancelada: 'Cancelada',
-      en_espera: 'En lista de espera'
-    };
-    return labels[estado] || estado || '—';
-  };
-
-  const getEstadoBadge = (estado) => {
-    const badges = {
-      aceptada: { class: 'badge-success', text: 'Aceptada' },
-      pendiente: { class: 'badge-warning', text: 'Pendiente' },
-      cancelada: { class: 'badge-danger', text: 'Cancelada' },
-      en_espera: { class: 'badge-info', text: 'En lista de espera' },
-      approved: { class: 'badge-success', text: 'Aprobado' },
-      pending: { class: 'badge-warning', text: 'Pendiente' },
-      rejected: { class: 'badge-danger', text: 'Rechazado' }
-    };
-    const badge = badges[estado] || { class: 'badge-secondary', text: getEstadoLabel(estado) };
-    return <span className={`badge ${badge.class}`}>{badge.text}</span>;
   };
 
   const handleRowClick = (inscription) => {
@@ -343,18 +323,12 @@ const UserDetail = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-light-bg flex flex-col items-center justify-center">
-        <div className="spinner"></div>
-        <p className="mt-4 text-gray-600">Cargando información del usuario...</p>
-      </div>
-    );
+    return <LoadingScreen message="Cargando información del usuario..." />;
   }
 
   if (!user && !loading) {
     return (
-      <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto min-w-0">
+      <PageContainer>
           <div className="card">
             {error ? (
               <>
@@ -368,25 +342,22 @@ const UserDetail = () => {
               Volver a Usuarios
             </button>
           </div>
-        </div>
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
-      <div className="max-w-7xl mx-auto min-w-0">
-        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="min-w-0 text-2xl font-bold text-primary sm:text-3xl md:text-4xl">
-            {user.nombre} {user.apellido}
-          </h1>
-          <button
-            onClick={() => navigate('/admin/users')}
-            className="btn btn-secondary w-full shrink-0 justify-center sm:w-auto"
-          >
-            ← Volver
-          </button>
-        </div>
+    <PageContainer
+      title={`${user.nombre} ${user.apellido}`}
+      actions={
+        <button
+          onClick={() => navigate('/admin/users')}
+          className="btn btn-secondary w-full shrink-0 justify-center sm:w-auto"
+        >
+          ← Volver
+        </button>
+      }
+    >
 
         {error && (
           <div className="alert alert-error mb-4">{error}</div>
@@ -742,9 +713,7 @@ const UserDetail = () => {
                 <p className="mt-4 text-gray-600">Cargando inscripciones...</p>
               </div>
             ) : inscriptions.length === 0 ? (
-              <div className="card">
-                <p className="text-gray-600 text-center py-4">Este usuario no tiene inscripciones.</p>
-              </div>
+              <EmptyState message="Este usuario no tiene inscripciones." />
             ) : (
               <div className="card overflow-x-auto">
                 <table className="w-full border-collapse">
@@ -774,7 +743,7 @@ const UserDetail = () => {
                           )}
                         </td>
                         <td className="p-3 text-sm align-middle" onClick={(e) => e.stopPropagation()}>
-                          {getEstadoBadge(inscription.estado)}
+                          <InscriptionStatusTag estado={inscription.estado} />
                         </td>
                       </tr>
                     ))}
@@ -807,8 +776,7 @@ const UserDetail = () => {
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </PageContainer>
   );
 };
 

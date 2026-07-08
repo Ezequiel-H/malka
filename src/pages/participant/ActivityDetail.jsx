@@ -5,10 +5,16 @@ import { useToast } from '../../contexts/ToastContext';
 import { formatUtcCalendarDateEsAR, formatUtcCalendarDateToString } from '../../utils/dateUtils';
 import { buildGoogleCalendarTemplateUrl } from '../../utils/googleCalendarActivityUrl';
 import { postInscription } from '../../utils/paymentUtils';
-import { formatActivityPrice } from '../../utils/priceUtils';
 import ActivityDescription from '../../components/activities/ActivityDescription';
 import ActivityTags from '../../components/activities/ActivityTags';
 import ActivityInfo from '../../components/activities/ActivityInfo';
+import InscriptionStatusBadge from '../../components/activities/InscriptionStatusBadge';
+import DateSelectionModal from '../../components/activities/DateSelectionModal';
+import LoadingScreen from '../../components/layout/LoadingScreen';
+import PageContainer from '../../components/layout/PageContainer';
+import Modal from '../../components/layout/Modal';
+import InscriptionConfirmModal from '../../components/activities/InscriptionConfirmModal';
+import EmptyState from '../../components/common/EmptyState';
 
 const ActivityDetail = () => {
   const { id } = useParams();
@@ -168,35 +174,14 @@ const ActivityDetail = () => {
     if (url) window.open(url, '_blank');
   };
 
-  const getEstadoInscripcionBadge = (estado) => {
-    if (!estado) return null;
-
-    switch (estado) {
-      case 'aceptada':
-        return <span className="inline-block px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800 border border-green-300">✓ Inscripción Confirmada</span>;
-      case 'pendiente':
-        return <span className="inline-block px-3 py-1 rounded-full text-sm font-semibold bg-yellow-100 text-yellow-800 border border-yellow-300">⏳ Pendiente de Confirmación</span>;
-      case 'en_espera':
-        return <span className="inline-block px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-800 border border-blue-300">⏰ En Lista de Espera</span>;
-      default:
-        return null;
-    }
-  };
-
   if (loading) {
-    return (
-      <div className="min-h-screen bg-light-bg flex flex-col items-center justify-center">
-        <div className="spinner"></div>
-        <p className="mt-4 text-gray-600">Cargando actividad...</p>
-      </div>
-    );
+    return <LoadingScreen message="Cargando actividad..." />;
   }
 
   if (!activity) return null;
 
   return (
-    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
-      <div className="max-w-4xl mx-auto min-w-0">
+    <PageContainer maxWidth="4xl">
         <Link
           to="/activities"
           className="inline-flex items-center gap-1 text-primary hover:underline mb-6 text-sm font-medium"
@@ -248,7 +233,7 @@ const ActivityDetail = () => {
                     <p className="mt-4 text-gray-600">Cargando fechas disponibles...</p>
                   </div>
                 ) : availableDates.length === 0 ? (
-                  <p className="text-gray-600 text-center py-4">No hay fechas disponibles en los próximos 30 días.</p>
+                  <EmptyState card={false} message="No hay fechas disponibles en los próximos 30 días." />
                 ) : (
                   <div className="space-y-2">
                     {availableDates.slice(0, 5).map((dateOption, index) => (
@@ -290,7 +275,7 @@ const ActivityDetail = () => {
                             )}
                           </div>
                           <div className="shrink-0 self-start sm:self-center">
-                            {getEstadoInscripcionBadge(dateOption.estadoInscripcion)}
+                            <InscriptionStatusBadge estado={dateOption.estadoInscripcion} />
                           </div>
                         </div>
                       </div>
@@ -308,7 +293,7 @@ const ActivityDetail = () => {
             <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:flex-wrap">
               {activity.estadoInscripcion ? (
                 <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-1">
-                  {getEstadoInscripcionBadge(activity.estadoInscripcion)}
+                  <InscriptionStatusBadge estado={activity.estadoInscripcion} />
                 </div>
               ) : (
                 <button
@@ -364,301 +349,52 @@ const ActivityDetail = () => {
 
         {/* Modal de Política de Cancelación */}
         {showCancelPolicyModal && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) setShowCancelPolicyModal(false);
-            }}
-          >
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto min-w-0">
-              <div className="p-4 sm:p-6">
-                <div className="mb-4 flex items-start justify-between gap-3">
-                  <h2 className="min-w-0 flex-1 text-xl font-bold text-gray-800 sm:text-2xl">
-                    Política de Cancelación
-                  </h2>
-                  <button
-                    onClick={() => setShowCancelPolicyModal(false)}
-                    className="flex-shrink-0 text-2xl text-gray-500 hover:text-gray-700 sm:text-3xl"
-                  >
-                    ×
-                  </button>
-                </div>
-                <div className="rounded-lg bg-gray-50 p-4 sm:p-6">
-                  <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                    {activity.politicaCancelacion}
-                  </p>
-                </div>
-                <div className="flex justify-end pt-4">
-                  <button
-                    onClick={() => setShowCancelPolicyModal(false)}
-                    className="btn btn-primary w-full justify-center sm:w-auto"
-                  >
-                    Cerrar
-                  </button>
-                </div>
-              </div>
+          <Modal onClose={() => setShowCancelPolicyModal(false)} title="Política de Cancelación">
+            <div className="rounded-lg bg-gray-50 p-4 sm:p-6">
+              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                {activity.politicaCancelacion}
+              </p>
             </div>
-          </div>
+            <div className="flex justify-end pt-4">
+              <button
+                onClick={() => setShowCancelPolicyModal(false)}
+                className="btn btn-primary w-full justify-center sm:w-auto"
+              >
+                Cerrar
+              </button>
+            </div>
+          </Modal>
         )}
 
-        {/* Modal de selección de fecha */}
         {showDateModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto min-w-0">
-              <div className="p-4 sm:p-6">
-                <div className="mb-4 flex items-start justify-between gap-3">
-                  <h2 className="min-w-0 flex-1 text-lg font-bold leading-snug text-gray-800 sm:text-xl md:text-2xl">
-                    <span className="block sm:inline">Selecciona una fecha — </span>
-                    <span className="break-words">{activity.titulo}</span>
-                  </h2>
-                  <button
-                    onClick={() => {
-                      setShowDateModal(false);
-                      setShowConfirmModal(false);
-                      setSelectedDate(null);
-                    }}
-                    className="flex-shrink-0 text-2xl text-gray-500 hover:text-gray-700"
-                  >
-                    ×
-                  </button>
-                </div>
-
-                {loadingDates ? (
-                  <div className="text-center py-8">
-                    <div className="spinner mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Cargando fechas disponibles...</p>
-                  </div>
-                ) : availableDates.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-gray-600">No hay fechas disponibles en los próximos 30 días.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {availableDates.map((dateOption, index) => {
-                      const isInscribed = !!dateOption.estadoInscripcion;
-                      return (
-                        <div
-                          key={index}
-                          className={`w-full p-4 rounded-lg border-2 ${
-                            dateOption.estadoInscripcion === 'aceptada'
-                              ? 'border-green-500 bg-green-50'
-                              : dateOption.estadoInscripcion === 'pendiente'
-                              ? 'border-yellow-500 bg-yellow-50'
-                              : dateOption.estadoInscripcion === 'en_espera'
-                              ? 'border-blue-500 bg-blue-50'
-                              : dateOption.tieneCupo
-                              ? 'border-gray-300 bg-white'
-                              : 'border-gray-200 bg-gray-100 opacity-50'
-                          }`}
-                        >
-                          <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                            <div className="min-w-0 flex-1">
-                              <p className="mb-2 font-semibold text-gray-800">
-                                {formatUtcCalendarDateEsAR(dateOption.fecha, {
-                                  weekday: 'long',
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric'
-                                })}
-                              </p>
-                              {dateOption.hora && (
-                                <p className="mb-2 text-sm text-gray-600">Hora: {dateOption.hora}</p>
-                              )}
-                            </div>
-                            <div className="flex shrink-0 flex-col items-stretch gap-2 text-left sm:ml-4 sm:items-end sm:text-right">
-                              {dateOption.cuposDisponibles !== null ? (
-                                <p className={`text-sm font-semibold ${
-                                  dateOption.cuposDisponibles > 0 ? 'text-green-600' : 'text-red-600'
-                                }`}>
-                                  {dateOption.cuposDisponibles > 0
-                                    ? `${dateOption.cuposDisponibles} cupos disponibles`
-                                    : 'Sin cupo'}
-                                </p>
-                              ) : (
-                                <p className="text-sm text-gray-600">Sin límite de cupo</p>
-                              )}
-                              {getEstadoInscripcionBadge(dateOption.estadoInscripcion)}
-                            </div>
-                          </div>
-
-                          {isInscribed ? (
-                            <button
-                              disabled
-                              className="btn btn-primary w-full opacity-50 cursor-not-allowed"
-                            >
-                              Inscripción Realizada
-                            </button>
-                          ) : dateOption.tieneCupo ? (
-                            <button
-                              onClick={() => handleInscribeButtonClick(dateOption)}
-                              className="btn btn-primary w-full"
-                            >
-                              Inscribirse
-                            </button>
-                          ) : (
-                            <p className="text-sm text-red-600 font-semibold">Sin cupo disponible</p>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <DateSelectionModal
+            activity={activity}
+            availableDates={availableDates}
+            loading={loadingDates}
+            onClose={() => {
+              setShowDateModal(false);
+              setShowConfirmModal(false);
+              setSelectedDate(null);
+            }}
+            onSelect={handleInscribeButtonClick}
+          />
         )}
 
-        {/* Modal de confirmación de inscripción */}
         {showConfirmModal && selectedDate && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto min-w-0">
-              <div className="p-4 sm:p-6">
-                <div className="mb-4 flex items-start justify-between gap-3">
-                  <h2 className="min-w-0 flex-1 text-xl font-bold text-gray-800 sm:text-2xl">
-                    Confirmar Inscripción
-                  </h2>
-                  <button
-                    onClick={() => {
-                      setShowConfirmModal(false);
-                      setSelectedDate(null);
-                      setComprobanteFile(null);
-                    }}
-                    className="flex-shrink-0 text-2xl text-gray-500 hover:text-gray-700"
-                  >
-                    ×
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-800 mb-2">{activity.titulo}</h3>
-                    {activity.descripcion && (
-                      <p className="text-gray-600 mb-4 whitespace-pre-wrap">{activity.descripcion}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-3 rounded-lg bg-gray-50 p-4">
-                    <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
-                      <span className="shrink-0 font-semibold text-gray-700 sm:w-24">
-                        {activity.tipo === 'viaje' ? 'Inicio:' : 'Fecha:'}
-                      </span>
-                      <span className="min-w-0 text-gray-800">
-                        {formatUtcCalendarDateEsAR(selectedDate.fecha, {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                        {activity.tipo === 'viaje' && selectedDate.hora ? ` · ${selectedDate.hora}` : ''}
-                      </span>
-                    </div>
-                    {activity.tipo === 'viaje' && activity.fechaFin && (
-                      <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
-                        <span className="shrink-0 font-semibold text-gray-700 sm:w-24">Finaliza:</span>
-                        <span className="min-w-0 text-gray-800">
-                          {formatUtcCalendarDateEsAR(activity.fechaFin, {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
-                          {activity.horaFin ? ` · ${activity.horaFin}` : ''}
-                        </span>
-                      </div>
-                    )}
-                    {selectedDate.hora && activity.tipo !== 'viaje' && (
-                      <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
-                        <span className="shrink-0 font-semibold text-gray-700 sm:w-24">Hora:</span>
-                        <span className="text-gray-800">{selectedDate.hora}</span>
-                      </div>
-                    )}
-                    {activity.lugar && (
-                      <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
-                        <span className="shrink-0 font-semibold text-gray-700 sm:w-24">Lugar:</span>
-                        <span className="min-w-0 break-words text-gray-800">{activity.lugar}</span>
-                      </div>
-                    )}
-                    <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
-                      <span className="shrink-0 font-semibold text-gray-700 sm:w-24">Precio:</span>
-                      <span className="text-gray-800">
-                        {formatActivityPrice(activity)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {!activity.esGratuita && activity.tipo !== 'viaje' && (
-                    <div className="space-y-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-                      <h4 className="font-semibold text-gray-800">Instrucciones de pago</h4>
-                      {activity.instruccionesPagoResueltas ? (
-                        <p className="text-gray-700 whitespace-pre-wrap">{activity.instruccionesPagoResueltas}</p>
-                      ) : (
-                        <p className="text-gray-600 text-sm">
-                          Realizá la transferencia por el monto indicado y subí el comprobante.
-                        </p>
-                      )}
-                      <div>
-                        <label className="block font-semibold text-gray-700 mb-1">
-                          Comprobante de transferencia *
-                        </label>
-                        <input
-                          type="file"
-                          accept="image/*,application/pdf"
-                          onChange={(e) => setComprobanteFile(e.target.files?.[0] || null)}
-                          className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-primary file:text-white hover:file:opacity-90"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Imagen o PDF, máximo 5MB</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {!activity.esGratuita && activity.tipo === 'viaje' && (
-                    <div className="space-y-2 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-                      <h4 className="font-semibold text-gray-800">Pago del viaje</h4>
-                      <p className="text-gray-700 text-sm">
-                        No necesitás transferir ni subir comprobante ahora. Una vez confirmado tu
-                        cupo, coordinamos el pago por WhatsApp.
-                      </p>
-                      <a
-                        href="https://wa.me/5491134405730"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn-secondary w-full justify-center sm:w-auto"
-                      >
-                        💬 Escribinos por WhatsApp
-                      </a>
-                    </div>
-                  )}
-
-                  <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:flex-wrap">
-                    <button
-                      onClick={handleConfirmInscription}
-                      className="btn btn-primary w-full justify-center min-w-0 sm:w-auto sm:min-w-[140px] sm:flex-1"
-                    >
-                      Confirmar Inscripción
-                    </button>
-                    <button
-                      onClick={() => handleAddToCalendar(selectedDate)}
-                      className="btn btn-secondary w-full justify-center sm:w-auto"
-                    >
-                      📅 Agregar al Calendario
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowConfirmModal(false);
-                        setSelectedDate(null);
-                      }}
-                      className="btn btn-outline w-full justify-center sm:w-auto"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <InscriptionConfirmModal
+            activity={activity}
+            selectedDate={selectedDate}
+            onComprobanteChange={setComprobanteFile}
+            onConfirm={handleConfirmInscription}
+            onAddToCalendar={() => handleAddToCalendar(selectedDate)}
+            onClose={() => {
+              setShowConfirmModal(false);
+              setSelectedDate(null);
+              setComprobanteFile(null);
+            }}
+          />
         )}
-      </div>
-    </div>
+    </PageContainer>
   );
 };
 

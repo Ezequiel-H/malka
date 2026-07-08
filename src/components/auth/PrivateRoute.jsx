@@ -1,18 +1,14 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { setAuthRedirect } from '../../utils/authRedirect';
+import LoadingScreen from '../layout/LoadingScreen';
 
 const PrivateRoute = ({ children, requireApproved = false }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-light-bg flex flex-col items-center justify-center">
-        <div className="spinner"></div>
-        <p className="mt-4 text-gray-600">Cargando...</p>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!user) {

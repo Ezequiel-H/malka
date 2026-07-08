@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
+import LoadingScreen from '../../components/layout/LoadingScreen';
+import PageContainer from '../../components/layout/PageContainer';
+import EmptyState from '../../components/common/EmptyState';
 
 const PendingUsers = () => {
   const { showSuccess, showError } = useToast();
@@ -52,25 +55,14 @@ const PendingUsers = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-light-bg flex flex-col items-center justify-center">
-        <div className="spinner"></div>
-        <p className="mt-4 text-gray-600">Cargando usuarios...</p>
-      </div>
-    );
+    return <LoadingScreen message="Cargando usuarios..." />;
   }
 
   return (
-    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
-      <div className="max-w-7xl mx-auto min-w-0">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8 text-primary">
-          Usuarios Pendientes de Aprobación
-        </h1>
+    <PageContainer title="Usuarios Pendientes de Aprobación">
 
         {users.length === 0 ? (
-          <div className="card">
-            <p className="text-gray-600 text-center py-4">No hay usuarios pendientes de aprobación.</p>
-          </div>
+          <EmptyState message="No hay usuarios pendientes de aprobación." />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {users.map(user => (
@@ -124,8 +116,7 @@ const PendingUsers = () => {
             ))}
           </div>
         )}
-      </div>
-    </div>
+    </PageContainer>
   );
 };
 

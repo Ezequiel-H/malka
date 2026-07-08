@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useToast } from '../../contexts/ToastContext';
+import PageContainer from '../../components/layout/PageContainer';
 import { activityPublicTags, activityPrivateTags } from '../../utils/tagFields';
 import DatePicker from 'react-datepicker';
 import { registerLocale } from 'react-datepicker';
@@ -373,11 +374,7 @@ const ActivityForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
-      <div className="max-w-4xl mx-auto min-w-0">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8 text-primary">
-          {isEdit ? 'Editar Actividad' : 'Nueva Actividad'}
-        </h1>
+    <PageContainer title={isEdit ? 'Editar Actividad' : 'Nueva Actividad'} maxWidth="4xl">
 
         {error && (
           <div className="alert alert-error">{error}</div>
@@ -1138,8 +1135,7 @@ const ActivityForm = () => {
           </button>
         </div>
       </form>
-      </div>
-    </div>
+    </PageContainer>
   );
 };
 

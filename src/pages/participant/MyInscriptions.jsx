@@ -7,6 +7,10 @@ import {
   formatUtcCalendarDayAndTime,
 } from '../../utils/dateUtils';
 import { getPagoEstadoLabel, getPagoEstadoBadgeClass, putComprobante } from '../../utils/paymentUtils';
+import LoadingScreen from '../../components/layout/LoadingScreen';
+import PageContainer from '../../components/layout/PageContainer';
+import EmptyState from '../../components/common/EmptyState';
+import InscriptionStatusTag from '../../components/activities/InscriptionStatusTag';
 
 const MyInscriptions = () => {
   const { showSuccess, showError } = useToast();
@@ -77,30 +81,12 @@ const MyInscriptions = () => {
     }
   };
 
-  const getEstadoBadge = (estado) => {
-    const badges = {
-      aceptada: { class: 'badge-success', text: 'Confirmada' },
-      pendiente: { class: 'badge-warning', text: 'Pendiente' },
-      cancelada: { class: 'badge-danger', text: 'Cancelada' },
-      en_espera: { class: 'badge-info', text: 'En lista de espera' }
-    };
-    const badge = badges[estado] || badges.pendiente;
-    return <span className={`badge ${badge.class}`}>{badge.text}</span>;
-  };
-
   if (loading) {
-    return (
-      <div className="min-h-screen bg-light-bg flex flex-col items-center justify-center">
-        <div className="spinner"></div>
-        <p className="mt-4 text-gray-600">Cargando inscripciones...</p>
-      </div>
-    );
+    return <LoadingScreen message="Cargando inscripciones..." />;
   }
 
   return (
-    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
-      <div className="max-w-7xl mx-auto min-w-0">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8 text-primary">Mis Inscripciones</h1>
+    <PageContainer title="Mis Inscripciones">
 
         <div className="card mb-8">
           <div className="form-group">
@@ -120,9 +106,7 @@ const MyInscriptions = () => {
         </div>
 
         {inscriptions.length === 0 ? (
-          <div className="card">
-            <p className="text-gray-600 text-center py-4">No tienes inscripciones registradas.</p>
-          </div>
+          <EmptyState message="No tienes inscripciones registradas." />
         ) : (
           <div className="card divide-y divide-gray-200 p-0 overflow-hidden">
             {inscriptions.map(inscription => {
@@ -200,7 +184,7 @@ const MyInscriptions = () => {
                     )}
                   </div>
                   <div className="flex flex-wrap items-center gap-2 shrink-0 sm:justify-end text-sm">
-                    {getEstadoBadge(inscription.estado)}
+                    <InscriptionStatusTag estado={inscription.estado} aceptadaLabel="Confirmada" />
                     {inscription.estado !== 'cancelada' && (
                       <button
                         type="button"
@@ -216,8 +200,7 @@ const MyInscriptions = () => {
             })}
           </div>
         )}
-      </div>
-    </div>
+    </PageContainer>
   );
 };
 

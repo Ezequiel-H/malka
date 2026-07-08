@@ -2,17 +2,32 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useToast } from '../../contexts/ToastContext';
+import { useDebounce } from '../../hooks/useDebounce';
+import LoadingScreen from '../../components/layout/LoadingScreen';
+import PageContainer from '../../components/layout/PageContainer';
+import EmptyState from '../../components/common/EmptyState';
+import UserStatusBadge from '../../components/users/UserStatusBadge';
 
 const UsersManagement = () => {
   const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
+  const [searchInput, setSearchInput] = useState('');
   const [filters, setFilters] = useState({
     estado: '',
     role: '',
     search: ''
   });
+
+  const debouncedSearch = useDebounce(searchInput, 350);
+
+  useEffect(() => {
+    setFilters(prev => (
+      prev.search === debouncedSearch ? prev : { ...prev, search: debouncedSearch }
+    ));
+  }, [debouncedSearch]);
 
   useEffect(() => {
     fetchUsers();
@@ -34,17 +49,8 @@ const UsersManagement = () => {
       console.error('Error fetching users:', error);
     } finally {
       setLoading(false);
+      setInitialLoad(false);
     }
-  };
-
-  const getEstadoBadge = (estado) => {
-    const badges = {
-      approved: { class: 'badge-success', text: 'Aprobado' },
-      pending: { class: 'badge-warning', text: 'Pendiente' },
-      rejected: { class: 'badge-danger', text: 'Rechazado' }
-    };
-    const badge = badges[estado] || badges.pending;
-    return <span className={`badge ${badge.class}`}>{badge.text}</span>;
   };
 
   const handleApprove = async (userId, e) => {
@@ -72,19 +78,12 @@ const UsersManagement = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-light-bg flex flex-col items-center justify-center">
-        <div className="spinner"></div>
-        <p className="mt-4 text-gray-600">Cargando usuarios...</p>
-      </div>
-    );
+  if (initialLoad) {
+    return <LoadingScreen message="Cargando usuarios..." />;
   }
 
   return (
-    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
-      <div className="max-w-7xl mx-auto min-w-0">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8 text-primary">Gestión de Usuarios</h1>
+    <PageContainer title="Gestión de Usuarios">
 
         {/* Filtros */}
         <div className="card mb-8">
@@ -94,8 +93,8 @@ const UsersManagement = () => {
               <label>Buscar</label>
               <input
                 type="text"
-                value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Nombre, apellido o email..."
                 className="bg-white"
               />
@@ -131,10 +130,9 @@ const UsersManagement = () => {
         </div>
 
         {/* Lista de usuarios */}
+        <div className={loading ? 'opacity-50 transition-opacity pointer-events-none' : 'transition-opacity'}>
         {users.length === 0 ? (
-          <div className="card">
-            <p className="text-gray-600 text-center py-4">No se encontraron usuarios con los filtros seleccionados.</p>
-          </div>
+          <EmptyState message="No se encontraron usuarios con los filtros seleccionados." />
         ) : (
           <div className="card overflow-x-auto">
             <table className="w-full border-collapse">
@@ -162,7 +160,7 @@ const UsersManagement = () => {
                         {user.role === 'admin' ? 'Admin' : 'Participante'}
                       </span>
                     </td>
-                    <td className="p-4 align-middle">{getEstadoBadge(user.estado)}</td>
+                    <td className="p-4 align-middle"><UserStatusBadge estado={user.estado} /></td>
                     <td className="p-4 align-middle">
                       {user.tags && user.tags.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
@@ -207,8 +205,8 @@ const UsersManagement = () => {
             </table>
           </div>
         )}
-      </div>
-    </div>
+        </div>
+    </PageContainer>
   );
 };
 

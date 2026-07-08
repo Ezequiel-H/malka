@@ -10,6 +10,10 @@ import {
 } from '../../utils/dateUtils';
 import { buildGoogleCalendarTemplateUrl } from '../../utils/googleCalendarActivityUrl';
 import { getPagoEstadoLabel, getPagoEstadoBadgeClass } from '../../utils/paymentUtils';
+import LoadingScreen from '../../components/layout/LoadingScreen';
+import PageContainer from '../../components/layout/PageContainer';
+import EmptyState from '../../components/common/EmptyState';
+import InscriptionStatusTag from '../../components/activities/InscriptionStatusTag';
 import { formatActivityPrice, formatPrice } from '../../utils/priceUtils';
 
 const GMAIL_INVITE_BODY_MAX = 7500;
@@ -358,17 +362,6 @@ const ActivityInscriptions = () => {
     }
   };
 
-  const getEstadoBadge = (estado) => {
-    const badges = {
-      aceptada: { class: 'badge-success', text: 'Aceptada' },
-      pendiente: { class: 'badge-warning', text: 'Pendiente' },
-      cancelada: { class: 'badge-danger', text: 'Cancelada' },
-      en_espera: { class: 'badge-info', text: 'En lista de espera' }
-    };
-    const badge = badges[estado] || badges.pendiente;
-    return <span className={`badge ${badge.class}`}>{badge.text}</span>;
-  };
-
   const formatDate = (date) => {
     return formatDateEsAR(date, {
       weekday: 'long',
@@ -422,7 +415,7 @@ const ActivityInscriptions = () => {
           <div className="break-words text-gray-600">{email}</div>
         </div>
         <div className="sm:col-span-3 flex flex-wrap items-center gap-2 sm:justify-end shrink-0">
-          {getEstadoBadge(inscription.estado)}
+          <InscriptionStatusTag estado={inscription.estado} />
           {inscription.pago?.comprobante?.url && (
             <>
               <span className={`badge ${getPagoEstadoBadgeClass(inscription.pago.estadoPago)}`}>
@@ -473,12 +466,7 @@ const ActivityInscriptions = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-light-bg flex flex-col items-center justify-center">
-        <div className="spinner"></div>
-        <p className="mt-4 text-gray-600">Cargando inscripciones...</p>
-      </div>
-    );
+    return <LoadingScreen message="Cargando inscripciones..." />;
   }
 
   if (!activity) {
@@ -573,8 +561,7 @@ const ActivityInscriptions = () => {
   };
 
   return (
-    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
-      <div className="max-w-7xl mx-auto min-w-0">
+    <PageContainer>
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
           <button
             onClick={() => navigate('/admin/activities')}
@@ -710,26 +697,14 @@ const ActivityInscriptions = () => {
 
         {/* Lista de inscripciones */}
         {allInscriptions.length === 0 ? (
-          <div className="card">
-            <p className="text-gray-600 text-center py-4">
-              No hay inscripciones para esta actividad (solo se muestran inscripciones de ayer en adelante).
-            </p>
-          </div>
+          <EmptyState message="No hay inscripciones para esta actividad (solo se muestran inscripciones de ayer en adelante)." />
         ) : inscriptions.length === 0 ? (
-          <div className="card">
-            <p className="text-gray-600 text-center py-4">
-              No hay inscripciones con el estado seleccionado.
-            </p>
-          </div>
+          <EmptyState message="No hay inscripciones con el estado seleccionado." />
         ) : activity.tipo === 'recurrente' ? (
           // Actividad recurrente: agrupar por fecha
           <div className="space-y-8">
             {sortedDates.length === 0 ? (
-              <div className="card">
-                <p className="text-gray-600 text-center py-4">
-                  No hay inscripciones con el estado seleccionado.
-                </p>
-              </div>
+              <EmptyState message="No hay inscripciones con el estado seleccionado." />
             ) : (
               sortedDates.map(fechaStr => {
                 const fechaInscriptions = filteredGrouped[fechaStr];
@@ -766,8 +741,7 @@ const ActivityInscriptions = () => {
             {inscriptions.map(inscription => renderInscriptionCard(inscription))}
           </div>
         )}
-      </div>
-    </div>
+    </PageContainer>
   );
 };
 

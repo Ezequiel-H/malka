@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
+import LoadingScreen from '../../components/layout/LoadingScreen';
+import PageContainer from '../../components/layout/PageContainer';
+import EmptyState from '../../components/common/EmptyState';
 
 /**
  * Catálogo de tags (público `/tags` o privado `/tags-privados`).
@@ -130,17 +133,11 @@ const TagCatalogManagement = ({
   });
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-light-bg flex flex-col items-center justify-center">
-        <div className="spinner"></div>
-        <p className="mt-4 text-gray-600">Cargando tags...</p>
-      </div>
-    );
+    return <LoadingScreen message="Cargando tags..." />;
   }
 
   return (
-    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
-      <div className="max-w-7xl mx-auto min-w-0">
+    <PageContainer>
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
           <div className="flex-1 w-full">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -291,11 +288,9 @@ const TagCatalogManagement = ({
         )}
 
         {filteredTags.length === 0 ? (
-          <div className="card">
-            <p className="text-gray-600 text-center py-4">
-              No hay tags {filter !== 'all' && (filter === 'active' ? 'activas' : 'inactivas')}.
-            </p>
-          </div>
+          <EmptyState>
+            No hay tags {filter !== 'all' && (filter === 'active' ? 'activas' : 'inactivas')}.
+          </EmptyState>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredTags.map(tag => (
@@ -352,8 +347,7 @@ const TagCatalogManagement = ({
             ))}
           </div>
         )}
-      </div>
-    </div>
+    </PageContainer>
   );
 };
 

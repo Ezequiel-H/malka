@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { formatAuthError, normalizePhone } from '../../utils/authErrors';
+import PageContainer from '../../components/layout/PageContainer';
 
 const RESTRICCIONES = [
   'Vegetariano',
@@ -96,8 +97,7 @@ const MyProfile = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
-      <div className="max-w-2xl mx-auto card min-w-0">
+    <PageContainer maxWidth="2xl" className="card">
         <h1 className="text-2xl sm:text-3xl font-bold text-primary mb-2">Mi perfil</h1>
         <p className="text-gray-600 mb-6">
           Actualizá tus datos. Tus intereses se administran desde <Link to="/my-interests" className="text-primary font-medium">Mis intereses</Link>.
@@ -236,8 +236,7 @@ const MyProfile = () => {
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </PageContainer>
   );
 };
 
