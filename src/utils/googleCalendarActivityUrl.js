@@ -1,4 +1,5 @@
 import { formatUtcCalendarDateToString } from './dateUtils';
+import { formatActivityPrice } from './priceUtils';
 
 /**
  * URL de Google Calendar (crear evento), misma lógica que el botón «Agregar al calendario» del participante.
@@ -29,8 +30,31 @@ export function buildGoogleCalendarTemplateUrl(activity, dateOption = null) {
     parseInt(minutes, 10) || 0,
     0
   );
-  const duration = activity.duracion || 60;
-  const endTs = startTs + duration * 60000;
+
+  // Viaje: la finalización usa fechaFin/horaFin (evento de varios días).
+  let endTs = null;
+  if (!dateOption && activity.tipo === 'viaje' && activity.fechaFin) {
+    const endDateStr =
+      typeof activity.fechaFin === 'string'
+        ? activity.fechaFin.substring(0, 10)
+        : formatUtcCalendarDateToString(activity.fechaFin);
+    const [ey, em, ed] = endDateStr.split('-').map(Number);
+    if (ey && em && ed) {
+      const [endHours, endMinutes] = String(activity.horaFin || activity.hora || '19:00').split(':');
+      endTs = Date.UTC(
+        ey,
+        em - 1,
+        ed,
+        parseInt(endHours, 10) || 19,
+        parseInt(endMinutes, 10) || 0,
+        0
+      );
+    }
+  }
+  if (endTs === null || endTs <= startTs) {
+    const duration = activity.duracion || 60;
+    endTs = startTs + duration * 60000;
+  }
 
   const pad = (n) => String(n).padStart(2, '0');
   const formatCalendarDate = (timestamp) => {
@@ -41,7 +65,7 @@ export function buildGoogleCalendarTemplateUrl(activity, dateOption = null) {
   const start = formatCalendarDate(startTs);
   const end = formatCalendarDate(endTs);
 
-  const description = `${activity.descripcion || ''}\n\n${activity.lugar ? `Lugar: ${activity.lugar}\n` : ''}${activity.ubicacionOnline ? `Ubicación: ${activity.ubicacionOnline}\n` : ''}Precio: ${activity.esGratuita ? 'Gratis' : `$${activity.precio}`}`;
+  const description = `${activity.descripcion || ''}\n\n${activity.lugar ? `Lugar: ${activity.lugar}\n` : ''}${activity.ubicacionOnline ? `Ubicación: ${activity.ubicacionOnline}\n` : ''}Precio: ${formatActivityPrice(activity)}`;
 
   const location = activity.ubicacionOnline || activity.lugar || '';
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(activity.titulo)}&dates=${start}/${end}&ctz=${encodeURIComponent('America/Argentina/Buenos_Aires')}&details=${encodeURIComponent(description)}&location=${encodeURIComponent(location)}`;

@@ -63,9 +63,12 @@ const ActivityForm = () => {
     tipo: 'unica',
     fecha: '',
     hora: '',
+    fechaFin: '',
+    horaFin: '',
     lugar: 'Malka, 3 de Febrero 1325',
     ubicacionOnline: 'https://maps.app.goo.gl/Wd2mjrQy7MJiKmMZ8',
     precio: 0,
+    moneda: 'ARS',
     esGratuita: true,
     instruccionesPago: '',
     cupo: '',
@@ -181,6 +184,9 @@ const ActivityForm = () => {
         tags: publicTags,
         tagsPrivados: privateTags,
         fecha: activity.fecha ? formatDateToString(activity.fecha) : '',
+        fechaFin: activity.fechaFin ? formatDateToString(activity.fechaFin) : '',
+        horaFin: activity.horaFin || '',
+        moneda: activity.moneda || 'ARS',
         cupo: activity.cupo || '',
         duracion: activity.duracion || '',
         hora: activity.hora || (recurrence?.hora || ''),
@@ -303,7 +309,20 @@ const ActivityForm = () => {
         }
       }
 
-      const fechaToSend = formData.tipo === 'unica' ? formData.fecha : (formData.tipo === 'recurrente' && formData.recurrence.frequency === 'daily' ? formData.fecha : undefined);
+      if (formData.tipo === 'viaje') {
+        if (!formData.fecha || !formData.fechaFin) {
+          setError('Debes indicar la fecha de inicio y la fecha de finalización del viaje');
+          setLoading(false);
+          return;
+        }
+        if (formData.fechaFin < formData.fecha) {
+          setError('La fecha de finalización no puede ser anterior a la fecha de inicio');
+          setLoading(false);
+          return;
+        }
+      }
+
+      const fechaToSend = (formData.tipo === 'unica' || formData.tipo === 'viaje') ? formData.fecha : (formData.tipo === 'recurrente' && formData.recurrence.frequency === 'daily' ? formData.fecha : undefined);
 
       const {
         _id: _omitId,
@@ -320,6 +339,9 @@ const ActivityForm = () => {
         categorias: formData.tags,
         tagsPrivados: formData.tagsPrivados,
         fecha: fechaToSend,
+        fechaFin: formData.tipo === 'viaje' ? (formData.fechaFin || null) : null,
+        horaFin: formData.tipo === 'viaje' ? formData.horaFin : '',
+        instruccionesPago: formData.tipo === 'viaje' ? '' : formData.instruccionesPago,
         hora: formData.tipo === 'recurrente' ? (formData.recurrence.hora || formData.hora) : formData.hora,
         cupo: formData.cupo ? Number(formData.cupo) : null,
         duracion: formData.duracion ? Number(formData.duracion) : null,
@@ -462,6 +484,7 @@ const ActivityForm = () => {
           >
             <option value="unica">Única</option>
             <option value="recurrente">Recurrente</option>
+            <option value="viaje">Viaje</option>
           </select>
         </div>
 
@@ -508,6 +531,108 @@ const ActivityForm = () => {
                     const { hour } = parseTime(formData.hora);
                     const newTime = formatTime(hour || '00', newMinute);
                     setFormData(prev => ({ ...prev, hora: newTime }));
+                  }}
+                  className="flex-1 bg-white cursor-pointer"
+                >
+                  <option value="">Min</option>
+                  {minutes.map(minute => (
+                    <option key={minute} value={minute}>{minute}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </>
+        ) : formData.tipo === 'viaje' ? (
+          <>
+            <div className="form-group">
+              <label>Fecha de inicio *</label>
+              <DatePicker
+                selected={formData.fecha ? stringToLocalDate(formData.fecha) : null}
+                onChange={(date) => {
+                  const dateString = date ? formatDateToString(date) : '';
+                  setFormData(prev => ({ ...prev, fecha: dateString }));
+                }}
+                locale="es"
+                dateFormat="dd/MM/yyyy"
+                placeholderText="dd/mm/yyyy"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all bg-white cursor-pointer"
+                showPopperArrow={false}
+              />
+            </div>
+            <div className="form-group">
+              <label>Hora de inicio</label>
+              <div className="flex gap-2">
+                <select
+                  value={parseTime(formData.hora).hour}
+                  onChange={(e) => {
+                    const { minute } = parseTime(formData.hora);
+                    const newTime = formatTime(e.target.value, minute || '00');
+                    setFormData(prev => ({ ...prev, hora: newTime }));
+                  }}
+                  className="flex-1 bg-white cursor-pointer"
+                >
+                  <option value="">Hora</option>
+                  {hours.map(hour => (
+                    <option key={hour} value={hour}>{hour}</option>
+                  ))}
+                </select>
+                <span className="flex items-center text-gray-500 font-bold">:</span>
+                <select
+                  value={parseTime(formData.hora).minute}
+                  onChange={(e) => {
+                    const { hour } = parseTime(formData.hora);
+                    const newTime = formatTime(hour || '00', e.target.value);
+                    setFormData(prev => ({ ...prev, hora: newTime }));
+                  }}
+                  className="flex-1 bg-white cursor-pointer"
+                >
+                  <option value="">Min</option>
+                  {minutes.map(minute => (
+                    <option key={minute} value={minute}>{minute}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Fecha de finalización *</label>
+              <DatePicker
+                selected={formData.fechaFin ? stringToLocalDate(formData.fechaFin) : null}
+                onChange={(date) => {
+                  const dateString = date ? formatDateToString(date) : '';
+                  setFormData(prev => ({ ...prev, fechaFin: dateString }));
+                }}
+                locale="es"
+                dateFormat="dd/MM/yyyy"
+                placeholderText="dd/mm/yyyy"
+                minDate={formData.fecha ? stringToLocalDate(formData.fecha) : undefined}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all bg-white cursor-pointer"
+                showPopperArrow={false}
+              />
+            </div>
+            <div className="form-group">
+              <label>Hora de finalización</label>
+              <div className="flex gap-2">
+                <select
+                  value={parseTime(formData.horaFin).hour}
+                  onChange={(e) => {
+                    const { minute } = parseTime(formData.horaFin);
+                    const newTime = formatTime(e.target.value, minute || '00');
+                    setFormData(prev => ({ ...prev, horaFin: newTime }));
+                  }}
+                  className="flex-1 bg-white cursor-pointer"
+                >
+                  <option value="">Hora</option>
+                  {hours.map(hour => (
+                    <option key={hour} value={hour}>{hour}</option>
+                  ))}
+                </select>
+                <span className="flex items-center text-gray-500 font-bold">:</span>
+                <select
+                  value={parseTime(formData.horaFin).minute}
+                  onChange={(e) => {
+                    const { hour } = parseTime(formData.horaFin);
+                    const newTime = formatTime(hour || '00', e.target.value);
+                    setFormData(prev => ({ ...prev, horaFin: newTime }));
                   }}
                   className="flex-1 bg-white cursor-pointer"
                 >
@@ -783,19 +908,30 @@ const ActivityForm = () => {
         {!formData.esGratuita && (
           <div className="form-group">
             <label>Precio</label>
-            <input
-              type="number"
-              name="precio"
-              value={formData.precio}
-              onChange={handleChange}
-              min="0"
-              step="0.01"
-              className="bg-white"
-            />
+            <div className="flex gap-2">
+              <input
+                type="number"
+                name="precio"
+                value={formData.precio}
+                onChange={handleChange}
+                min="0"
+                step="0.01"
+                className="flex-1 min-w-0 bg-white"
+              />
+              <select
+                name="moneda"
+                value={formData.moneda}
+                onChange={handleChange}
+                className="!w-48 shrink-0 bg-white cursor-pointer"
+              >
+                <option value="ARS">Pesos ($)</option>
+                <option value="USD">Dólares (US$)</option>
+              </select>
+            </div>
           </div>
         )}
 
-        {!formData.esGratuita && (
+        {!formData.esGratuita && formData.tipo !== 'viaje' && (
           <div className="form-group">
             <label>Instrucciones de pago</label>
             <p className="text-sm text-gray-500 mb-2">
@@ -809,6 +945,15 @@ const ActivityForm = () => {
               className="bg-white"
               placeholder={defaultInstruccionesPago || 'Datos de transferencia (alias, CBU, titular...)'}
             />
+          </div>
+        )}
+
+        {!formData.esGratuita && formData.tipo === 'viaje' && (
+          <div className="form-group">
+            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-gray-700">
+              El pago del viaje no se realiza por transferencia y no se pide comprobante.
+              Las instrucciones de pago se coordinan por WhatsApp una vez que se confirma el cupo.
+            </div>
           </div>
         )}
 

@@ -16,8 +16,10 @@ export const getPagoEstadoBadgeClass = (estadoPago) => {
   return classes[estadoPago] || 'badge-warning';
 };
 
-export const postInscription = async (axios, { activityId, fecha, comprobanteFile, esGratuita }) => {
-  if (!esGratuita) {
+export const postInscription = async (axios, { activityId, fecha, comprobanteFile, esGratuita, tipo }) => {
+  // Los viajes no requieren comprobante aunque tengan precio (pago por WhatsApp).
+  const requiereComprobante = !esGratuita && tipo !== 'viaje';
+  if (requiereComprobante) {
     const formData = new FormData();
     formData.append('activityId', activityId);
     formData.append('fecha', fecha);

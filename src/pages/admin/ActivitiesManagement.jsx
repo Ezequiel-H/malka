@@ -2,20 +2,37 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
-import { activityPublicTags } from '../../utils/tagFields';
+import { activityPublicTags, publicTagColor } from '../../utils/tagFields';
 import { formatDateToString, formatUtcCalendarDateEsAR, formatUtcCalendarDateToString } from '../../utils/dateUtils';
 import { getActivityShareUrl } from '../../utils/activityShareUrl';
+import { formatActivityPrice } from '../../utils/priceUtils';
 
 const ActivitiesManagement = () => {
   const { showSuccess, showError } = useToast();
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('publicada');
+  const [publicTagCatalog, setPublicTagCatalog] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchActivities();
   }, [filter]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await axios.get('/tags');
+        if (!cancelled) setPublicTagCatalog(res.data.tags || []);
+      } catch (e) {
+        console.error('Error loading tag catalog:', e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const fetchActivities = async () => {
     try {
@@ -181,11 +198,15 @@ const ActivitiesManagement = () => {
                   <div className="shrink-0 self-start">{getEstadoBadge(activity.estado)}</div>
                 </div>
 
-                <p className="text-gray-600 mb-4 line-clamp-3">{activity.descripcion}</p>
+                <p className="text-gray-600 mb-4 line-clamp-3 whitespace-pre-line">{activity.descripcion}</p>
 
                 <div className="mb-4 flex flex-wrap gap-2">
                   {activityPublicTags(activity).map(cat => (
-                    <span key={cat} className="badge badge-secondary">
+                    <span
+                      key={cat}
+                      className="badge text-white"
+                      style={{ backgroundColor: publicTagColor(publicTagCatalog, cat) }}
+                    >
                       {cat}
                     </span>
                   ))}
@@ -193,13 +214,19 @@ const ActivitiesManagement = () => {
 
                 <div className="mb-4 text-sm text-gray-600 space-y-1">
                   {activity.fecha && (
-                    <p><strong>Fecha:</strong> {formatUtcCalendarDateEsAR(activity.fecha)}</p>
+                    <p>
+                      <strong>{activity.tipo === 'viaje' ? 'Inicio:' : 'Fecha:'}</strong>{' '}
+                      {formatUtcCalendarDateEsAR(activity.fecha)}
+                    </p>
                   )}
-                  {activity.hora && <p><strong>Hora:</strong> {activity.hora}</p>}
+                  {activity.tipo === 'viaje' && activity.fechaFin && (
+                    <p><strong>Finaliza:</strong> {formatUtcCalendarDateEsAR(activity.fechaFin)}</p>
+                  )}
+                  {activity.hora && activity.tipo !== 'viaje' && <p><strong>Hora:</strong> {activity.hora}</p>}
                   {activity.lugar && <p><strong>Lugar:</strong> {activity.lugar}</p>}
-                  <p><strong>Precio:</strong> {activity.esGratuita ? 'Gratis' : `$${activity.precio}`}</p>
+                  <p><strong>Precio:</strong> {formatActivityPrice(activity)}</p>
                   {activity.cupo && <p><strong>Cupo:</strong> {activity.cupo}</p>}
-                  <p><strong>Tipo:</strong> {activity.tipo === 'recurrente' ? 'Recurrente' : 'Única'}</p>
+                  <p><strong>Tipo:</strong> {activity.tipo === 'recurrente' ? 'Recurrente' : activity.tipo === 'viaje' ? 'Viaje' : 'Única'}</p>
                 </div>
 
                 <div className="mt-auto flex flex-col gap-2 sm:flex-row sm:flex-wrap">

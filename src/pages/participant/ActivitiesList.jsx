@@ -2,10 +2,14 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
-import { activityPublicTags, publicTagColor } from '../../utils/tagFields';
+import { activityPublicTags } from '../../utils/tagFields';
 import { formatDateEsAR, formatDateToString, formatUtcCalendarDateEsAR, formatUtcCalendarDateToString } from '../../utils/dateUtils';
 import { buildGoogleCalendarTemplateUrl } from '../../utils/googleCalendarActivityUrl';
 import { postInscription } from '../../utils/paymentUtils';
+import { formatActivityPrice } from '../../utils/priceUtils';
+import ActivityDescription from '../../components/activities/ActivityDescription';
+import ActivityTags from '../../components/activities/ActivityTags';
+import ActivityInfo from '../../components/activities/ActivityInfo';
 
 const ActivitiesList = () => {
   const { showSuccess, showError } = useToast();
@@ -218,6 +222,7 @@ const ActivitiesList = () => {
         fecha,
         comprobanteFile: file,
         esGratuita: activityData.esGratuita,
+        tipo: activityData.tipo,
       });
       showSuccess(response.data.message || 'Inscripción realizada exitosamente');
       setShowConfirmModal(false);
@@ -265,7 +270,7 @@ const ActivitiesList = () => {
 
   const handleConfirmInscription = () => {
     if (!selectedDate || !selectedActivity) return;
-    if (!selectedActivity.esGratuita && !comprobanteFile) {
+    if (!selectedActivity.esGratuita && selectedActivity.tipo !== 'viaje' && !comprobanteFile) {
       showError('Debes subir un comprobante de transferencia');
       return;
     }
@@ -304,8 +309,8 @@ const ActivitiesList = () => {
     if (e) {
       e.stopPropagation();
     }
-    // Si es actividad única, inscribirse directamente o abrir confirmación si es paga
-    if (activity.tipo === 'unica') {
+    // Actividad única o viaje: inscribirse directamente o abrir confirmación si es paga
+    if (activity.tipo === 'unica' || activity.tipo === 'viaje') {
       if (!activity.esGratuita) {
         openConfirmForUnica(activity);
         return;
@@ -332,12 +337,6 @@ const ActivitiesList = () => {
         setLoadingDates(false);
       }
     }
-  };
-
-  const getEstadoBadge = (activity) => {
-    // No mostrar badge de disponibilidad porque el cupo depende de la fecha
-    // Para actividades recurrentes, el cupo se muestra en el modal de fechas
-    return null;
   };
 
   if (loading) {
@@ -427,31 +426,11 @@ const ActivitiesList = () => {
                   />
                 )}
                 <h2 className="text-xl font-bold mb-3 text-gray-800">{activity.titulo}</h2>
-                <p className="text-gray-600 mb-4 line-clamp-3 whitespace-pre-wrap">{activity.descripcion}</p>
-                
-                <div className="mb-4 flex flex-wrap gap-2">
-                  {activityPublicTags(activity).map(cat => (
-                    <span
-                      key={cat}
-                      className="badge text-white"
-                      style={{ backgroundColor: publicTagColor(publicTagCatalog, cat) }}
-                    >
-                      {cat}
-                    </span>
-                  ))}
-                  {getEstadoBadge(activity)}
-                </div>
+                <ActivityDescription activity={activity} variant="card" />
 
-                <div className="mb-4 text-sm text-gray-600 space-y-1">
-                  {activity.tipo === 'recurrente' && activity.proximaOcurrencia ? (
-                    <p><strong>Próxima fecha:</strong> {formatUtcCalendarDateEsAR(activity.proximaOcurrencia)}</p>
-                  ) : activity.fecha && (
-                    <p><strong>Fecha:</strong> {formatUtcCalendarDateEsAR(activity.fecha)}</p>
-                  )}
-                  {activity.hora && <p><strong>Hora:</strong> {activity.hora}</p>}
-                  {activity.lugar && <p><strong>Lugar:</strong> {activity.lugar}</p>}
-                  <p><strong>Precio:</strong> {activity.esGratuita ? 'Gratis' : `$${activity.precio}`}</p>
-                </div>
+                <ActivityTags activity={activity} catalog={publicTagCatalog} variant="card" />
+
+                <ActivityInfo activity={activity} variant="card" />
 
                 <div
                   className="mt-auto flex w-full flex-col gap-2 sm:flex-row sm:items-stretch"
@@ -639,7 +618,9 @@ const ActivitiesList = () => {
 
                   <div className="space-y-3 rounded-lg bg-gray-50 p-4">
                     <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
-                      <span className="shrink-0 font-semibold text-gray-700 sm:w-24">Fecha:</span>
+                      <span className="shrink-0 font-semibold text-gray-700 sm:w-24">
+                        {selectedActivity.tipo === 'viaje' ? 'Inicio:' : 'Fecha:'}
+                      </span>
                       <span className="min-w-0 text-gray-800">
                         {formatUtcCalendarDateEsAR(selectedDate.fecha, {
                           weekday: 'long',
@@ -647,9 +628,24 @@ const ActivitiesList = () => {
                           month: 'long',
                           day: 'numeric'
                         })}
+                        {selectedActivity.tipo === 'viaje' && selectedDate.hora ? ` · ${selectedDate.hora}` : ''}
                       </span>
                     </div>
-                    {selectedDate.hora && (
+                    {selectedActivity.tipo === 'viaje' && selectedActivity.fechaFin && (
+                      <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
+                        <span className="shrink-0 font-semibold text-gray-700 sm:w-24">Finaliza:</span>
+                        <span className="min-w-0 text-gray-800">
+                          {formatUtcCalendarDateEsAR(selectedActivity.fechaFin, {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                          {selectedActivity.horaFin ? ` · ${selectedActivity.horaFin}` : ''}
+                        </span>
+                      </div>
+                    )}
+                    {selectedDate.hora && selectedActivity.tipo !== 'viaje' && (
                       <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
                         <span className="shrink-0 font-semibold text-gray-700 sm:w-24">Hora:</span>
                         <span className="text-gray-800">{selectedDate.hora}</span>
@@ -677,7 +673,7 @@ const ActivitiesList = () => {
                     <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
                       <span className="shrink-0 font-semibold text-gray-700 sm:w-24">Precio:</span>
                       <span className="text-gray-800">
-                        {selectedActivity.esGratuita ? 'Gratis' : `$${selectedActivity.precio}`}
+                        {formatActivityPrice(selectedActivity)}
                       </span>
                     </div>
                     {selectedActivity.duracion && (
@@ -688,7 +684,7 @@ const ActivitiesList = () => {
                     )}
                   </div>
 
-                  {!selectedActivity.esGratuita && (
+                  {!selectedActivity.esGratuita && selectedActivity.tipo !== 'viaje' && (
                     <div className="space-y-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
                       <h4 className="font-semibold text-gray-800">Instrucciones de pago</h4>
                       {selectedActivity.instruccionesPagoResueltas ? (
@@ -710,6 +706,24 @@ const ActivitiesList = () => {
                         />
                         <p className="text-xs text-gray-500 mt-1">Imagen o PDF, máximo 5MB</p>
                       </div>
+                    </div>
+                  )}
+
+                  {!selectedActivity.esGratuita && selectedActivity.tipo === 'viaje' && (
+                    <div className="space-y-2 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+                      <h4 className="font-semibold text-gray-800">Pago del viaje</h4>
+                      <p className="text-gray-700 text-sm">
+                        No necesitás transferir ni subir comprobante ahora. Una vez confirmado tu
+                        cupo, coordinamos el pago por WhatsApp.
+                      </p>
+                      <a
+                        href="https://wa.me/5491134405730"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-secondary w-full justify-center sm:w-auto"
+                      >
+                        💬 Escribinos por WhatsApp
+                      </a>
                     </div>
                   )}
 

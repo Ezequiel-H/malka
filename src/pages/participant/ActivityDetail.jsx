@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
-import { activityPublicTags, publicTagColor } from '../../utils/tagFields';
 import { formatUtcCalendarDateEsAR, formatUtcCalendarDateToString } from '../../utils/dateUtils';
 import { buildGoogleCalendarTemplateUrl } from '../../utils/googleCalendarActivityUrl';
 import { postInscription } from '../../utils/paymentUtils';
+import { formatActivityPrice } from '../../utils/priceUtils';
+import ActivityDescription from '../../components/activities/ActivityDescription';
+import ActivityTags from '../../components/activities/ActivityTags';
+import ActivityInfo from '../../components/activities/ActivityInfo';
 
 const ActivityDetail = () => {
   const { id } = useParams();
@@ -93,6 +96,7 @@ const ActivityDetail = () => {
         fecha,
         comprobanteFile: file,
         esGratuita: activityData.esGratuita,
+        tipo: activityData.tipo,
       });
       showSuccess(response.data.message || 'Inscripción realizada exitosamente');
       setShowConfirmModal(false);
@@ -117,7 +121,7 @@ const ActivityDetail = () => {
   };
 
   const handleInscribeClick = async () => {
-    if (activity.tipo === 'unica') {
+    if (activity.tipo === 'unica' || activity.tipo === 'viaje') {
       if (!activity.esGratuita) {
         openConfirmForUnica(activity);
         return;
@@ -151,7 +155,7 @@ const ActivityDetail = () => {
 
   const handleConfirmInscription = () => {
     if (!selectedDate || !activity) return;
-    if (!activity.esGratuita && !comprobanteFile) {
+    if (!activity.esGratuita && activity.tipo !== 'viaje' && !comprobanteFile) {
       showError('Debes subir un comprobante de transferencia');
       return;
     }
@@ -221,102 +225,11 @@ const ActivityDetail = () => {
               </div>
             )}
 
-            {activity.descripcion && (
-              <div className="mb-6">
-                <h2 className="text-xl font-semibold text-gray-800 mb-2">Descripción</h2>
-                <p className="text-gray-600 whitespace-pre-wrap">{activity.descripcion}</p>
-              </div>
-            )}
+            <ActivityDescription activity={activity} variant="detail" />
 
-            {activityPublicTags(activity).length > 0 && (
-              <div className="mb-6">
-                <h2 className="text-xl font-semibold text-gray-800 mb-2">Tags</h2>
-                <div className="flex flex-wrap gap-2">
-                  {activityPublicTags(activity).map(cat => (
-                    <span
-                      key={cat}
-                      className="badge text-white"
-                      style={{ backgroundColor: publicTagColor(publicTagCatalog, cat) }}
-                    >
-                      {cat}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+            <ActivityTags activity={activity} catalog={publicTagCatalog} variant="detail" />
 
-            <div className="bg-gray-50 p-6 rounded-lg mb-6 space-y-3">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Información</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {activity.tipo === 'recurrente' && activity.proximaOcurrencia ? (
-                  <div>
-                    <span className="font-semibold text-gray-700">Próxima fecha:</span>
-                    <span className="ml-2 text-gray-800">
-                      {formatUtcCalendarDateEsAR(activity.proximaOcurrencia, {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </span>
-                  </div>
-                ) : activity.fecha && (
-                  <div>
-                    <span className="font-semibold text-gray-700">Fecha:</span>
-                    <span className="ml-2 text-gray-800">
-                      {formatUtcCalendarDateEsAR(activity.fecha, {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </span>
-                  </div>
-                )}
-
-                {activity.hora && (
-                  <div>
-                    <span className="font-semibold text-gray-700">Hora:</span>
-                    <span className="ml-2 text-gray-800">{activity.hora}</span>
-                  </div>
-                )}
-
-                {activity.duracion && (
-                  <div>
-                    <span className="font-semibold text-gray-700">Duración:</span>
-                    <span className="ml-2 text-gray-800">{activity.duracion} minutos</span>
-                  </div>
-                )}
-
-                {activity.lugar && (
-                  <div>
-                    <span className="font-semibold text-gray-700">Lugar:</span>
-                    <span className="ml-2 text-gray-800">{activity.lugar}</span>
-                  </div>
-                )}
-
-                {activity.ubicacionOnline && (
-                  <div>
-                    <span className="font-semibold text-gray-700">Ubicación:</span>
-                    <a
-                      href={activity.ubicacionOnline}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="ml-2 text-blue-600 hover:underline"
-                    >
-                      Ver en Google Maps
-                    </a>
-                  </div>
-                )}
-
-                <div>
-                  <span className="font-semibold text-gray-700">Precio:</span>
-                  <span className="ml-2 text-gray-800">
-                    {activity.esGratuita ? 'Gratis' : `$${activity.precio}`}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <ActivityInfo activity={activity} variant="detail" />
 
             {activity.estadoInscripcion && activity.tipo === 'recurrente' && activity.fechaInscripcion && (
               <div className="mb-6">
@@ -406,7 +319,7 @@ const ActivityDetail = () => {
                 </button>
               )}
 
-              {activity.tipo === 'unica' && activity.fecha && (
+              {(activity.tipo === 'unica' || activity.tipo === 'viaje') && activity.fecha && (
                 <button
                   onClick={() => handleAddToCalendar()}
                   className="btn btn-secondary w-full justify-center sm:w-auto"
@@ -620,13 +533,15 @@ const ActivityDetail = () => {
                   <div>
                     <h3 className="text-xl font-semibold text-gray-800 mb-2">{activity.titulo}</h3>
                     {activity.descripcion && (
-                      <p className="text-gray-600 mb-4">{activity.descripcion}</p>
+                      <p className="text-gray-600 mb-4 whitespace-pre-wrap">{activity.descripcion}</p>
                     )}
                   </div>
 
                   <div className="space-y-3 rounded-lg bg-gray-50 p-4">
                     <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
-                      <span className="shrink-0 font-semibold text-gray-700 sm:w-24">Fecha:</span>
+                      <span className="shrink-0 font-semibold text-gray-700 sm:w-24">
+                        {activity.tipo === 'viaje' ? 'Inicio:' : 'Fecha:'}
+                      </span>
                       <span className="min-w-0 text-gray-800">
                         {formatUtcCalendarDateEsAR(selectedDate.fecha, {
                           weekday: 'long',
@@ -634,9 +549,24 @@ const ActivityDetail = () => {
                           month: 'long',
                           day: 'numeric'
                         })}
+                        {activity.tipo === 'viaje' && selectedDate.hora ? ` · ${selectedDate.hora}` : ''}
                       </span>
                     </div>
-                    {selectedDate.hora && (
+                    {activity.tipo === 'viaje' && activity.fechaFin && (
+                      <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
+                        <span className="shrink-0 font-semibold text-gray-700 sm:w-24">Finaliza:</span>
+                        <span className="min-w-0 text-gray-800">
+                          {formatUtcCalendarDateEsAR(activity.fechaFin, {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                          {activity.horaFin ? ` · ${activity.horaFin}` : ''}
+                        </span>
+                      </div>
+                    )}
+                    {selectedDate.hora && activity.tipo !== 'viaje' && (
                       <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
                         <span className="shrink-0 font-semibold text-gray-700 sm:w-24">Hora:</span>
                         <span className="text-gray-800">{selectedDate.hora}</span>
@@ -651,12 +581,12 @@ const ActivityDetail = () => {
                     <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
                       <span className="shrink-0 font-semibold text-gray-700 sm:w-24">Precio:</span>
                       <span className="text-gray-800">
-                        {activity.esGratuita ? 'Gratis' : `$${activity.precio}`}
+                        {formatActivityPrice(activity)}
                       </span>
                     </div>
                   </div>
 
-                  {!activity.esGratuita && (
+                  {!activity.esGratuita && activity.tipo !== 'viaje' && (
                     <div className="space-y-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
                       <h4 className="font-semibold text-gray-800">Instrucciones de pago</h4>
                       {activity.instruccionesPagoResueltas ? (
@@ -678,6 +608,24 @@ const ActivityDetail = () => {
                         />
                         <p className="text-xs text-gray-500 mt-1">Imagen o PDF, máximo 5MB</p>
                       </div>
+                    </div>
+                  )}
+
+                  {!activity.esGratuita && activity.tipo === 'viaje' && (
+                    <div className="space-y-2 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+                      <h4 className="font-semibold text-gray-800">Pago del viaje</h4>
+                      <p className="text-gray-700 text-sm">
+                        No necesitás transferir ni subir comprobante ahora. Una vez confirmado tu
+                        cupo, coordinamos el pago por WhatsApp.
+                      </p>
+                      <a
+                        href="https://wa.me/5491134405730"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-secondary w-full justify-center sm:w-auto"
+                      >
+                        💬 Escribinos por WhatsApp
+                      </a>
                     </div>
                   )}
 

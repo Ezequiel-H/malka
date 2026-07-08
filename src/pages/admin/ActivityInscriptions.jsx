@@ -10,13 +10,14 @@ import {
 } from '../../utils/dateUtils';
 import { buildGoogleCalendarTemplateUrl } from '../../utils/googleCalendarActivityUrl';
 import { getPagoEstadoLabel, getPagoEstadoBadgeClass } from '../../utils/paymentUtils';
+import { formatActivityPrice, formatPrice } from '../../utils/priceUtils';
 
 const GMAIL_INVITE_BODY_MAX = 7500;
 
 /** Día concreto para el enlace «Agregar a calendario» (única = actividad; recurrente = primera fecha de la vista). */
 const getCalendarDateOptionForEmail = (activity, sortedDateStrings) => {
   if (!activity) return null;
-  if (activity.tipo === 'unica' && activity.fecha) {
+  if (activity.tipo !== 'recurrente' && activity.fecha) {
     return { fecha: activity.fecha, hora: activity.hora };
   }
   if (activity.tipo === 'recurrente' && sortedDateStrings?.length) {
@@ -30,7 +31,7 @@ const getCalendarDateOptionForEmail = (activity, sortedDateStrings) => {
 
 const buildGmailInvitationSubject = (activity, sortedDateStrings) => {
   const titulo = activity?.titulo?.trim() || 'Actividad';
-  if (activity.tipo === 'unica' && activity.fecha) {
+  if (activity.tipo !== 'recurrente' && activity.fecha) {
     const datePart = formatDateEsAR(activity.fecha, {
       weekday: 'long',
       day: 'numeric',
@@ -92,7 +93,7 @@ const buildCompactGoogleCalendarUrl = (activity, dateOption = null) => {
 };
 
 const buildFechaHoraBodyBlock = (activity, sortedDateStrings) => {
-  if (activity.tipo === 'unica' && activity.fecha) {
+  if (activity.tipo !== 'recurrente' && activity.fecha) {
     const d = formatDateEsAR(activity.fecha, {
       weekday: 'long',
       day: 'numeric',
@@ -129,7 +130,7 @@ const buildGmailInvitationBody = (activity, sortedDateStrings, calendarUrl, maps
   lines.push(`📍¿Dónde? ${activity.lugar?.trim() || 'A confirmar'}`);
   lines.push(`🕐¿Cuándo? ${buildFechaHoraBodyBlock(activity, sortedDateStrings)}`);
   lines.push(
-    `💳${activity.esGratuita ? 'Actividad gratuita' : `Valor: $${activity.precio ?? '—'}`}`
+    `💳${activity.esGratuita ? 'Actividad gratuita' : `Valor: ${formatPrice(activity.precio, activity.moneda)}`}`
   );
   if (typeof activity.duracion === 'number' && activity.duracion > 0) {
     lines.push(`⏱️Duración estimada: ${activity.duracion} minutos`);
@@ -622,7 +623,7 @@ const ActivityInscriptions = () => {
             )}
             <div>
               <p className="text-sm text-gray-600">
-                <strong>Precio:</strong> {activity.esGratuita ? 'Gratis' : `$${activity.precio}`}
+                <strong>Precio:</strong> {formatActivityPrice(activity)}
               </p>
             </div>
             {activity.cupo && (
@@ -634,7 +635,7 @@ const ActivityInscriptions = () => {
             )}
             <div>
               <p className="text-sm text-gray-600">
-                <strong>Tipo:</strong> {activity.tipo === 'recurrente' ? 'Recurrente' : 'Única'}
+                <strong>Tipo:</strong> {activity.tipo === 'recurrente' ? 'Recurrente' : activity.tipo === 'viaje' ? 'Viaje' : 'Única'}
               </p>
             </div>
           </div>

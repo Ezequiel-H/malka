@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
 import { formatUtcCalendarDayAndTime } from '../../utils/dateUtils';
 import { isPdfComprobante } from '../../utils/paymentUtils';
+import { formatPrice } from '../../utils/priceUtils';
 import PdfFirstPageViewer from './PdfFirstPageViewer';
 
 const adminUserPath = (userRef) => {
@@ -62,7 +63,7 @@ const ProofReviewCard = ({ inscription, processingId, onClose, onApprove, onReje
               )}
             </p>
             <p className="text-base font-semibold text-gray-800 mt-2">
-              ${inscription.pago?.montoEsperado ?? activity?.precio ?? '—'}
+              {formatPrice(inscription.pago?.montoEsperado ?? activity?.precio, activity?.moneda)}
             </p>
           </div>
 
