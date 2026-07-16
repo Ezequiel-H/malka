@@ -27,8 +27,8 @@ const Dashboard = () => {
             <div className="alert alert-info">
               <h2 className="text-lg sm:text-xl font-semibold mb-2">Tu usuario está siendo validado</h2>
               <p className="text-base mb-4">
-                Tu cuenta está siendo validada por nuestro equipo. Este proceso puede tardar unos días. Podrás acceder a
-                las actividades una vez que tu cuenta sea aprobada.
+                Tu cuenta está siendo validada por nuestro equipo. Este proceso puede tardar unos días. Una vez que tu
+                cuenta esté aprobada, podrás inscribirte en las actividades.
               </p>
               <Link to="/my-interests" className="btn btn-secondary w-full justify-center sm:inline-flex sm:w-auto">
                 Mis intereses

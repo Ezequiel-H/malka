@@ -30,8 +30,8 @@ const PrivateRoute = ({ children, requireApproved = false }) => {
             <div className="alert alert-info">
               <h2 className="mb-2 text-lg font-semibold sm:text-xl">Tu usuario está siendo validado</h2>
               <p className="text-base">
-                Tu cuenta está siendo validada por nuestro equipo. Este proceso puede tardar unos días. Podrás
-                acceder a las actividades una vez que tu cuenta sea aprobada.
+                Tu cuenta está siendo validada por nuestro equipo. Este proceso puede tardar unos días. Una vez que
+                tu cuenta esté aprobada, podrás inscribirte en las actividades.
               </p>
             </div>
           </div>
