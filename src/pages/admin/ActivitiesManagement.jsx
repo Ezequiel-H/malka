@@ -3,12 +3,13 @@ import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
 import { activityPublicTags, publicTagColor } from '../../utils/tagFields';
-import { formatDateToString, formatUtcCalendarDateEsAR, formatUtcCalendarDateToString } from '../../utils/dateUtils';
+import { formatUtcCalendarDateEsAR, formatUtcCalendarDateToString } from '../../utils/dateUtils';
 import { getActivityShareUrl } from '../../utils/activityShareUrl';
 import { formatActivityPrice } from '../../utils/priceUtils';
 import LoadingScreen from '../../components/layout/LoadingScreen';
 import PageContainer from '../../components/layout/PageContainer';
 import EmptyState from '../../components/common/EmptyState';
+import ExportDateModal from '../../components/activities/ExportDateModal';
 
 const ActivitiesManagement = () => {
   const { showSuccess, showError } = useToast();
@@ -17,6 +18,9 @@ const ActivitiesManagement = () => {
   const [filter, setFilter] = useState('publicada');
   const [publicTagCatalog, setPublicTagCatalog] = useState([]);
   const [selectedTags, setSelectedTags] = useState([]);
+  const [exportActivity, setExportActivity] = useState(null);
+  const [exportDates, setExportDates] = useState([]);
+  const [exportDatesLoading, setExportDatesLoading] = useState(false);
   const navigate = useNavigate();
 
   const toggleTag = (tagName) => {
@@ -114,17 +118,13 @@ const ActivitiesManagement = () => {
     }
   };
 
-  const handleExport = async (activity) => {
+  const downloadExport = async (activity, fechaStr) => {
     try {
+      const params = fechaStr ? { fecha: fechaStr } : undefined;
       const response = await axios.get(`/activities/${activity._id}/export`, {
+        params,
         responseType: 'blob'
       });
-      
-      // Build filename the same way as backend
-      const formatDateForFilename = (date) => {
-        if (!date) return 'sin-fecha';
-        return formatUtcCalendarDateToString(date);
-      };
 
       const formatDateTimeForFilename = (date) => {
         const d = new Date(date);
@@ -137,12 +137,11 @@ const ActivitiesManagement = () => {
         return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
       };
 
-      // Clean activity title for filename
       const cleanTitle = activity.titulo.replace(/[^a-z0-9\s]/gi, '').replace(/\s+/g, '_');
-      const eventDate = formatDateForFilename(activity.fecha);
+      const eventDate = fechaStr || formatUtcCalendarDateToString(activity.fecha) || 'sin-fecha';
       const exportDateTime = formatDateTimeForFilename(new Date());
       const filename = `${cleanTitle}_${eventDate}_exportado_${exportDateTime}.xlsx`;
-      
+
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -154,6 +153,58 @@ const ActivitiesManagement = () => {
     } catch (error) {
       console.error('Error al exportar:', error);
       showError('Error al exportar inscripciones');
+    }
+  };
+
+  const closeExportModal = () => {
+    setExportActivity(null);
+    setExportDates([]);
+    setExportDatesLoading(false);
+  };
+
+  const handleExportClick = async (activity) => {
+    if (activity.tipo !== 'recurrente') {
+      await downloadExport(activity);
+      return;
+    }
+
+    setExportActivity(activity);
+    setExportDates([]);
+    setExportDatesLoading(true);
+
+    try {
+      const response = await axios.get(`/inscriptions/activity/${activity._id}`);
+      const inscriptions = response.data.inscriptions || [];
+      const byDate = {};
+
+      inscriptions.forEach((inscription) => {
+        const fechaStr = formatUtcCalendarDateToString(inscription.fecha);
+        if (!fechaStr) return;
+        if (!byDate[fechaStr]) {
+          byDate[fechaStr] = { fechaStr, count: 0 };
+        }
+        byDate[fechaStr].count += 1;
+      });
+
+      const todayStr = formatUtcCalendarDateToString(new Date());
+      const sorted = Object.values(byDate).sort((a, b) => a.fechaStr.localeCompare(b.fechaStr));
+      const past = sorted.filter((d) => d.fechaStr < todayStr).slice(-3);
+      const upcoming = sorted.filter((d) => d.fechaStr >= todayStr).slice(0, 3);
+      setExportDates([...past, ...upcoming]);
+    } catch (error) {
+      console.error('Error al cargar fechas para exportar:', error);
+      showError('Error al cargar fechas para exportar');
+      closeExportModal();
+    } finally {
+      setExportDatesLoading(false);
+    }
+  };
+
+  const handleExportDateSelect = async (fechaStr) => {
+    const activity = exportActivity;
+    closeExportModal();
+    if (activity) {
+      await downloadExport(activity, fechaStr);
     }
   };
 
@@ -305,7 +356,7 @@ const ActivitiesManagement = () => {
                     Editar
                   </button>
                   <button
-                    onClick={() => handleExport(activity)}
+                    onClick={() => handleExportClick(activity)}
                     className="btn btn-success w-full justify-center sm:w-auto sm:min-w-[100px] sm:flex-1"
                   >
                     Exportar Excel
@@ -322,6 +373,16 @@ const ActivitiesManagement = () => {
               </div>
             ))}
           </div>
+        )}
+
+        {exportActivity && (
+          <ExportDateModal
+            activity={exportActivity}
+            dates={exportDates}
+            loading={exportDatesLoading}
+            onClose={closeExportModal}
+            onSelect={handleExportDateSelect}
+          />
         )}
     </PageContainer>
   );
