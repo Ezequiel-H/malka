@@ -1,6 +1,7 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
-import Navbar from './components/layout/Navbar';
+import AppShell from './components/layout/AppShell';
+import ErrorBoundary from './components/layout/ErrorBoundary';
 import LoadingScreen from './components/layout/LoadingScreen';
 import LoginGate from './components/auth/LoginGate';
 import Register from './pages/auth/Register';
@@ -23,20 +24,26 @@ import MyInterests from './pages/participant/MyInterests';
 import MyProfile from './pages/participant/MyProfile';
 import PrivateRoute from './components/auth/PrivateRoute';
 import AdminRoute from './components/auth/AdminRoute';
+// TEMPORAL: vitrina del design system. Se borra junto con su ruta /ds.
+import DesignSystem from './pages/DesignSystem';
 
 function App() {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return <LoadingScreen />;
   }
 
-  return (
-    <div className="App min-h-screen bg-light-bg">
-      {user && <Navbar />}
+  const routes = (
+    <ErrorBoundary key={location.pathname}>
       <Routes>
         <Route path="/login" element={<LoginGate />} />
         <Route path="/register" element={!user ? <Register /> : <LoginGate />} />
+
+        {/* TEMPORAL: /ds — vitrina del design system, sin auth para poder
+            iterarla sin loguearse. Borrar antes de producción. */}
+        <Route path="/ds" element={<DesignSystem />} />
 
         <Route
           path="/dashboard"
@@ -189,8 +196,11 @@ function App() {
 
         <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
       </Routes>
-    </div>
+    </ErrorBoundary>
   );
+
+  // Las rutas sin sesión (login, registro, /ds) no llevan el shell.
+  return <div className="App min-h-screen">{user ? <AppShell>{routes}</AppShell> : routes}</div>;
 }
 
 export default App;

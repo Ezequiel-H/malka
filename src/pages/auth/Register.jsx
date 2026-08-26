@@ -1,10 +1,28 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import PublicTagPicker from '../../components/tags/PublicTagPicker';
-import DateInput from '../../components/common/DateInput';
 import { formatLocalDateToString } from '../../utils/dateUtils';
+import {
+  Alert,
+  Button,
+  Card,
+  Checkbox,
+  DatePicker,
+  Field,
+  Input,
+  Spinner,
+} from '../../components/ui';
+
+const RESTRICCIONES = [
+  'Vegetariano',
+  'Vegano',
+  'Sin TACC',
+  'Sin lactosa',
+  'Sin nueces',
+  'Diabético',
+];
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -80,6 +98,15 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // DatePicker guarda el valor en un input hidden, y el navegador no valida
+    // los hidden: el `required` del Field es sólo la marca visual, así que la
+    // fecha se chequea acá a mano.
+    if (!formData.fechaNacimiento) {
+      setError('Decinos tu fecha de nacimiento para completar el registro.');
+      return;
+    }
+
     setLoading(true);
 
     const result = await register({
@@ -88,67 +115,64 @@ const Register = () => {
       telefono: formData.telefono.replace(/\s/g, '').trim(),
       tags
     });
-    
+
     if (result.success) {
       navigate('/dashboard');
     } else {
       setError(result.message);
     }
-    
+
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-light-bg flex items-center justify-center px-4 py-10 sm:px-6 sm:py-12">
-      <div className="max-w-lg w-full min-w-0">
-        <div className="card">
-          <h1 className="text-2xl sm:text-3xl font-bold text-center mb-5 sm:mb-6 text-primary">
+    <div className="flex min-h-screen items-center justify-center bg-surface-page px-4 py-10 sm:px-6 sm:py-12">
+      <div className="w-full min-w-0 max-w-lg">
+        <Card padding="lg">
+          <h1 className="mb-5 text-center text-2xl font-bold text-primary sm:mb-6 sm:text-3xl">
             Registro
           </h1>
-          
+
           {error && (
-            <div className="alert alert-error">{error}</div>
+            <Alert tone="danger" className="mb-5">
+              {error}
+            </Alert>
           )}
 
           <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label>Nombre</label>
-              <input
+            <Field label="Nombre" required>
+              <Input
                 type="text"
                 name="nombre"
                 value={formData.nombre}
                 onChange={handleChange}
                 required
-                className="bg-white"
               />
-            </div>
+            </Field>
 
-            <div className="form-group">
-              <label>Apellido</label>
-              <input
+            <Field label="Apellido" required>
+              <Input
                 type="text"
                 name="apellido"
                 value={formData.apellido}
                 onChange={handleChange}
                 required
-                className="bg-white"
               />
-            </div>
+            </Field>
 
-            <div className="form-group">
-              <label>Fecha de nacimiento</label>
-              <DateInput
+            <Field label="Fecha de nacimiento" required>
+              <DatePicker
                 name="fechaNacimiento"
                 value={formData.fechaNacimiento}
-                onChange={handleChange}
-                required
+                onChange={(fechaNacimiento) =>
+                  setFormData((previo) => ({ ...previo, fechaNacimiento }))
+                }
                 max={formatLocalDateToString(new Date())}
               />
-            </div>
+            </Field>
 
-            <div className="form-group">
-              <label>DNI</label>
-              <input
+            <Field label="DNI" hint="Entre 7 y 10 dígitos, sin puntos" required>
+              <Input
                 type="text"
                 name="dni"
                 value={formData.dni}
@@ -160,26 +184,24 @@ const Register = () => {
                 maxLength={10}
                 pattern="\d{7,10}"
                 title="Ingresá entre 7 y 10 dígitos"
-                className="bg-white"
               />
-            </div>
+            </Field>
 
-            <div className="form-group">
-              <label>Email</label>
-              <input
+            <Field label="Email" required>
+              <Input
                 type="email"
+                icon="mail"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="bg-white"
               />
-            </div>
+            </Field>
 
-            <div className="form-group">
-              <label>Teléfono</label>
-              <input
+            <Field label="Teléfono" hint="Al menos 8 dígitos. Podés incluir + y código de país" required>
+              <Input
                 type="tel"
+                icon="phone"
                 name="telefono"
                 value={formData.telefono}
                 onChange={handleChange}
@@ -190,94 +212,87 @@ const Register = () => {
                 maxLength={22}
                 pattern="^[+]?[0-9]{8,20}$"
                 title="Ingresá un teléfono con al menos 8 dígitos (podés usar + y código de país)"
-                className="bg-white"
               />
-            </div>
+            </Field>
 
-            <div className="form-group">
-              <label>Contraseña</label>
-              <input
+            <Field label="Contraseña" hint="Mínimo 6 caracteres" required>
+              <Input
                 type="password"
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
                 required
                 minLength={6}
-                className="bg-white"
               />
-            </div>
+            </Field>
 
-            <div className="form-group">
-              <label className="mb-2 block">Toda la comida es Kosher. ¿Tenés algún tipo de restricción?</label>
+            {/* Grupo de checkboxes: el <fieldset> es lo que hace que un lector
+                de pantalla anuncie la pregunta antes de cada opción. */}
+            <fieldset className="mb-5">
+              <legend className="mb-2 block text-sm font-medium text-ink-soft">
+                Toda la comida es Kosher. ¿Tenés algún tipo de restricción?
+              </legend>
               <div className="space-y-2.5">
-                {['Vegetariano', 'Vegano', 'Sin TACC', 'Sin lactosa', 'Sin nueces', 'Diabético'].map((restriccion) => (
-                  <label
+                {RESTRICCIONES.map((restriccion) => (
+                  <Checkbox
                     key={restriccion}
-                    className="flex max-w-none cursor-pointer items-center gap-3 font-normal"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.restriccionesAlimentarias?.includes(restriccion) || false}
-                      onChange={() => handleRestriccionChange(restriccion)}
-                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                    <span className="text-gray-700">{restriccion}</span>
-                  </label>
+                    label={restriccion}
+                    checked={formData.restriccionesAlimentarias?.includes(restriccion) || false}
+                    onChange={() => handleRestriccionChange(restriccion)}
+                  />
                 ))}
               </div>
-            </div>
+            </fieldset>
 
-            <div className="form-group">
-              <label>¿Cómo te enteraste de esta propuesta?</label>
-              <input
+            <Field label="¿Cómo te enteraste de esta propuesta?" required>
+              <Input
                 type="text"
                 name="comoSeEntero"
                 value={formData.comoSeEntero}
                 onChange={handleChange}
-                placeholder="Escribe cómo te enteraste..."
+                placeholder="Escribí cómo te enteraste..."
                 required
-                className="bg-white"
               />
-            </div>
+            </Field>
 
-            <div className="form-group">
-              <label>¿Qué te interesa?</label>
-              <p className="text-sm text-gray-600 mb-2">
-                Elegí una o más áreas (tags públicos). Podés cambiarlas después en &quot;Mis intereses&quot;.
-              </p>
+            <Field
+              label="¿Qué te interesa?"
+              hint="Elegí una o más áreas. Podés cambiarlas después en «Mis intereses»."
+            >
               {tagsLoading ? (
-                <p className="text-sm text-gray-500">Cargando intereses...</p>
+                <div className="flex items-center gap-2 py-2 text-sm text-ink-muted">
+                  <Spinner size="sm" label="Cargando intereses" />
+                  Cargando intereses...
+                </div>
               ) : (
                 <PublicTagPicker
                   availableTags={availableTags}
                   selectedNames={tags}
                   onChange={setTags}
                   emptyHint={
-                    <p className="text-sm text-gray-500 mt-2">
+                    <p className="mt-2 text-sm text-ink-muted">
                       Si no aparecen opciones, podés completar tus intereses luego desde tu cuenta.
                     </p>
                   }
                 />
               )}
-            </div>
+            </Field>
 
-            <button
-              type="submit"
-              className="btn btn-primary w-full"
-              disabled={loading}
-            >
+            <Button type="submit" size="lg" fullWidth loading={loading}>
               {loading ? 'Registrando...' : 'Registrarse'}
-            </button>
+            </Button>
           </form>
 
-          <p className="mt-6 text-center text-gray-600">
-            ¿Ya tienes cuenta? <Link to="/login" className="text-primary hover:text-primary/80 font-medium">Inicia sesión aquí</Link>
+          <p className="mt-6 text-center text-sm text-ink-muted">
+            ¿Ya tienes cuenta?{' '}
+            <Button variant="link" size="sm" to="/login" className="min-h-0 px-0 py-0 align-baseline">
+              Inicia sesión aquí
+            </Button>
           </p>
-        </div>
+        </Card>
       </div>
     </div>
   );
 };
 
 export default Register;
-

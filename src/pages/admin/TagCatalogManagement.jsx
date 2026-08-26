@@ -2,13 +2,33 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
+import { DEFAULT_PUBLIC_TAG_COLOR, TAG_ICON_OPTIONS } from '../../utils/tagFields';
 import LoadingScreen from '../../components/layout/LoadingScreen';
 import PageContainer from '../../components/layout/PageContainer';
-import EmptyState from '../../components/common/EmptyState';
+import {
+  Badge,
+  Button,
+  Card,
+  Checkbox,
+  ColorInput,
+  EmptyState,
+  Field,
+  Icon,
+  Input,
+  Select,
+  Textarea,
+  useConfirm,
+} from '../../components/ui';
 
 /**
  * Catálogo de tags (público `/tags` o privado `/tags-privados`).
  */
+const FILTER_OPTIONS = [
+  { value: 'all', label: 'Todas' },
+  { value: 'active', label: 'Activas' },
+  { value: 'inactive', label: 'Inactivas' },
+];
+
 const TagCatalogManagement = ({
   apiBase,
   title,
@@ -18,6 +38,7 @@ const TagCatalogManagement = ({
   onCatalogScopeChange
 }) => {
   const { showSuccess, showError } = useToast();
+  const confirm = useConfirm();
   const [tags, setTags] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -25,7 +46,7 @@ const TagCatalogManagement = ({
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
-    color: '#3B82F6',
+    color: DEFAULT_PUBLIC_TAG_COLOR,
     activa: true
   });
   const [filter, setFilter] = useState('all');
@@ -79,16 +100,20 @@ const TagCatalogManagement = ({
     setFormData({
       nombre: tag.nombre,
       descripcion: tag.descripcion || '',
-      color: tag.color || '#3B82F6',
+      color: tag.color || DEFAULT_PUBLIC_TAG_COLOR,
+      icono: tag.icono || '',
       activa: tag.activa !== undefined ? tag.activa : true
     });
     setShowForm(true);
   };
 
   const handleDelete = async (tagId) => {
-    if (!window.confirm('¿Estás seguro de que deseas eliminar esta tag?')) {
-      return;
-    }
+    const ok = await confirm({
+      title: '¿Eliminar esta tag?',
+      description: 'Se quita del catálogo. Las personas que la tengan asignada la pierden.',
+      confirmLabel: 'Eliminar',
+    });
+    if (!ok) return;
 
     try {
       await axios.delete(`${apiBase}/${tagId}`);
@@ -118,7 +143,7 @@ const TagCatalogManagement = ({
     setFormData({
       nombre: '',
       descripcion: '',
-      color: '#3B82F6',
+      color: DEFAULT_PUBLIC_TAG_COLOR,
       activa: true
     });
     setEditingTag(null);
@@ -137,213 +162,250 @@ const TagCatalogManagement = ({
   }
 
   return (
-    <PageContainer>
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
-          <div className="flex-1 w-full">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-              <div>
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary">{title}</h1>
-                {description && <p className="text-gray-600 mt-2 max-w-2xl">{description}</p>}
-                {crossLink && !onCatalogScopeChange && (
-                  <p className="mt-2">
-                    <Link to={crossLink.to} className="text-primary hover:underline font-medium">
-                      {crossLink.label}
-                    </Link>
-                  </p>
-                )}
-              </div>
-              {onCatalogScopeChange && (
-                <div
-                  className="shrink-0 inline-flex rounded-lg border border-gray-200 bg-gray-100 p-1"
-                  role="group"
-                  aria-label="Tipo de tags"
+    <PageContainer
+      title={title}
+      actions={
+        <>
+          {onCatalogScopeChange && (
+            <div
+              className="inline-flex shrink-0 rounded-control bg-ink/[0.06] p-1"
+              role="group"
+              aria-label="Tipo de tags"
+            >
+              {[
+                { scope: 'public', label: 'Normales' },
+                { scope: 'private', label: 'Privados' },
+              ].map(({ scope, label }) => (
+                <button
+                  key={scope}
+                  type="button"
+                  onClick={() => onCatalogScopeChange(scope)}
+                  aria-pressed={catalogScope === scope}
+                  className={`rounded-[0.5rem] px-3 py-1.5 text-sm font-medium transition-control duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                    catalogScope === scope
+                      ? 'bg-surface text-primary shadow-subtle'
+                      : 'text-ink-muted hover:text-ink'
+                  }`}
                 >
-                  <button
-                    type="button"
-                    onClick={() => onCatalogScopeChange('public')}
-                    className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-                      catalogScope === 'public'
-                        ? 'bg-white text-primary shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Normales
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onCatalogScopeChange('private')}
-                    className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-                      catalogScope === 'private'
-                        ? 'bg-white text-primary shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Privados
-                  </button>
-                </div>
-              )}
+                  {label}
+                </button>
+              ))}
             </div>
-          </div>
-          <button
+          )}
+          <Button
+            icon="add"
             onClick={() => {
               resetForm();
               setShowForm(true);
             }}
-            className="btn btn-primary w-full justify-center lg:w-auto shrink-0"
           >
             Nueva tag
-          </button>
-        </div>
+          </Button>
+        </>
+      }
+    >
+        {(description || (crossLink && !onCatalogScopeChange)) && (
+          <p className="mb-6 max-w-2xl text-sm text-ink-muted">
+            {description}
+            {crossLink && !onCatalogScopeChange && (
+              <>
+                {' '}
+                <Button variant="link" size="sm" to={crossLink.to} className="min-h-0 px-0 py-0">
+                  {crossLink.label}
+                </Button>
+              </>
+            )}
+          </p>
+        )}
 
-        <div className="card mb-8">
-          <div className="form-group">
-            <label>Filtrar por estado</label>
-            <select
+        <Card className="mb-8">
+          <Field label="Filtrar por estado" className="mb-0">
+            <Select
+              options={FILTER_OPTIONS}
               value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="bg-white max-w-xs"
-            >
-              <option value="all">Todas</option>
-              <option value="active">Activas</option>
-              <option value="inactive">Inactivas</option>
-            </select>
-          </div>
-        </div>
+              onChange={(value) => setFilter(value ?? 'all')}
+              className="max-w-xs"
+            />
+          </Field>
+        </Card>
 
         {showForm && (
-          <div className="card mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">
+          <Card className="mb-8">
+            <h2 className="mb-4 text-2xl font-semibold text-ink">
               {editingTag ? 'Editar tag' : 'Nueva tag'}
             </h2>
             <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label>Nombre *</label>
-                <input
+              <Field label="Nombre" required>
+                <Input
                   type="text"
                   name="nombre"
                   value={formData.nombre}
                   onChange={handleInputChange}
                   required
-                  className="bg-white"
                   placeholder="Ej: música, staff, invitados VIP"
                 />
-              </div>
+              </Field>
 
-              <div className="form-group">
-                <label>Descripción</label>
-                <textarea
+              <Field label="Descripción">
+                <Textarea
                   name="descripcion"
                   value={formData.descripcion}
                   onChange={handleInputChange}
-                  className="bg-white"
-                  rows="3"
+                  rows={3}
                   placeholder="Descripción opcional"
+                />
+              </Field>
+
+              <Field
+                label="Icono"
+                hint="Aparece en el chip de la tag para distinguirla de un vistazo."
+              >
+                <div className="flex flex-wrap gap-1.5">
+                  {TAG_ICON_OPTIONS.map((nombre) => {
+                    const activo = formData.icono === nombre;
+                    return (
+                      <button
+                        key={nombre}
+                        type="button"
+                        onClick={() =>
+                          setFormData((prev) => ({ ...prev, icono: activo ? '' : nombre }))
+                        }
+                        aria-pressed={activo}
+                        title={nombre}
+                        className={`flex h-10 w-10 items-center justify-center rounded-control border transition-chrome duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-95 motion-reduce:transition-none ${
+                          activo
+                            ? 'border-primary bg-primary text-white shadow-subtle'
+                            : 'border-surface-border bg-surface text-ink-soft hover:border-primary-300 hover:bg-primary-50'
+                        }`}
+                      >
+                        <Icon name={nombre} size="md" />
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
+
+              <Field label="Color">
+                {/* ColorInput emite el hex directo, no un evento; se envuelve
+                    para reusar el mismo handleInputChange del resto del form. */}
+                <ColorInput
+                  value={formData.color}
+                  onChange={(hex) =>
+                    handleInputChange({ target: { name: 'color', value: hex, type: 'text' } })
+                  }
+                />
+              </Field>
+
+              <div className="mb-5">
+                <Checkbox
+                  name="activa"
+                  label="Tag activa"
+                  checked={formData.activa}
+                  onChange={handleInputChange}
                 />
               </div>
 
-              <div className="form-group">
-                <label>Color</label>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="color"
-                    name="color"
-                    value={formData.color}
-                    onChange={handleInputChange}
-                    className="h-12 w-28 cursor-pointer"
-                  />
-                  <input
-                    type="text"
-                    name="color"
-                    value={formData.color}
-                    onChange={handleInputChange}
-                    className="bg-white form-input-hex"
-                    placeholder="#3B82F6"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="flex cursor-pointer items-center gap-2">
-                  <input
-                    type="checkbox"
-                    name="activa"
-                    checked={formData.activa}
-                    onChange={handleInputChange}
-                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                  />
-                  <span>Tag activa</span>
-                </label>
-              </div>
-
               <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-                <button type="submit" className="btn btn-primary w-full justify-center sm:w-auto">
+                <Button type="submit" icon="check" className="w-full sm:w-auto">
                   {editingTag ? 'Actualizar' : 'Crear'}
-                </button>
-                <button type="button" onClick={resetForm} className="btn btn-secondary w-full justify-center sm:w-auto">
+                </Button>
+                <Button type="button" variant="secondary" onClick={resetForm} className="w-full sm:w-auto">
                   Cancelar
-                </button>
+                </Button>
               </div>
             </form>
-          </div>
+          </Card>
         )}
 
         {filteredTags.length === 0 ? (
-          <EmptyState>
-            No hay tags {filter !== 'all' && (filter === 'active' ? 'activas' : 'inactivas')}.
-          </EmptyState>
+          <Card padding="none">
+            <EmptyState
+              icon="tag"
+              title="Sin tags"
+              description={
+                filter === 'all'
+                  ? 'Todavía no hay tags en el catálogo.'
+                  : `No hay tags ${filter === 'active' ? 'activas' : 'inactivas'}.`
+              }
+              action={
+                <Button
+                  icon="add"
+                  size="sm"
+                  onClick={() => {
+                    resetForm();
+                    setShowForm(true);
+                  }}
+                >
+                  Nueva tag
+                </Button>
+              }
+            />
+          </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredTags.map(tag => (
-              <div
-                key={tag._id}
-                className={`card hover:shadow-xl transition-shadow ${!tag.activa ? 'opacity-60' : ''}`}
-              >
-                <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <Card key={tag._id} className={`flex flex-col ${!tag.activa ? 'opacity-60' : ''}`}>
+                <div className="mb-2 flex items-start justify-between gap-3">
                   <div className="flex min-w-0 flex-1 items-center gap-3">
-                    <div className="h-4 w-4 shrink-0 rounded-full" style={{ backgroundColor: tag.color }} />
-                    <h2 className="text-xl font-bold capitalize text-gray-800">{tag.nombre}</h2>
+                    <span
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control text-white"
+                      style={{ backgroundColor: tag.color }}
+                    >
+                      <Icon name={tag.icono || 'tag'} size="md" />
+                    </span>
+                    <div className="min-w-0">
+                      <h2 className="truncate text-lg font-bold capitalize leading-snug text-ink">
+                        {tag.nombre}
+                      </h2>
+                      {/* El hex como metadato chico: el chip ya muestra el
+                          color; la fila "Color: ● #hex" era una línea entera
+                          para repetirlo. */}
+                      <p className="font-mono text-xs uppercase text-ink-faint">{tag.color}</p>
+                    </div>
                   </div>
-                  <span className={`badge shrink-0 self-start ${tag.activa ? 'badge-success' : 'badge-secondary'}`}>
+                  <Badge tone={tag.activa ? 'success' : 'neutral'} dot className="shrink-0">
                     {tag.activa ? 'Activa' : 'Inactiva'}
-                  </span>
+                  </Badge>
                 </div>
 
                 {tag.descripcion && (
-                  <p className="text-gray-600 mb-4 text-sm">{tag.descripcion}</p>
+                  <p className="mb-3 line-clamp-2 text-sm text-ink-muted">{tag.descripcion}</p>
                 )}
 
-                <div className="mb-4 text-sm text-gray-600">
-                  <p>
-                    <strong>Color:</strong>{' '}
-                    <span
-                      className="inline-block w-4 h-4 rounded-full align-middle mr-1"
-                      style={{ backgroundColor: tag.color }}
-                    />
-                    {tag.color}
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                  <button
-                    onClick={() => handleEdit(tag)}
-                    className="btn btn-secondary w-full justify-center sm:w-auto sm:min-w-[100px] sm:flex-1"
-                  >
+                {/* Una acción con texto; el resto, iconos con tooltip. */}
+                <div className="mt-auto flex items-center justify-between gap-2 border-t border-surface-border pt-3">
+                  <Button variant="secondary" size="sm" icon="edit" onClick={() => handleEdit(tag)}>
                     Editar
-                  </button>
-                  <button
-                    onClick={() => handleToggleActive(tag)}
-                    className={`btn w-full justify-center sm:w-auto sm:min-w-[100px] sm:flex-1 ${tag.activa ? 'btn-warning' : 'btn-success'}`}
-                  >
-                    {tag.activa ? 'Desactivar' : 'Activar'}
-                  </button>
-                  <button
-                    onClick={() => handleDelete(tag._id)}
-                    className="btn btn-danger w-full justify-center sm:w-auto sm:min-w-[100px] sm:flex-1"
-                  >
-                    Eliminar
-                  </button>
+                  </Button>
+
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      icon={tag.activa ? 'hide' : 'view'}
+                      iconOnly
+                      label={tag.activa ? 'Desactivar' : 'Activar'}
+                      title={tag.activa ? 'Desactivar' : 'Activar'}
+                      onClick={() => handleToggleActive(tag)}
+                      className={
+                        tag.activa
+                          ? 'hover:bg-warning-50 hover:text-warning-600'
+                          : 'hover:bg-success-50 hover:text-success-600'
+                      }
+                    />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      icon="delete"
+                      iconOnly
+                      label="Eliminar"
+                      title="Eliminar"
+                      onClick={() => handleDelete(tag._id)}
+                      className="hover:bg-danger-50 hover:text-danger-600"
+                    />
+                  </div>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         )}

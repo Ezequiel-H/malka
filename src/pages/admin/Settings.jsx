@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useToast } from '../../contexts/ToastContext';
 import LoadingScreen from '../../components/layout/LoadingScreen';
 import PageContainer from '../../components/layout/PageContainer';
+import { Button, Card, Field, Textarea } from '../../components/ui';
 
 const Settings = () => {
   const { showSuccess, showError } = useToast();
@@ -45,29 +46,25 @@ const Settings = () => {
 
   return (
     <PageContainer title="Ajustes" maxWidth="3xl">
+      <Card as="form" onSubmit={handleSubmit}>
+        <Field
+          label="Instrucciones de pago por defecto"
+          hint="Se muestran al inscribirse en actividades pagas que no tengan instrucciones propias. El precio ya se ve en la actividad; acá sólo indicá dónde transferir (alias, CBU, titular, etc.)."
+        >
+          <Textarea
+            value={instruccionesPagoDefault}
+            onChange={(e) => setInstruccionesPagoDefault(e.target.value)}
+            rows={8}
+            placeholder="Ej: Transferí a Alias: MALKA.ACTIVIDADES - CBU: 0000003100012345678901 - Titular: ..."
+          />
+        </Field>
 
-        <form onSubmit={handleSubmit} className="card">
-          <div className="form-group">
-            <label>Instrucciones de pago por defecto</label>
-            <p className="text-sm text-gray-600 mb-2">
-              Se muestran al inscribirse en actividades pagas que no tengan instrucciones propias.
-              El precio ya se ve en la actividad; acá solo indicá dónde transferir (alias, CBU, titular, etc.).
-            </p>
-            <textarea
-              value={instruccionesPagoDefault}
-              onChange={(e) => setInstruccionesPagoDefault(e.target.value)}
-              rows={8}
-              className="bg-white"
-              placeholder="Ej: Transferí a Alias: MALKA.ACTIVIDADES - CBU: 0000003100012345678901 - Titular: ..."
-            />
-          </div>
-
-          <div className="flex justify-end">
-            <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? 'Guardando...' : 'Guardar ajustes'}
-            </button>
-          </div>
-        </form>
+        <div className="flex justify-end">
+          <Button type="submit" icon="check" loading={saving}>
+            {saving ? 'Guardando...' : 'Guardar ajustes'}
+          </Button>
+        </div>
+      </Card>
     </PageContainer>
   );
 };

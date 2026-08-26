@@ -88,7 +88,7 @@ describe('AdminDashboard', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /Panel de Administración/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /^Panel$/i })).toBeInTheDocument();
     });
   });
 
@@ -139,10 +139,15 @@ describe('AdminDashboard', () => {
       </AppTestShell>
     );
 
+    // El selector de actividad ya no es un <select> nativo sino el Select del
+    // design system, así que se opera abriendo el listbox y eligiendo la
+    // opción. La conducta que se verifica —que se pida la estadística de esa
+    // actividad— es la misma.
     await waitFor(() => {
-      expect(screen.getByLabelText(/Actividad/i)).toBeInTheDocument();
+      expect(screen.getByRole('combobox', { name: /Actividad/i })).toBeInTheDocument();
     });
-    await user.selectOptions(screen.getByLabelText(/Actividad/i), '507f1f77bcf86cd799439011');
+    await user.click(screen.getByRole('combobox', { name: /Actividad/i }));
+    await user.click(await screen.findByRole('option', { name: 'Actividad demo' }));
 
     await waitFor(() => {
       const calls = axios.get.mock.calls.filter((c) => c[0] === '/admin/inscription-stats');

@@ -3,14 +3,38 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useToast } from '../../contexts/ToastContext';
 import { useDebounce } from '../../hooks/useDebounce';
-import LoadingScreen from '../../components/layout/LoadingScreen';
 import PageContainer from '../../components/layout/PageContainer';
-import EmptyState from '../../components/common/EmptyState';
 import UserStatusBadge from '../../components/users/UserStatusBadge';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Field,
+  Input,
+  Select,
+  Table,
+  useConfirm,
+  SkeletonRows,
+} from '../../components/ui';
+
+const ESTADO_OPTIONS = [
+  { value: '', label: 'Todos' },
+  { value: 'approved', label: 'Aprobado' },
+  { value: 'pending', label: 'Pendiente' },
+  { value: 'rejected', label: 'Rechazado' },
+];
+
+const ROLE_OPTIONS = [
+  { value: '', label: 'Todos' },
+  { value: 'participant', label: 'Participante' },
+  { value: 'admin', label: 'Administrador' },
+];
 
 const UsersManagement = () => {
   const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
+  const confirm = useConfirm();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
@@ -55,6 +79,14 @@ const UsersManagement = () => {
 
   const handleApprove = async (userId, e) => {
     e.stopPropagation(); // Prevenir que se active el click del row
+    const ok = await confirm({
+      title: '¿Aprobar este usuario?',
+      description: 'Va a poder ingresar y anotarse en actividades.',
+      confirmLabel: 'Aprobar',
+      tone: 'primary',
+    });
+    if (!ok) return;
+
     try {
       await axios.put(`/users/${userId}/approve`);
       showSuccess('Usuario aprobado exitosamente');
@@ -66,9 +98,13 @@ const UsersManagement = () => {
 
   const handleReject = async (userId, e) => {
     e.stopPropagation(); // Prevenir que se active el click del row
-    if (!window.confirm('¿Estás seguro de que deseas rechazar a este usuario?')) {
-      return;
-    }
+    const ok = await confirm({
+      title: '¿Rechazar a este usuario?',
+      description: 'No va a poder ingresar al sistema. Podés revertirlo después desde su ficha.',
+      confirmLabel: 'Rechazar',
+    });
+    if (!ok) return;
+
     try {
       await axios.put(`/users/${userId}/reject`);
       showSuccess('Usuario rechazado');
@@ -78,137 +114,143 @@ const UsersManagement = () => {
     }
   };
 
+  const columns = [
+    {
+      key: 'nombre',
+      header: 'Nombre',
+      render: (user) => (
+        <span className="font-medium text-ink">
+          {user.nombre} {user.apellido}
+        </span>
+      ),
+    },
+    { key: 'email', header: 'Email', render: (user) => <span className="text-ink-soft">{user.email}</span> },
+    {
+      key: 'role',
+      header: 'Rol',
+      render: (user) => (
+        <Badge tone={user.role === 'admin' ? 'primary' : 'neutral'}>
+          {user.role === 'admin' ? 'Admin' : 'Participante'}
+        </Badge>
+      ),
+    },
+    { key: 'estado', header: 'Estado', render: (user) => <UserStatusBadge estado={user.estado} /> },
+    {
+      key: 'tags',
+      header: 'Tags',
+      render: (user) =>
+        user.tags && user.tags.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {user.tags.slice(0, 3).map((tag) => (
+              <Badge key={tag} tone="primary" size="sm">
+                {tag}
+              </Badge>
+            ))}
+            {user.tags.length > 3 && (
+              <Badge tone="neutral" size="sm">
+                +{user.tags.length - 3}
+              </Badge>
+            )}
+          </div>
+        ) : (
+          <span className="text-ink-faint">Sin tags</span>
+        ),
+    },
+    {
+      key: 'acciones',
+      header: 'Acciones',
+      align: 'right',
+      render: (user) =>
+        user.estado === 'pending' ? (
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              size="sm"
+              variant="success"
+              icon="check"
+              onClick={(e) => handleApprove(user._id, e)}
+              title="Aprobar usuario"
+            >
+              Aceptar
+            </Button>
+            <Button
+              size="sm"
+              variant="danger"
+              icon="close"
+              onClick={(e) => handleReject(user._id, e)}
+              title="Rechazar usuario"
+            >
+              Rechazar
+            </Button>
+          </div>
+        ) : null,
+    },
+  ];
+
   if (initialLoad) {
-    return <LoadingScreen message="Cargando usuarios..." />;
+    return (
+      <PageContainer title="Usuarios">
+        <SkeletonRows count={8} />
+      </PageContainer>
+    );
   }
 
   return (
-    <PageContainer title="Gestión de Usuarios">
+    <PageContainer title="Usuarios">
+      <Card className="mb-8">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Field label="Buscar" className="mb-0">
+            <Input
+              type="search"
+              icon="search"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Nombre, apellido o email..."
+            />
+          </Field>
 
-        {/* Filtros */}
-        <div className="card mb-8">
-          <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-gray-800">Filtros</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="form-group">
-              <label>Buscar</label>
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Nombre, apellido o email..."
-                className="bg-white"
+          <Field label="Estado" className="mb-0">
+            <Select
+              options={ESTADO_OPTIONS}
+              value={filters.estado}
+              onChange={(value) => setFilters({ ...filters, estado: value ?? '' })}
+            />
+          </Field>
+
+          <Field label="Rol" className="mb-0">
+            <Select
+              options={ROLE_OPTIONS}
+              value={filters.role}
+              onChange={(value) => setFilters({ ...filters, role: value ?? '' })}
+            />
+          </Field>
+        </div>
+      </Card>
+
+      <div
+        className={
+          loading
+            ? 'pointer-events-none opacity-50 transition-opacity duration-fast'
+            : 'transition-opacity duration-fast'
+        }
+      >
+        <Table
+          columns={columns}
+          rows={users}
+          rowKey={(user) => user._id}
+          onRowClick={(user) => navigate(`/admin/users/${user._id}`)}
+          empty={
+            <Card padding="none">
+              <EmptyState
+                icon="search"
+                title="Sin resultados"
+                description="No encontramos usuarios con los filtros seleccionados."
               />
-            </div>
-
-            <div className="form-group">
-              <label>Estado</label>
-              <select
-                value={filters.estado}
-                onChange={(e) => setFilters({ ...filters, estado: e.target.value })}
-                className="bg-white"
-              >
-                <option value="">Todos</option>
-                <option value="approved">Aprobado</option>
-                <option value="pending">Pendiente</option>
-                <option value="rejected">Rechazado</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Rol</label>
-              <select
-                value={filters.role}
-                onChange={(e) => setFilters({ ...filters, role: e.target.value })}
-                className="bg-white"
-              >
-                <option value="">Todos</option>
-                <option value="participant">Participante</option>
-                <option value="admin">Administrador</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Lista de usuarios */}
-        <div className={loading ? 'opacity-50 transition-opacity pointer-events-none' : 'transition-opacity'}>
-        {users.length === 0 ? (
-          <EmptyState message="No se encontraron usuarios con los filtros seleccionados." />
-        ) : (
-          <div className="card overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b-2 border-gray-300">
-                  <th className="p-4 text-left align-middle font-semibold text-gray-700">Nombre</th>
-                  <th className="p-4 text-left align-middle font-semibold text-gray-700">Email</th>
-                  <th className="p-4 text-left align-middle font-semibold text-gray-700">Rol</th>
-                  <th className="p-4 text-left align-middle font-semibold text-gray-700">Estado</th>
-                  <th className="p-4 text-left align-middle font-semibold text-gray-700">Tags</th>
-                  <th className="p-4 text-left align-middle font-semibold text-gray-700">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map(user => (
-                  <tr 
-                    key={user._id} 
-                    className="border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
-                    onClick={() => navigate(`/admin/users/${user._id}`)}
-                  >
-                    <td className="p-4 align-middle">{user.nombre} {user.apellido}</td>
-                    <td className="p-4 align-middle">{user.email}</td>
-                    <td className="p-4 align-middle">
-                      <span className="badge badge-secondary">
-                        {user.role === 'admin' ? 'Admin' : 'Participante'}
-                      </span>
-                    </td>
-                    <td className="p-4 align-middle"><UserStatusBadge estado={user.estado} /></td>
-                    <td className="p-4 align-middle">
-                      {user.tags && user.tags.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {user.tags.slice(0, 3).map(tag => (
-                            <span key={tag} className="badge badge-info">
-                              {tag}
-                            </span>
-                          ))}
-                          {user.tags.length > 3 && (
-                            <span className="badge badge-secondary">
-                              +{user.tags.length - 3}
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">Sin tags</span>
-                      )}
-                    </td>
-                    <td className="p-4 align-middle">
-                      {user.estado === 'pending' && (
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={(e) => handleApprove(user._id, e)}
-                            className="btn btn-success btn-sm"
-                            title="Aprobar usuario"
-                          >
-                            Aceptar
-                          </button>
-                          <button
-                            onClick={(e) => handleReject(user._id, e)}
-                            className="btn btn-danger btn-sm"
-                            title="Rechazar usuario"
-                          >
-                            Rechazar
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        </div>
+            </Card>
+          }
+        />
+      </div>
     </PageContainer>
   );
 };
 
 export default UsersManagement;
-

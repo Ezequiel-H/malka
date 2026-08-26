@@ -1,8 +1,9 @@
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import PageContainer from '../components/layout/PageContainer';
 import BirthDatePrompt from '../components/profile/BirthDatePrompt';
+import { Alert, Button, Card } from '../components/ui';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -20,27 +21,31 @@ const Dashboard = () => {
 
   return (
     <PageContainer maxWidth="4xl">
-        <div className="card">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-5 sm:mb-6 text-primary break-words">
-            Bienvenido, {user?.nombre} {user?.apellido}
-          </h1>
-          <BirthDatePrompt className="mb-5 sm:mb-6" />
-          {user?.estado === 'pending' && (
-            <div className="alert alert-info">
-              <h2 className="text-lg sm:text-xl font-semibold mb-2">Tu usuario está siendo validado</h2>
-              <p className="text-base mb-4">
-                Tu cuenta está siendo validada por nuestro equipo. Este proceso puede tardar unos días. Una vez que tu
-                cuenta esté aprobada, podrás inscribirte en las actividades.
-              </p>
-              <Link to="/my-interests" className="btn btn-secondary w-full justify-center sm:inline-flex sm:w-auto">
+      <Card>
+        <h1 className="mb-5 break-words text-2xl font-semibold tracking-tight text-ink sm:mb-6 sm:text-3xl">
+          Bienvenido, {user?.nombre} {user?.apellido}
+        </h1>
+
+        <BirthDatePrompt className="mb-5 sm:mb-6" />
+
+        {user?.estado === 'pending' && (
+          <Alert
+            tone="info"
+            title="Tu usuario está siendo validado"
+            titleAs="h2"
+            action={
+              <Button variant="secondary" size="sm" to="/my-interests">
                 Mis intereses
-              </Link>
-            </div>
-          )}
-        </div>
+              </Button>
+            }
+          >
+            Tu cuenta está siendo validada por nuestro equipo. Este proceso puede tardar unos días.
+            Una vez aprobada, vas a poder inscribirte en las actividades.
+          </Alert>
+        )}
+      </Card>
     </PageContainer>
   );
 };
 
 export default Dashboard;
-

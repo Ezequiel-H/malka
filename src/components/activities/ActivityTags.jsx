@@ -1,14 +1,16 @@
-import { activityPublicTags, publicTagColor } from '../../utils/tagFields';
+import { activityPublicTags, publicTagColor, publicTagIcon } from '../../utils/tagFields';
+import { Badge } from '../ui';
 
 const TagBadges = ({ tags, catalog }) =>
-  tags.map(cat => (
-    <span
+  tags.map((cat) => (
+    <Badge
       key={cat}
-      className="badge text-white"
+      solid
+      icon={publicTagIcon(catalog, cat) || undefined}
       style={{ backgroundColor: publicTagColor(catalog, cat) }}
     >
       {cat}
-    </span>
+    </Badge>
   ));
 
 /**
@@ -31,7 +33,7 @@ const ActivityTags = ({ activity, catalog = [], variant = 'detail' }) => {
 
   return (
     <div className="mb-6">
-      <h2 className="text-xl font-semibold text-gray-800 mb-2">Tags</h2>
+      <h2 className="mb-2 text-xl font-semibold text-ink">Tags</h2>
       <div className="flex flex-wrap gap-2">
         <TagBadges tags={tags} catalog={catalog} />
       </div>

@@ -7,6 +7,16 @@ export const getPagoEstadoLabel = (estadoPago) => {
   return labels[estadoPago] || estadoPago;
 };
 
+/** Tono del Badge del design system según el estado de pago. */
+export const getPagoEstadoTone = (estadoPago) => {
+  const tones = {
+    pendiente: 'warning',
+    aprobado: 'success',
+    rechazado: 'danger',
+  };
+  return tones[estadoPago] || 'warning';
+};
+
 export const getPagoEstadoBadgeClass = (estadoPago) => {
   const classes = {
     pendiente: 'badge-warning',

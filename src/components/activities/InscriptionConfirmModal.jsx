@@ -1,19 +1,24 @@
+import { useState } from 'react';
 import { formatUtcCalendarDateEsAR } from '../../utils/dateUtils';
 import { formatActivityPrice } from '../../utils/priceUtils';
-import Modal from '../layout/Modal';
+import { Alert, Button, Field, FileInput, Modal } from '../ui';
 
 const LONG_DATE_OPTS = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
 
 const InfoRow = ({ label, children }) => (
   <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
-    <span className="shrink-0 font-semibold text-gray-700 sm:w-24">{label}</span>
-    <span className="min-w-0 break-words text-gray-800">{children}</span>
+    <span className="shrink-0 font-semibold text-ink-soft sm:w-24">{label}</span>
+    <span className="min-w-0 break-words text-ink">{children}</span>
   </div>
 );
 
 /**
  * Modal para confirmar una inscripción: resumen del evento en la fecha elegida,
  * instrucciones de pago (o coordinación por WhatsApp para viajes) y acciones.
+ *
+ * No cierra por Escape ni por click afuera: es el último paso antes de
+ * confirmar y con un comprobante ya cargado, perderlo por un click al lado
+ * sería costoso.
  */
 const InscriptionConfirmModal = ({
   activity,
@@ -23,21 +28,45 @@ const InscriptionConfirmModal = ({
   onAddToCalendar,
   onClose,
 }) => {
+  /* El archivo se refleja acá sólo para poder mostrarlo en el FileInput; la
+     página sigue siendo la dueña del valor que se envía. */
+  const [comprobante, setComprobante] = useState(null);
+
   if (!activity || !selectedDate) return null;
 
   const esViaje = activity.tipo === 'viaje';
 
+  const handleComprobante = (file) => {
+    setComprobante(file);
+    onComprobanteChange(file);
+  };
+
   return (
-    <Modal onClose={onClose} title="Confirmar Inscripción" closeOnBackdrop={false} closeOnEsc={false}>
+    <Modal
+      open
+      onClose={onClose}
+      title="Confirmar inscripción"
+      closeOnOverlay={false}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button icon="check" onClick={onConfirm}>
+            Confirmar inscripción
+          </Button>
+        </>
+      }
+    >
       <div className="space-y-4">
         <div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">{activity.titulo}</h3>
+          <h3 className="mb-2 text-xl font-semibold text-ink">{activity.titulo}</h3>
           {activity.descripcion && (
-            <p className="text-gray-600 mb-4 whitespace-pre-wrap">{activity.descripcion}</p>
+            <p className="mb-4 whitespace-pre-wrap text-ink-muted">{activity.descripcion}</p>
           )}
         </div>
 
-        <div className="space-y-3 rounded-lg bg-gray-50 p-4">
+        <div className="space-y-3 rounded-card border border-surface-border bg-surface p-4">
           <InfoRow label={esViaje ? 'Inicio:' : 'Fecha:'}>
             {formatUtcCalendarDateEsAR(selectedDate.fecha, LONG_DATE_OPTS)}
             {esViaje && selectedDate.hora ? ` · ${selectedDate.hora}` : ''}
@@ -60,7 +89,7 @@ const InscriptionConfirmModal = ({
                 href={activity.ubicacionOnline}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 hover:underline"
+                className="font-medium text-primary hover:underline"
               >
                 Ver en Google Maps
               </a>
@@ -73,76 +102,69 @@ const InscriptionConfirmModal = ({
         </div>
 
         {!activity.esGratuita && !esViaje && (
-          <div className="space-y-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-            <h4 className="font-semibold text-gray-800">Instrucciones de pago</h4>
+          <Alert tone="warning" title="Instrucciones de pago">
             {activity.instruccionesPagoResueltas ? (
-              <p className="text-gray-700 whitespace-pre-wrap">{activity.instruccionesPagoResueltas}</p>
+              <p className="whitespace-pre-wrap">{activity.instruccionesPagoResueltas}</p>
             ) : (
-              <p className="text-gray-600 text-sm">
-                Realizá la transferencia por el monto indicado y subí el comprobante.
-              </p>
+              <p>Realizá la transferencia por el monto indicado y subí el comprobante.</p>
             )}
-            <div>
-              <label className="block font-semibold text-gray-700 mb-1">
-                Comprobante de transferencia *
-              </label>
-              <input
-                type="file"
+
+            <Field label="Comprobante de transferencia" className="mb-0 mt-3" required>
+              <FileInput
                 accept="image/*,application/pdf"
-                onChange={(e) => onComprobanteChange(e.target.files?.[0] || null)}
-                className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-primary file:text-white hover:file:opacity-90"
+                value={comprobante}
+                onChange={handleComprobante}
+                maxSize={5 * 1024 * 1024}
+                hint="Arrastrá el comprobante, pegalo o hacé click"
               />
-              <p className="text-xs text-gray-500 mt-1">Imagen o PDF, máximo 5MB</p>
-            </div>
-          </div>
+            </Field>
+          </Alert>
         )}
 
         {!activity.esGratuita && esViaje && (
-          <div className="space-y-2 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-            <h4 className="font-semibold text-gray-800">Pago del viaje</h4>
-            <p className="text-gray-700 text-sm">
-              No necesitás transferir ni subir comprobante ahora. Una vez confirmado tu cupo,
-              coordinamos el pago por WhatsApp.
-            </p>
-            <a
-              href="https://wa.me/5491134405730"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-secondary w-full justify-center sm:w-auto"
-            >
-              💬 Escribinos por WhatsApp
-            </a>
-          </div>
+          <Alert tone="warning" title="Pago del viaje">
+            No necesitás transferir ni subir comprobante ahora. Una vez confirmado tu cupo,
+            coordinamos el pago por WhatsApp.
+            <div className="mt-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                icon="whatsapp"
+                href="https://wa.me/5491134405730"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Escribinos por WhatsApp
+              </Button>
+            </div>
+          </Alert>
         )}
 
-        <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:flex-wrap">
-          <button
-            onClick={onConfirm}
-            className="btn btn-primary w-full justify-center min-w-0 sm:w-auto sm:min-w-[140px] sm:flex-1"
-          >
-            Confirmar Inscripción
-          </button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           {activity.ubicacionOnline && (
-            <a
+            <Button
+              variant="secondary"
+              size="sm"
+              icon="location"
               href={activity.ubicacionOnline}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn btn-secondary w-full justify-center text-center sm:w-auto sm:whitespace-nowrap"
               title="Ver ubicación en Google Maps"
+              className="w-full sm:w-auto"
             >
-              🗺️ ¿Cómo llego?
-            </a>
+              ¿Cómo llego?
+            </Button>
           )}
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
+            icon="addToCalendar"
             onClick={onAddToCalendar}
-            className="btn btn-secondary w-full justify-center sm:w-auto"
             title="Agregar al calendario"
+            className="w-full sm:w-auto"
           >
-            📅 Agregar al Calendario
-          </button>
-          <button onClick={onClose} className="btn btn-outline w-full justify-center sm:w-auto">
-            Cancelar
-          </button>
+            Agregar al calendario
+          </Button>
         </div>
       </div>
     </Modal>

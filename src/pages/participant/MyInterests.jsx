@@ -6,6 +6,7 @@ import PublicTagPicker from '../../components/tags/PublicTagPicker';
 import { userPublicTags } from '../../utils/tagFields';
 import LoadingScreen from '../../components/layout/LoadingScreen';
 import PageContainer from '../../components/layout/PageContainer';
+import { Button, Field } from '../../components/ui';
 
 const MyInterests = () => {
   const { user, fetchUser, updateMyTags } = useAuth();
@@ -54,28 +55,31 @@ const MyInterests = () => {
   }
 
   return (
-    <PageContainer maxWidth="2xl" className="card">
-        <h1 className="text-2xl sm:text-3xl font-bold text-primary mb-2">Mis intereses</h1>
-        <p className="text-gray-600 mb-6">
-          Elegí las áreas que te interesan. Las usamos para mostrarte actividades alineadas a tus preferencias.
-          Podés cambiar esta lista cuando quieras.
-        </p>
-        <form onSubmit={handleSubmit}>
-          <label className="block font-medium text-gray-800 mb-2">Tags públicos</label>
+    <PageContainer maxWidth="2xl" className="rounded-card border border-surface-border bg-surface p-4 shadow-card sm:p-6">
+      <h1 className="mb-2 text-2xl font-bold text-primary sm:text-3xl">Mis intereses</h1>
+      <p className="mb-6 text-ink-muted">
+        Elegí las áreas que te interesan. Las usamos para mostrarte actividades alineadas a tus
+        preferencias. Podés cambiar esta lista cuando quieras.
+      </p>
+
+      <form onSubmit={handleSubmit}>
+        <Field label="Tags públicos">
           <PublicTagPicker
             availableTags={availableTags}
             selectedNames={tags}
             onChange={setTags}
             emptyHint={
-              <p className="text-sm text-gray-500 mt-2">
+              <p className="mt-2 text-sm text-ink-muted">
                 No hay tags en el catálogo. Un administrador puede cargarlas en Tags públicos.
               </p>
             }
           />
-          <button type="submit" className="btn btn-primary mt-6 w-full sm:w-auto" disabled={saving}>
-            {saving ? 'Guardando...' : 'Guardar'}
-          </button>
-        </form>
+        </Field>
+
+        <Button type="submit" loading={saving} className="mt-6 w-full sm:w-auto">
+          {saving ? 'Guardando...' : 'Guardar'}
+        </Button>
+      </form>
     </PageContainer>
   );
 };

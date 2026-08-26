@@ -2,21 +2,26 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
-import { activityPublicTags } from '../../utils/tagFields';
+import { activityPublicTags, publicTagColor, publicTagIcon, DEFAULT_PUBLIC_TAG_COLOR } from '../../utils/tagFields';
 import { formatDateEsAR, formatDateToString, formatUtcCalendarDateEsAR, formatUtcCalendarDateToString } from '../../utils/dateUtils';
 import { buildGoogleCalendarTemplateUrl } from '../../utils/googleCalendarActivityUrl';
 import { postInscription } from '../../utils/paymentUtils';
+import { formatActivityPrice } from '../../utils/priceUtils';
 import { useDebounce } from '../../hooks/useDebounce';
 import ActivityDescription from '../../components/activities/ActivityDescription';
 import ActivityTags from '../../components/activities/ActivityTags';
 import ActivityInfo from '../../components/activities/ActivityInfo';
-import LoadingScreen from '../../components/layout/LoadingScreen';
 import PageContainer from '../../components/layout/PageContainer';
-import InscriptionStatusBadge from '../../components/activities/InscriptionStatusBadge';
+import InscriptionStatusTag from '../../components/activities/InscriptionStatusTag';
 import DateSelectionModal from '../../components/activities/DateSelectionModal';
 import InscriptionConfirmModal from '../../components/activities/InscriptionConfirmModal';
-import EmptyState from '../../components/common/EmptyState';
 import BirthDatePrompt from '../../components/profile/BirthDatePrompt';
+import {
+  Badge,
+  Button, Card, EmptyState, Field, Input, Select,
+  Icon,
+  SkeletonCards,
+} from '../../components/ui';
 
 const ActivitiesList = () => {
   const { showSuccess, showError } = useToast();
@@ -342,124 +347,172 @@ const ActivitiesList = () => {
     }
   };
 
+  // El Select del DS toma opciones como datos, no como <option> sueltos.
+  // getPeriodLabel arma la etiqueta con el rango de fechas real, así que las
+  // opciones se derivan en cada render y no pueden vivir fuera del componente.
+  const PERIODO_OPTIONS = [
+    { value: '', label: 'Todos los períodos' },
+    { value: 'esta-semana', label: getPeriodLabel('esta-semana') },
+    { value: 'semana-que-viene', label: getPeriodLabel('semana-que-viene') },
+    { value: 'este-mes', label: getPeriodLabel('este-mes') },
+    { value: 'siguiente-mes', label: getPeriodLabel('siguiente-mes') },
+  ];
+
+  const tagOptions = [
+    { value: '', label: 'Todos los tags' },
+    ...categoriasOptions.map((cat) => ({
+      value: cat,
+      label: cat.charAt(0).toUpperCase() + cat.slice(1),
+    })),
+  ];
+
   if (initialLoad) {
-    return <LoadingScreen message="Cargando actividades..." />;
+    return (
+      <PageContainer title="Cartelera">
+        <SkeletonCards />
+      </PageContainer>
+    );
   }
 
   return (
-    <PageContainer title="Cartelera de Actividades">
-        <BirthDatePrompt className="mb-6" />
+    <PageContainer title="Cartelera">
+      <BirthDatePrompt className="mb-6" />
 
         {/* Filtros */}
-        <div className="card mb-8">
-          <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-gray-800">Filtros</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="form-group">
-              <label>Buscar</label>
-              <input
-                type="text"
+        <Card className="mb-8">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Field label="Buscar" className="mb-0">
+              <Input
+                type="search"
+                icon="search"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Título o descripción..."
-                className="bg-white"
               />
-            </div>
+            </Field>
 
-            <div className="form-group">
-              <label>Período</label>
-              <select
+            <Field label="Período" className="mb-0">
+              <Select
+                options={PERIODO_OPTIONS}
                 value={filters.periodo}
-                onChange={(e) => setFilters({ ...filters, periodo: e.target.value })}
-                className="bg-white"
-              >
-                <option value="">Todos los períodos</option>
-                <option value="esta-semana">{getPeriodLabel('esta-semana')}</option>
-                <option value="semana-que-viene">{getPeriodLabel('semana-que-viene')}</option>
-                <option value="este-mes">{getPeriodLabel('este-mes')}</option>
-                <option value="siguiente-mes">{getPeriodLabel('siguiente-mes')}</option>
-              </select>
-            </div>
+                onChange={(value) => setFilters({ ...filters, periodo: value ?? '' })}
+              />
+            </Field>
 
-            <div className="form-group">
-              <label>Tags</label>
-              <select
+            <Field label="Tags" className="mb-0">
+              <Select
+                options={tagOptions}
                 value={filters.categoria}
-                onChange={(e) => setFilters({ ...filters, categoria: e.target.value })}
-                className="bg-white"
-              >
-                <option value="">Todos los tags</option>
-                {categoriasOptions.length > 0 ? (
-                  categoriasOptions.map(cat => (
-                    <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
-                  ))
-                ) : (
-                  <option value="" disabled>No hay tags disponibles</option>
-                )}
-              </select>
-            </div>
+                onChange={(value) => setFilters({ ...filters, categoria: value ?? '' })}
+                searchable={tagOptions.length > 8}
+                emptyMessage="No hay tags disponibles"
+              />
+            </Field>
           </div>
-        </div>
+        </Card>
 
         {/* Lista de actividades */}
         <div className={loading ? 'opacity-50 transition-opacity pointer-events-none' : 'transition-opacity'}>
         {activities.length === 0 ? (
-          <EmptyState message="No se encontraron actividades con los filtros seleccionados." />
+          <Card padding="none">
+            <EmptyState
+              icon="search"
+              title="Sin resultados"
+              description="No encontramos actividades con los filtros seleccionados."
+            />
+          </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {activities.map(activity => (
-              <div 
-                key={activity._id} 
-                className="card hover:shadow-xl transition-shadow cursor-pointer flex flex-col"
+              <Card
+                key={activity._id}
+                interactive
+                className="flex flex-col"
                 onClick={(e) => handleActivityClick(activity, e)}
               >
-                {activity.fotos && activity.fotos.length > 0 && (
+                {activity.fotos && activity.fotos.length > 0 ? (
                   <img
                     src={activity.fotos[0]}
                     alt={activity.titulo}
-                    className="w-full h-48 object-cover rounded-lg mb-4"
+                    className="mb-4 h-48 w-full rounded-card object-cover"
                   />
+                ) : (
+                  /* Sin foto, la card no se queda en texto plano: una banda
+                     con el color de su primera tag (o el verde de marca) y el
+                     icono del tipo de actividad. */
+                  (() => {
+                    const tagColor =
+                      publicTagColor(publicTagCatalog, activityPublicTags(activity)[0]) ||
+                      DEFAULT_PUBLIC_TAG_COLOR;
+                    const tipoIcon =
+                      publicTagIcon(publicTagCatalog, activityPublicTags(activity)[0]) ||
+                      (activity.tipo === 'viaje'
+                        ? 'location'
+                        : activity.tipo === 'recurrente'
+                          ? 'time'
+                          : 'activity');
+                    return (
+                      <div
+                        aria-hidden="true"
+                        className="mb-4 flex h-28 items-center justify-center rounded-card"
+                        style={{
+                          background: `linear-gradient(135deg, ${tagColor}14, ${tagColor}42)`,
+                        }}
+                      >
+                        <Icon name={tipoIcon} size="2xl" style={{ color: tagColor }} strokeWidth={1.5} />
+                      </div>
+                    );
+                  })()
                 )}
-                <h2 className="text-xl font-bold mb-3 text-gray-800">{activity.titulo}</h2>
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <h2 className="min-w-0 text-lg font-bold leading-snug text-ink">
+                    {activity.titulo}
+                  </h2>
+                  {activity.esGratuita ? (
+                    <Badge tone="success" className="shrink-0">
+                      Gratis
+                    </Badge>
+                  ) : (
+                    <span className="shrink-0 font-semibold tabular-nums text-ink">
+                      {formatActivityPrice(activity)}
+                    </span>
+                  )}
+                </div>
                 <ActivityDescription activity={activity} variant="card" />
 
                 <ActivityTags activity={activity} catalog={publicTagCatalog} variant="card" />
 
-                <ActivityInfo activity={activity} variant="card" />
+                <ActivityInfo activity={activity} variant="card" showPrice={false} />
 
                 <div
-                  className="mt-auto flex w-full flex-col gap-2 sm:flex-row sm:items-stretch"
+                  className="mt-auto flex items-center justify-between gap-3 border-t border-surface-border pt-3"
                   onClick={(e) => e.stopPropagation()}
                 >
+                  {/* El "¿Cómo llego?" se fue de la card: el lugar ya está en la
+                      línea de datos y el mapa vive en el detalle. */}
                   {activity.estadoInscripcion ? (
-                    <div className="flex w-full flex-1 flex-col gap-2">
-                      <InscriptionStatusBadge estado={activity.estadoInscripcion} />
+                    <div className="flex min-w-0 flex-col gap-1">
+                      <InscriptionStatusTag
+                        estado={activity.estadoInscripcion}
+                        aceptadaLabel="Confirmada"
+                      />
                       {activity.tipo === 'recurrente' && activity.fechaInscripcion && (
-                        <p className="text-sm text-gray-600">
+                        <p className="text-xs text-ink-muted">
                           Inscrito para: {formatUtcCalendarDateEsAR(activity.fechaInscripcion)}
                         </p>
                       )}
                     </div>
                   ) : (
-                    <button
-                      onClick={(e) => handleInscribeClick(activity, e)}
-                      className="btn btn-primary w-full justify-center sm:w-auto sm:flex-1"
-                    >
-                      Inscribirse
-                    </button>
+                    <span className="text-sm text-ink-faint">Ver detalle</span>
                   )}
-                  {activity.ubicacionOnline && (
-                    <a
-                      href={activity.ubicacionOnline}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-secondary w-full justify-center whitespace-normal text-center sm:w-auto sm:whitespace-nowrap"
-                      title="Ver ubicación en Google Maps"
-                    >
-                      🗺️ ¿Cómo llego?
-                    </a>
+
+                  {!activity.estadoInscripcion && (
+                    <Button size="sm" icon="check" onClick={(e) => handleInscribeClick(activity, e)}>
+                      Inscribirse
+                    </Button>
                   )}
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         )}

@@ -1,5 +1,5 @@
 import { formatUtcCalendarDateEsAR } from '../../utils/dateUtils';
-import Modal from '../layout/Modal';
+import { Card, EmptyState, Modal, Spinner } from '../ui';
 
 const LONG_DATE_OPTS = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
 
@@ -11,46 +11,43 @@ const ExportDateModal = ({ activity, dates, loading, onClose, onSelect }) => {
 
   return (
     <Modal
+      open
       onClose={onClose}
-      titleClassName="text-lg font-bold leading-snug text-gray-800 sm:text-xl"
-      title={
-        <>
-          <span className="block sm:inline">Exportar Excel — </span>
-          <span className="break-words">{activity.titulo}</span>
-        </>
-      }
+      title={`Exportar Excel — ${activity.titulo}`}
+      description="Últimas 3 y próximas 3 fechas con inscripciones."
     >
-      <p className="mb-4 text-sm text-gray-600">
-        Últimas 3 y próximas 3 fechas con inscripciones.
-      </p>
-
       {loading ? (
-        <div className="text-center py-8">
-          <div className="spinner mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando fechas...</p>
+        <div className="flex flex-col items-center py-8">
+          <Spinner size="lg" label="Cargando fechas" />
+          <p className="mt-4 text-ink-muted">Cargando fechas...</p>
         </div>
       ) : dates.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-600">No hay fechas recientes con inscripciones para exportar.</p>
-        </div>
+        <EmptyState
+          icon="activity"
+          title="Sin fechas para exportar"
+          description="No hay fechas recientes con inscripciones."
+        />
       ) : (
         <div className="space-y-2">
           {dates.map((dateOption) => (
-            <button
+            <Card
               key={dateOption.fechaStr}
+              as="button"
               type="button"
+              interactive
+              padding="sm"
               onClick={() => onSelect(dateOption.fechaStr)}
-              className="w-full rounded-lg border-2 border-gray-300 bg-white p-4 text-left transition-colors hover:border-primary hover:bg-gray-50"
+              className="w-full text-left"
             >
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                <p className="font-semibold text-gray-800">
+                <p className="font-semibold text-ink">
                   {formatUtcCalendarDateEsAR(`${dateOption.fechaStr}T00:00:00.000Z`, LONG_DATE_OPTS)}
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-ink-muted">
                   {dateOption.count} {dateOption.count === 1 ? 'inscripción' : 'inscripciones'}
                 </p>
               </div>
-            </button>
+            </Card>
           ))}
         </div>
       )}

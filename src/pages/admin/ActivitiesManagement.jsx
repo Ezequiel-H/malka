@@ -2,17 +2,34 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
-import { activityPublicTags, publicTagColor } from '../../utils/tagFields';
+import { activityPublicTags, publicTagColor, publicTagIcon } from '../../utils/tagFields';
 import { formatUtcCalendarDateEsAR, formatUtcCalendarDateToString } from '../../utils/dateUtils';
 import { getActivityShareUrl } from '../../utils/activityShareUrl';
 import { formatActivityPrice } from '../../utils/priceUtils';
-import LoadingScreen from '../../components/layout/LoadingScreen';
 import PageContainer from '../../components/layout/PageContainer';
-import EmptyState from '../../components/common/EmptyState';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Field,
+  Icon,
+  Select,
+  SkeletonCards,
+  useConfirm,
+} from '../../components/ui';
 import ExportDateModal from '../../components/activities/ExportDateModal';
+
+const ESTADO_OPTIONS = [
+  { value: '', label: 'Todas' },
+  { value: 'publicada', label: 'Publicadas' },
+  { value: 'borrador', label: 'Borradores' },
+  { value: 'eliminada', label: 'Eliminadas' },
+];
 
 const ActivitiesManagement = () => {
   const { showSuccess, showError } = useToast();
+  const confirm = useConfirm();
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('publicada');
@@ -72,13 +89,22 @@ const ActivitiesManagement = () => {
 
   const handleDelete = async (activityId, currentEstado) => {
     const isEliminada = currentEstado === 'eliminada';
-    const confirmMessage = isEliminada 
-      ? '¿Estás seguro de que deseas volver a activar esta actividad?'
-      : '¿Estás seguro de que deseas eliminar esta actividad?';
 
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
+    const ok = await confirm(
+      isEliminada
+        ? {
+            title: '¿Volver a activar esta actividad?',
+            description: 'Vuelve a publicarse y los participantes van a poder verla.',
+            confirmLabel: 'Activar',
+            tone: 'primary',
+          }
+        : {
+            title: '¿Eliminar esta actividad?',
+            description: 'Deja de verse en la cartelera. Podés volver a activarla después.',
+            confirmLabel: 'Eliminar',
+          }
+    );
+    if (!ok) return;
 
     try {
       if (isEliminada) {
@@ -210,56 +236,60 @@ const ActivitiesManagement = () => {
 
   const getEstadoBadge = (estado) => {
     const badges = {
-      publicada: { class: 'badge-success', text: 'Publicada' },
-      borrador: { class: 'badge-warning', text: 'Borrador' },
-      eliminada: { class: 'badge-danger', text: 'Eliminada' }
+      publicada: { tone: 'success', text: 'Publicada' },
+      borrador: { tone: 'warning', text: 'Borrador' },
+      eliminada: { tone: 'danger', text: 'Eliminada' },
     };
     const badge = badges[estado] || badges.borrador;
-    return <span className={`badge ${badge.class}`}>{badge.text}</span>;
+    return (
+      <Badge tone={badge.tone} dot>
+        {badge.text}
+      </Badge>
+    );
   };
 
   if (loading) {
-    return <LoadingScreen message="Cargando actividades..." />;
+    return (
+      <PageContainer title="Actividades">
+        <SkeletonCards />
+      </PageContainer>
+    );
   }
 
   return (
     <PageContainer
-      title="Gestión de Actividades"
+      title="Actividades"
       actions={
-        <Link to="/admin/activities/new" className="btn btn-primary w-full justify-center sm:w-auto shrink-0">
-          Nueva Actividad
-        </Link>
+        <Button to="/admin/activities/new" icon="add" className="w-full shrink-0 sm:w-auto">
+          Nueva actividad
+        </Button>
       }
     >
 
         {/* Filtro */}
-        <div className="card mb-8">
-          <div className="form-group">
-            <label>Filtrar por estado</label>
-            <select
+        <Card className="mb-8">
+          <Field label="Filtrar por estado" className="mb-0">
+            <Select
+              options={ESTADO_OPTIONS}
               value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="bg-white max-w-xs"
-            >
-              <option value="">Todas</option>
-              <option value="publicada">Publicadas</option>
-              <option value="borrador">Borradores</option>
-              <option value="eliminada">Eliminadas</option>
-            </select>
-          </div>
+              onChange={(value) => setFilter(value ?? '')}
+              className="max-w-xs"
+            />
+          </Field>
 
           {publicTagCatalog.length > 0 && (
-            <div className="form-group mb-0">
-              <div className="flex items-center justify-between">
-                <label>Filtrar por tags</label>
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <span className="block text-sm font-medium text-ink-soft">Filtrar por tags</span>
                 {selectedTags.length > 0 && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="link"
+                    size="sm"
                     onClick={() => setSelectedTags([])}
-                    className="text-sm text-primary underline"
+                    className="min-h-0 px-0 py-0"
                   >
                     Limpiar
-                  </button>
+                  </Button>
                 )}
               </div>
               <div className="flex flex-wrap gap-2">
@@ -271,7 +301,10 @@ const ActivitiesManagement = () => {
                       key={tag.nombre}
                       type="button"
                       onClick={() => toggleTag(tag.nombre)}
-                      className={`badge transition-opacity ${isSelected ? 'text-white' : 'text-gray-700'}`}
+                      aria-pressed={isSelected}
+                      className={`inline-flex items-center rounded-pill px-3 py-1 text-xs font-semibold transition-chrome duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 active:scale-95 motion-reduce:transition-none ${
+                        isSelected ? 'text-white' : 'text-ink-soft'
+                      }`}
                       style={{
                         backgroundColor: isSelected ? color : 'transparent',
                         border: `1px solid ${color}`
@@ -283,94 +316,166 @@ const ActivitiesManagement = () => {
                 })}
               </div>
               {selectedTags.length > 0 && (
-                <p className="mt-2 text-sm text-gray-500">
+                <p className="mt-2 text-sm text-ink-muted">
                   Mostrando actividades con al menos uno de los tags seleccionados.
                 </p>
               )}
             </div>
           )}
-        </div>
+        </Card>
 
         {/* Lista de actividades */}
         {filteredActivities.length === 0 ? (
-          <EmptyState message="No hay actividades con el filtro seleccionado." />
+          <Card padding="none">
+            <EmptyState
+              icon="activity"
+              title="Sin actividades"
+              description="No hay actividades con el filtro seleccionado."
+              action={
+                <Button to="/admin/activities/new" icon="add" size="sm">
+                  Nueva actividad
+                </Button>
+              }
+            />
+          </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredActivities.map(activity => (
-              <div key={activity._id} className="card hover:shadow-xl transition-shadow flex flex-col">
-                <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <h2 className="min-w-0 flex-1 text-xl font-bold text-gray-800">{activity.titulo}</h2>
-                  <div className="shrink-0 self-start">{getEstadoBadge(activity.estado)}</div>
+              <Card key={activity._id} className="flex flex-col">
+                <div className="mb-2 flex items-start justify-between gap-3">
+                  <h2 className="min-w-0 flex-1 text-lg font-bold leading-snug text-ink">
+                    {activity.titulo}
+                  </h2>
+                  <div className="shrink-0">{getEstadoBadge(activity.estado)}</div>
                 </div>
 
-                <p className="text-gray-600 mb-4 line-clamp-3 whitespace-pre-line">{activity.descripcion}</p>
-
-                <div className="mb-4 flex flex-wrap gap-2">
-                  {activityPublicTags(activity).map(cat => (
-                    <span
-                      key={cat}
-                      className="badge text-white"
-                      style={{ backgroundColor: publicTagColor(publicTagCatalog, cat) }}
-                    >
-                      {cat}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="mb-4 text-sm text-gray-600 space-y-1">
+                {/* Los datos en una línea envolvente con iconos, como en la
+                    cartelera: una fila por dato hacía la card el doble de alta. */}
+                <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-ink-soft">
                   {activity.fecha && (
-                    <p>
-                      <strong>{activity.tipo === 'viaje' ? 'Inicio:' : 'Fecha:'}</strong>{' '}
+                    <span className="flex items-center gap-1.5">
+                      <Icon name="activity" size="sm" className="shrink-0 text-ink-faint" />
                       {formatUtcCalendarDateEsAR(activity.fecha)}
-                    </p>
+                      {activity.tipo === 'viaje' && activity.fechaFin
+                        ? ` → ${formatUtcCalendarDateEsAR(activity.fechaFin)}`
+                        : ''}
+                    </span>
                   )}
-                  {activity.tipo === 'viaje' && activity.fechaFin && (
-                    <p><strong>Finaliza:</strong> {formatUtcCalendarDateEsAR(activity.fechaFin)}</p>
+                  {activity.hora && activity.tipo !== 'viaje' && (
+                    <span className="flex items-center gap-1.5">
+                      <Icon name="time" size="sm" className="shrink-0 text-ink-faint" />
+                      {activity.hora}
+                    </span>
                   )}
-                  {activity.hora && activity.tipo !== 'viaje' && <p><strong>Hora:</strong> {activity.hora}</p>}
-                  {activity.lugar && <p><strong>Lugar:</strong> {activity.lugar}</p>}
-                  <p><strong>Precio:</strong> {formatActivityPrice(activity)}</p>
-                  {activity.cupo && <p><strong>Cupo:</strong> {activity.cupo}</p>}
-                  <p><strong>Tipo:</strong> {activity.tipo === 'recurrente' ? 'Recurrente' : activity.tipo === 'viaje' ? 'Viaje' : 'Única'}</p>
+                  {activity.lugar && (
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <Icon name="location" size="sm" className="shrink-0 text-ink-faint" />
+                      <span className="truncate">{activity.lugar}</span>
+                    </span>
+                  )}
+                  {activity.cupo && (
+                    <span className="flex items-center gap-1.5">
+                      <Icon name="users" size="sm" className="shrink-0 text-ink-faint" />
+                      Cupo {activity.cupo}
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1.5">
+                    <Icon name="payment" size="sm" className="shrink-0 text-ink-faint" />
+                    {activity.esGratuita ? (
+                      <Badge tone="success" size="sm">
+                        Gratis
+                      </Badge>
+                    ) : (
+                      <span className="font-semibold text-ink">{formatActivityPrice(activity)}</span>
+                    )}
+                  </span>
+                  <Badge tone="neutral" size="sm">
+                    {activity.tipo === 'recurrente'
+                      ? 'Recurrente'
+                      : activity.tipo === 'viaje'
+                        ? 'Viaje'
+                        : 'Única'}
+                  </Badge>
                 </div>
 
-                <div className="mt-auto flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                  {activity.estado === 'publicada' && (
-                    <button
-                      onClick={() => handleCopyLink(activity._id)}
-                      className="btn btn-secondary w-full justify-center sm:w-auto sm:min-w-[100px] sm:flex-1"
-                    >
-                      Copiar link
-                    </button>
-                  )}
-                  <button
+                <p className="mb-3 line-clamp-2 whitespace-pre-line text-sm text-ink-muted">
+                  {activity.descripcion}
+                </p>
+
+                {activityPublicTags(activity).length > 0 && (
+                  <div className="mb-3 flex flex-wrap gap-1.5">
+                    {activityPublicTags(activity).map(cat => (
+                      <Badge
+                        key={cat}
+                        solid
+                        size="sm"
+                        icon={publicTagIcon(publicTagCatalog, cat) || undefined}
+                        style={{ backgroundColor: publicTagColor(publicTagCatalog, cat) }}
+                      >
+                        {cat}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                {/* Una acción principal con texto; el resto, iconos con tooltip.
+                    Cinco botones llenos convertían cada card en una botonera. */}
+                <div className="mt-auto flex items-center justify-between gap-2 border-t border-surface-border pt-3">
+                  <Button
+                    size="sm"
+                    icon="users"
                     onClick={() => navigate(`/admin/activities/${activity._id}/inscriptions`)}
-                    className="btn btn-primary w-full justify-center sm:w-auto sm:min-w-[100px] sm:flex-1"
                   >
-                    Ver Inscripciones
-                  </button>
-                  <button
-                    onClick={() => navigate(`/admin/activities/edit/${activity._id}`)}
-                    className="btn btn-secondary w-full justify-center sm:w-auto sm:min-w-[100px] sm:flex-1"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => handleExportClick(activity)}
-                    className="btn btn-success w-full justify-center sm:w-auto sm:min-w-[100px] sm:flex-1"
-                  >
-                    Exportar Excel
-                  </button>
-                  <button
-                    onClick={() => handleDelete(activity._id, activity.estado)}
-                    className={`btn w-full justify-center sm:w-auto sm:min-w-[100px] sm:flex-1 ${
-                      activity.estado === 'eliminada' ? 'btn-success' : 'btn-danger'
-                    }`}
-                  >
-                    {activity.estado === 'eliminada' ? 'Volver a activar' : 'Eliminar'}
-                  </button>
+                    Inscripciones
+                  </Button>
+
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      icon="edit"
+                      iconOnly
+                      label="Editar"
+                      title="Editar"
+                      onClick={() => navigate(`/admin/activities/edit/${activity._id}`)}
+                    />
+                    {activity.estado === 'publicada' && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        icon="copy"
+                        iconOnly
+                        label="Copiar link"
+                        title="Copiar link"
+                        onClick={() => handleCopyLink(activity._id)}
+                      />
+                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      icon="download"
+                      iconOnly
+                      label="Exportar Excel"
+                      title="Exportar Excel"
+                      onClick={() => handleExportClick(activity)}
+                    />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      icon={activity.estado === 'eliminada' ? 'check' : 'delete'}
+                      iconOnly
+                      label={activity.estado === 'eliminada' ? 'Volver a activar' : 'Eliminar'}
+                      title={activity.estado === 'eliminada' ? 'Volver a activar' : 'Eliminar'}
+                      onClick={() => handleDelete(activity._id, activity.estado)}
+                      className={
+                        activity.estado === 'eliminada'
+                          ? 'hover:bg-success-50 hover:text-success-600'
+                          : 'hover:bg-danger-50 hover:text-danger-600'
+                      }
+                    />
+                  </div>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         )}

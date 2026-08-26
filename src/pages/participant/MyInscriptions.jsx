@@ -6,14 +6,32 @@ import {
   formatUtcCalendarDateToString,
   formatUtcCalendarDayAndTime,
 } from '../../utils/dateUtils';
-import { getPagoEstadoLabel, getPagoEstadoBadgeClass, putComprobante } from '../../utils/paymentUtils';
-import LoadingScreen from '../../components/layout/LoadingScreen';
+import { getPagoEstadoLabel, getPagoEstadoTone, putComprobante } from '../../utils/paymentUtils';
 import PageContainer from '../../components/layout/PageContainer';
-import EmptyState from '../../components/common/EmptyState';
 import InscriptionStatusTag from '../../components/activities/InscriptionStatusTag';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Field,
+  FileInput,
+  Select,
+  useConfirm,
+  SkeletonRows,
+} from '../../components/ui';
+
+const ESTADOS = [
+  { value: '', label: 'Todos' },
+  { value: 'aceptada', label: 'Confirmadas' },
+  { value: 'pendiente', label: 'Pendientes' },
+  { value: 'cancelada', label: 'Canceladas' },
+  { value: 'en_espera', label: 'En lista de espera' },
+];
 
 const MyInscriptions = () => {
   const { showSuccess, showError } = useToast();
+  const confirm = useConfirm();
   const [inscriptions, setInscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
@@ -29,11 +47,11 @@ const MyInscriptions = () => {
       setLoading(true);
       const params = filter ? `?estado=${filter}` : '';
       const response = await axios.get(`/inscriptions/my${params}`);
-      
+
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       yesterday.setHours(0, 0, 0, 0);
-      
+
       const yesterdayStr = formatLocalDateToString(yesterday);
 
       const filteredInscriptions = response.data.inscriptions.filter((inscription) => {
@@ -42,7 +60,7 @@ const MyInscriptions = () => {
         if (!dayStr) return false;
         return dayStr >= yesterdayStr;
       });
-      
+
       setInscriptions(filteredInscriptions);
     } catch (error) {
       console.error('Error fetching inscriptions:', error);
@@ -52,9 +70,13 @@ const MyInscriptions = () => {
   };
 
   const handleCancel = async (inscriptionId) => {
-    if (!window.confirm('¿Estás seguro de que deseas cancelar esta inscripción?')) {
-      return;
-    }
+    const ok = await confirm({
+      title: '¿Cancelar esta inscripción?',
+      description: 'Si después querés volver, vas a tener que inscribirte de nuevo.',
+      confirmLabel: 'Cancelar inscripción',
+      cancelLabel: 'Volver',
+    });
+    if (!ok) return;
 
     try {
       await axios.put(`/inscriptions/${inscriptionId}/cancel`);
@@ -82,124 +104,148 @@ const MyInscriptions = () => {
   };
 
   if (loading) {
-    return <LoadingScreen message="Cargando inscripciones..." />;
+    return (
+      <PageContainer title="Mis inscripciones">
+        <SkeletonRows count={5} />
+      </PageContainer>
+    );
   }
 
   return (
-    <PageContainer title="Mis Inscripciones">
+    <PageContainer title="Mis inscripciones">
+      <Card className="mb-8">
+        <Field label="Filtrar por estado" className="mb-0">
+          <Select
+            options={ESTADOS}
+            value={filter}
+            onChange={(value) => setFilter(value ?? '')}
+            className="max-w-xs"
+          />
+        </Field>
+      </Card>
 
-        <div className="card mb-8">
-          <div className="form-group">
-            <label>Filtrar por estado</label>
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="bg-white max-w-xs"
-            >
-              <option value="">Todos</option>
-              <option value="aceptada">Confirmadas</option>
-              <option value="pendiente">Pendientes</option>
-              <option value="cancelada">Canceladas</option>
-              <option value="en_espera">En lista de espera</option>
-            </select>
-          </div>
-        </div>
+      {inscriptions.length === 0 ? (
+        <Card padding="none">
+          <EmptyState
+            icon="activity"
+            title="Todavía no tenés inscripciones"
+            description="Cuando te anotes en una actividad, va a aparecer acá."
+            action={
+              <Button to="/activities" icon="activity" size="sm">
+                Ver actividades
+              </Button>
+            }
+          />
+        </Card>
+      ) : (
+        <Card padding="none" className="divide-y divide-surface-border overflow-hidden">
+          {inscriptions.map((inscription) => {
+            const activity = inscription.activityId;
+            const horaEv = inscription.hora || activity?.hora || '';
+            const hasPago = !!inscription.pago?.comprobante?.url;
 
-        {inscriptions.length === 0 ? (
-          <EmptyState message="No tienes inscripciones registradas." />
-        ) : (
-          <div className="card divide-y divide-gray-200 p-0 overflow-hidden">
-            {inscriptions.map(inscription => {
-              const activity = inscription.activityId;
-              const horaEv = inscription.hora || activity?.hora || '';
-              const hasPago = !!inscription.pago?.comprobante?.url;
-              return (
-                <div
-                  key={inscription._id}
-                  className="px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4 hover:bg-gray-50/80"
-                >
-                  <div className="min-w-0 flex-1 flex flex-col gap-2">
-                    <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-6">
-                      <div className="font-semibold text-gray-900 truncate text-base sm:max-w-[42%] sm:shrink-0 sm:pr-2">
-                        {activity?.titulo || 'Actividad eliminada'}
-                      </div>
-                      <div className="text-gray-800 tabular-nums text-base font-medium sm:text-lg sm:flex-1 sm:min-w-0">
-                        {formatUtcCalendarDayAndTime(inscription.fecha, horaEv)}
-                      </div>
+            return (
+              <div
+                key={inscription._id}
+                className="flex flex-col gap-3 px-4 py-3 transition-control duration-fast hover:bg-primary-50/40 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
+              >
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-6">
+                    <div className="truncate text-base font-semibold text-ink sm:max-w-[42%] sm:shrink-0 sm:pr-2">
+                      {activity?.titulo || 'Actividad eliminada'}
                     </div>
-                    {hasPago && (
-                      <div className="text-sm text-gray-600 space-y-1">
-                        <span className={`badge ${getPagoEstadoBadgeClass(inscription.pago.estadoPago)}`}>
-                          {getPagoEstadoLabel(inscription.pago.estadoPago)}
-                        </span>
-                        {inscription.pago.estadoPago === 'rechazado' && inscription.pago.motivoRechazo && (
-                          <p className="text-red-600">Motivo: {inscription.pago.motivoRechazo}</p>
+                    <div className="text-base font-medium tabular-nums text-ink-soft sm:min-w-0 sm:flex-1 sm:text-lg">
+                      {formatUtcCalendarDayAndTime(inscription.fecha, horaEv)}
+                    </div>
+                  </div>
+
+                  {hasPago && (
+                    <div className="space-y-1 text-sm text-ink-muted">
+                      <Badge tone={getPagoEstadoTone(inscription.pago.estadoPago)} dot>
+                        {getPagoEstadoLabel(inscription.pago.estadoPago)}
+                      </Badge>
+                      {inscription.pago.estadoPago === 'rechazado' &&
+                        inscription.pago.motivoRechazo && (
+                          <p className="text-danger-600">
+                            Motivo: {inscription.pago.motivoRechazo}
+                          </p>
                         )}
-                        {inscription.pago.estadoPago === 'pendiente' && inscription.estado === 'pendiente' && (
-                          <p>Tu comprobante está en revisión. Te avisaremos cuando se confirme la inscripción.</p>
+                      {inscription.pago.estadoPago === 'pendiente' &&
+                        inscription.estado === 'pendiente' && (
+                          <p>
+                            Tu comprobante está en revisión. Te avisaremos cuando se confirme la
+                            inscripción.
+                          </p>
                         )}
-                      </div>
-                    )}
-                    {hasPago && inscription.pago.estadoPago === 'rechazado' && (
-                      <div className="mt-1 space-y-2">
-                        {reuploadingId === inscription._id ? (
-                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                            <input
-                              type="file"
-                              accept="image/*,application/pdf"
-                              onChange={(e) => setReuploadFile(e.target.files?.[0] || null)}
-                              className="text-sm"
-                            />
-                            <button
-                              type="button"
+                    </div>
+                  )}
+
+                  {hasPago && inscription.pago.estadoPago === 'rechazado' && (
+                    <div className="mt-1 space-y-2">
+                      {reuploadingId === inscription._id ? (
+                        <div className="space-y-2">
+                          <FileInput
+                            accept="image/*,application/pdf"
+                            value={reuploadFile}
+                            onChange={setReuploadFile}
+                            maxSize={5 * 1024 * 1024}
+                            hint="Arrastrá el comprobante, pegalo o hacé click"
+                          />
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              size="sm"
+                              icon="upload"
                               onClick={() => handleReupload(inscription._id)}
-                              className="btn btn-primary text-xs py-1.5 px-3"
                             >
                               Enviar nuevo comprobante
-                            </button>
-                            <button
-                              type="button"
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
                               onClick={() => {
                                 setReuploadingId(null);
                                 setReuploadFile(null);
                               }}
-                              className="btn btn-outline text-xs py-1.5 px-3"
                             >
                               Cancelar
-                            </button>
+                            </Button>
                           </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setReuploadingId(inscription._id);
-                              setReuploadFile(null);
-                            }}
-                            className="btn btn-secondary text-xs py-1.5 px-3"
-                          >
-                            Volver a subir comprobante
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 shrink-0 sm:justify-end text-sm">
-                    <InscriptionStatusTag estado={inscription.estado} aceptadaLabel="Confirmada" />
-                    {inscription.estado !== 'cancelada' && (
-                      <button
-                        type="button"
-                        onClick={() => handleCancel(inscription._id)}
-                        className="btn btn-danger text-xs py-1.5 px-3"
-                      >
-                        Cancelar
-                      </button>
-                    )}
-                  </div>
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          icon="upload"
+                          onClick={() => {
+                            setReuploadingId(inscription._id);
+                            setReuploadFile(null);
+                          }}
+                        >
+                          Volver a subir comprobante
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
-              );
-            })}
-          </div>
-        )}
+
+                <div className="flex shrink-0 flex-wrap items-center gap-2 text-sm sm:justify-end">
+                  <InscriptionStatusTag estado={inscription.estado} aceptadaLabel="Confirmada" />
+                  {inscription.estado !== 'cancelada' && (
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      icon="close"
+                      onClick={() => handleCancel(inscription._id)}
+                    >
+                      Cancelar
+                    </Button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </Card>
+      )}
     </PageContainer>
   );
 };

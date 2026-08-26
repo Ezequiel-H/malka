@@ -40,7 +40,7 @@ test.describe('Login', () => {
     await page.locator('input[type="password"]').fill('any-password');
     await page.getByRole('button', { name: 'Iniciar Sesión' }).click();
     await expect(page).toHaveURL(/\/activities$/);
-    await expect(page.getByRole('heading', { name: 'Cartelera de Actividades' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Cartelera' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Malka' })).toBeVisible();
   });
 
@@ -61,7 +61,7 @@ test.describe('Login', () => {
     await page.locator('input[type="password"]').fill('any-password');
     await page.getByRole('button', { name: 'Iniciar Sesión' }).click();
     await expect(page).toHaveURL(/\/admin$/);
-    await expect(page.getByRole('heading', { name: 'Panel de Administración' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Panel' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Usuarios' })).toBeVisible();
   });
 });

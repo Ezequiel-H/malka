@@ -14,6 +14,7 @@ import {
   YAxis
 } from 'recharts';
 import { useAuth } from '../../contexts/AuthContext';
+import { Alert, Badge, Button, Card, DatePicker, Field, Icon, Select } from '../../components/ui';
 import {
   defaultFourWeeksArgentinaRange,
   isoWeekMondaySlotsArgentina,
@@ -173,134 +174,168 @@ const AdminDashboard = () => {
     return tick ? `Semana desde ${tick}` : '';
   }, []);
 
+  const activityOptions = activities.map((a) => ({ value: a._id, label: a.titulo }));
+
   if (authLoading || loading) {
     return <LoadingScreen />;
   }
 
   return (
-    <PageContainer title="Panel de Administración">
+    <PageContainer title="Panel">
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
-          <div className="card text-center hover:shadow-xl transition-shadow flex flex-col">
-            <h2 className="text-4xl sm:text-5xl font-bold text-yellow-500 mb-3">{stats.pendingUsers}</h2>
-            <p className="text-lg font-bold text-gray-800 mb-4">Usuarios Pendientes</p>
-            <Link to="/admin/users/pending" className="btn btn-warning mt-auto">
-              Ver Pendientes
-            </Link>
-          </div>
+          {/* Tarjeta de métrica: el número es el protagonista, en tinta. La card
+              entera navega; el pie con flecha sólo lo insinúa. Cinco botones de
+              colores acá arriba convertían el panel en un semáforo. */}
+          {[
+            {
+              value: stats.pendingUsers,
+              label: 'Usuarios pendientes',
+              to: '/admin/users/pending',
+              cta: 'Ver pendientes',
+              icon: 'users',
+              attention: stats.pendingUsers > 0,
+            },
+            {
+              value: stats.publishedActivities,
+              label: 'Actividades publicadas',
+              to: '/admin/activities',
+              cta: 'Gestionar',
+              icon: 'activity',
+            },
+            {
+              value: stats.pendingInscriptions,
+              label: 'Inscripciones pendientes',
+              to: '/admin/inscriptions?estado=pendiente',
+              cta: 'Gestionar',
+              icon: 'document',
+              attention: stats.pendingInscriptions > 0,
+            },
+            {
+              value: stats.acceptedInscriptionsLast30Days,
+              label: 'Aceptadas (últimos 30 días)',
+              to: '/admin/inscriptions?estado=aceptada',
+              cta: 'Ver aceptadas',
+              icon: 'success',
+            },
+          ].map((card) => (
+            <Card key={card.label} to={card.to} interactive className="group flex flex-col">
+              <div className="mb-4 flex items-start justify-between">
+                <span className="flex h-10 w-10 items-center justify-center rounded-control bg-primary-50 text-primary">
+                  <Icon name={card.icon} size="md" />
+                </span>
+                {card.attention && (
+                  <Badge tone="warning" dot size="sm">
+                    Atención
+                  </Badge>
+                )}
+              </div>
 
-          <div className="card text-center hover:shadow-xl transition-shadow flex flex-col">
-            <h2 className="text-4xl sm:text-5xl font-bold text-primary mb-3">{stats.publishedActivities}</h2>
-            <p className="text-lg font-bold text-gray-800 mb-4">Actividades Publicadas</p>
-            <Link to="/admin/activities" className="btn btn-primary mt-auto">
-              Gestionar Actividades
-            </Link>
-          </div>
-
-          <div className="card text-center hover:shadow-xl transition-shadow flex flex-col">
-            <h2 className="text-4xl sm:text-5xl font-bold text-orange-500 mb-3">{stats.pendingInscriptions}</h2>
-            <p className="text-lg font-bold text-gray-800 mb-4">Inscripciones Pendientes</p>
-            <Link to="/admin/inscriptions?estado=pendiente" className="btn btn-warning mt-auto">
-              Gestionar Inscripciones
-            </Link>
-          </div>
-
-          <div className="card text-center hover:shadow-xl transition-shadow flex flex-col">
-            <h2 className="text-4xl sm:text-5xl font-bold text-green-600 mb-3">
-              {stats.acceptedInscriptionsLast30Days}
-            </h2>
-            <p className="text-lg font-bold text-gray-800 mb-4">Inscripciones aceptadas (últimos 30 días)</p>
-            <Link to="/admin/inscriptions?estado=aceptada" className="btn btn-success mt-auto">
-              Ver aceptadas
-            </Link>
-          </div>
-
-          <div className="card text-center hover:shadow-xl transition-shadow flex flex-col">
-            <h2 className="text-3xl sm:text-4xl font-bold text-teal-600 mb-1 tabular-nums">
-              {stats.firstInscriptionRepeat.withMoreThanOneInscription}
-              <span className="text-2xl font-semibold text-gray-500"> / </span>
-              {stats.firstInscriptionRepeat.cohortSize}
-            </h2>
-            <p className="text-sm text-gray-600 mb-2 tabular-nums">
-              {stats.firstInscriptionRepeat.cohortSize > 0 && stats.firstInscriptionRepeat.rate != null
-                ? `${(stats.firstInscriptionRepeat.rate * 100).toFixed(1)} % con más de una inscripción`
-                : '—'}
-            </p>
-            <div className="mb-4 flex items-center justify-center gap-2">
-              <p className="text-lg font-bold text-gray-800">
-                Retorno tras primera inscripción ({stats.firstInscriptionRepeat.minDaysSinceFirstInscription}+ días)
+              <p className="text-3xl font-bold tabular-nums tracking-tight text-ink sm:text-4xl">
+                {card.value}
               </p>
+              <p className="mt-1 text-sm text-ink-muted">{card.label}</p>
+
+              <p className="mt-auto flex items-center gap-1 pt-4 text-sm font-medium text-primary">
+                {card.cta}
+                <Icon
+                  name="forward"
+                  size="xs"
+                  className="transition-transform duration-fast group-hover:translate-x-0.5 motion-reduce:transition-none"
+                />
+              </p>
+            </Card>
+          ))}
+
+          <Card className="flex flex-col">
+            <div className="mb-4 flex items-start justify-between">
+              <span className="flex h-10 w-10 items-center justify-center rounded-control bg-info-50 text-info-600">
+                <Icon name="users" size="md" />
+              </span>
               <div className="relative">
                 <button
                   type="button"
-                  className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-gray-300 text-gray-500 cursor-help"
+                  className="inline-flex h-5 w-5 items-center justify-center rounded-pill border border-surface-border text-ink-muted transition-control duration-fast hover:border-primary-300 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                   onClick={() => setShowReturnInfo((prev) => !prev)}
                   aria-expanded={showReturnInfo}
                   aria-label="Mostrar información sobre esta métrica"
                 >
-                  i
+                  <Icon name="info" size="xs" />
                 </button>
                 {showReturnInfo && (
                   <div
-                    className="absolute right-0 z-20 mt-2 w-64 rounded-md border border-gray-200 bg-white p-3 text-left text-xs leading-relaxed text-gray-600 shadow-lg"
+                    className="absolute right-0 z-20 mt-2 w-64 rounded-card border border-surface-border bg-surface p-3 text-left text-xs leading-relaxed text-ink-muted shadow-raised"
                     role="tooltip"
                   >
                     Entre quienes se anotaron a un evento por primera vez hace al menos{' '}
-                    {stats.firstInscriptionRepeat.minDaysSinceFirstInscription} días, cuántos tienen más de un evento
-                    total. Cualquier estado de inscripción.
+                    {stats.firstInscriptionRepeat.minDaysSinceFirstInscription} días, cuántos tienen
+                    más de un evento total. Cualquier estado de inscripción.
                   </div>
                 )}
               </div>
             </div>
+
+            <p className="text-3xl font-bold tabular-nums tracking-tight text-ink sm:text-4xl">
+              {stats.firstInscriptionRepeat.withMoreThanOneInscription}
+              <span className="text-xl font-semibold text-ink-faint"> / </span>
+              {stats.firstInscriptionRepeat.cohortSize}
+            </p>
+            <p className="mt-1 text-sm text-ink-muted">
+              Retorno tras primera inscripción ({stats.firstInscriptionRepeat.minDaysSinceFirstInscription}+ días)
+            </p>
+            <p className="mt-1 text-xs tabular-nums text-ink-faint">
+              {stats.firstInscriptionRepeat.cohortSize > 0 && stats.firstInscriptionRepeat.rate != null
+                ? `${(stats.firstInscriptionRepeat.rate * 100).toFixed(1)} % con más de una inscripción`
+                : '—'}
+            </p>
+
             <Link
               to="/admin/inscriptions"
-              className="btn btn-outline btn-sm border-teal-600 text-teal-700 mt-auto"
+              className="mt-auto flex items-center gap-1 pt-4 text-sm font-medium text-primary hover:underline"
             >
               Ver inscripciones
+              <Icon name="forward" size="xs" />
             </Link>
-          </div>
+          </Card>
         </div>
 
-        <section className="card mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Inscripciones nuevas por semana</h2>
+        <Card as="section" className="mb-8">
+          <h2 className="mb-2 text-xl font-bold text-ink">
+            Inscripciones nuevas por semana
+          </h2>
 
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-            <label className="flex min-w-0 flex-col gap-1 text-sm font-medium text-gray-700">
-              Desde
-              <input
-                type="date"
-                value={from}
-                onChange={(e) => handleRangeChange('from', e.target.value)}
-                className="rounded border border-gray-300 px-3 py-2 text-gray-800"
-              />
-            </label>
-            <label className="flex min-w-0 flex-col gap-1 text-sm font-medium text-gray-700">
-              Hasta
-              <input
-                type="date"
-                value={to}
-                onChange={(e) => handleRangeChange('to', e.target.value)}
-                className="rounded border border-gray-300 px-3 py-2 text-gray-800"
-              />
-            </label>
+            <Field label="Desde" className="mb-0 min-w-0 sm:w-52">
+              <DatePicker value={from} onChange={(value) => handleRangeChange('from', value)} />
+            </Field>
+            <Field label="Hasta" className="mb-0 min-w-0 sm:w-52">
+              <DatePicker value={to} onChange={(value) => handleRangeChange('to', value)} />
+            </Field>
           </div>
 
           {chartError && (
-            <div className="alert alert-error mb-4" role="alert">
+            <Alert tone="danger" className="mb-4">
               {chartError}
-            </div>
+            </Alert>
           )}
 
           {chartLoading ? (
-            <div className="flex h-64 items-center justify-center text-gray-600">Cargando estadísticas…</div>
+            <div className="flex h-64 items-center justify-center text-ink-muted">Cargando estadísticas…</div>
           ) : (
             <div className="h-72 w-full min-w-0">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={weeklyGlobal} {...chartCommon}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="weekTick" tick={{ fontSize: 11 }} interval={0} angle={-35} textAnchor="end" height={50} />
-                  <YAxis allowDecimals={false} width={36} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ebe4d8" vertical={false} />
+                  <XAxis dataKey="weekTick" tick={{ fontSize: 11, fill: '#6b7a72' }} interval={0} angle={-35} textAnchor="end" height={50} axisLine={{ stroke: '#ebe4d8' }} tickLine={false} />
+                  <YAxis allowDecimals={false} width={36} tick={{ fontSize: 11, fill: '#6b7a72' }} axisLine={false} tickLine={false} />
                   <Tooltip
+                    cursor={{ fill: 'rgba(104, 155, 120, 0.08)' }}
+                    contentStyle={{
+                      borderRadius: 12,
+                      border: '1px solid #ebe4d8',
+                      boxShadow: '0 8px 20px -6px rgba(44, 61, 52, 0.12)',
+                      fontSize: 13,
+                    }}
                     formatter={(value) => [value, 'Nuevas inscripciones']}
                     labelFormatter={weeklyTooltipLabel}
                   />
@@ -309,63 +344,62 @@ const AdminDashboard = () => {
               </ResponsiveContainer>
             </div>
           )}
-        </section>
+        </Card>
 
-        <section className="card mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Por actividad</h2>
+        <Card as="section" className="mb-8">
+          <h2 className="mb-2 text-xl font-bold text-ink">Por actividad</h2>
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
-            <label
-              htmlFor="admin-dashboard-activity"
-              className="flex min-w-0 flex-1 flex-col gap-1 text-sm font-medium text-gray-700"
-            >
-              Actividad
-              <select
-                id="admin-dashboard-activity"
+            <Field label="Actividad" htmlFor="admin-dashboard-activity" className="mb-0 min-w-0 flex-1">
+              <Select
+                options={activityOptions}
                 value={selectedActivityId}
-                onChange={(e) => setSelectedActivityId(e.target.value)}
-                className="w-full min-w-0 rounded border border-gray-300 bg-white px-3 py-2 text-gray-800"
-              >
-                <option value="">— Elegí una actividad —</option>
-                {activities.map((a) => (
-                  <option key={a._id} value={a._id}>
-                    {a.titulo}
-                  </option>
-                ))}
-              </select>
-            </label>
+                onChange={(value) => setSelectedActivityId(value ?? '')}
+                placeholder="— Elegí una actividad —"
+                searchable={activityOptions.length > 8}
+              />
+            </Field>
           </div>
           {!selectedActivityId ? (
-            <p className="text-center text-gray-500 py-12">Elegí una actividad para ver el gráfico.</p>
+            <p className="py-12 text-center text-ink-muted">Elegí una actividad para ver el gráfico.</p>
           ) : chartLoading ? (
-            <div className="flex h-64 items-center justify-center text-gray-600">Cargando…</div>
+            <div className="flex h-64 items-center justify-center text-ink-muted">Cargando…</div>
           ) : (
             <div className="h-72 w-full min-w-0">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={weeklyActivity} {...chartCommon}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="weekTick" tick={{ fontSize: 11 }} interval={0} angle={-35} textAnchor="end" height={50} />
-                  <YAxis allowDecimals={false} width={36} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ebe4d8" vertical={false} />
+                  <XAxis dataKey="weekTick" tick={{ fontSize: 11, fill: '#6b7a72' }} interval={0} angle={-35} textAnchor="end" height={50} axisLine={{ stroke: '#ebe4d8' }} tickLine={false} />
+                  <YAxis allowDecimals={false} width={36} tick={{ fontSize: 11, fill: '#6b7a72' }} axisLine={false} tickLine={false} />
                   <Tooltip
+                    cursor={{ fill: 'rgba(104, 155, 120, 0.08)' }}
+                    contentStyle={{
+                      borderRadius: 12,
+                      border: '1px solid #ebe4d8',
+                      boxShadow: '0 8px 20px -6px rgba(44, 61, 52, 0.12)',
+                      fontSize: 13,
+                    }}
                     formatter={(value) => [value, 'Nuevas inscripciones']}
                     labelFormatter={weeklyTooltipLabel}
                   />
-                  <Bar dataKey="count" fill="#0d9488" name="Nuevas" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="count" fill="#3d7d99" name="Nuevas" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           )}
-        </section>
+        </Card>
 
-        <section className="card mb-8 overflow-x-auto">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Top {TOP_LIMIT} ocurrencias (inscripciones aceptadas)</h2>
+        <Card as="section" className="mb-8 overflow-x-auto">
+          <h2 className="mb-2 text-xl font-bold text-ink">
+            Top {TOP_LIMIT} ocurrencias (inscripciones aceptadas)
+          </h2>
           {chartLoading ? (
-            <p className="text-gray-600 py-8 text-center">Cargando…</p>
+            <p className="py-8 text-center text-ink-muted">Cargando…</p>
           ) : topOccurrences.length === 0 ? (
-            <p className="text-gray-600 py-8 text-center">No hay datos en este período.</p>
+            <p className="py-8 text-center text-ink-muted">No hay datos en este período.</p>
           ) : (
             <table className="min-w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-gray-600">
+                <tr className="border-b border-surface-border text-ink-muted">
                   <th className="py-2 pr-4 font-semibold">Actividad</th>
                   <th className="py-2 pr-4 font-semibold">Fecha de la clase</th>
                   <th className="py-2 pr-4 font-semibold text-right">Aceptadas</th>
@@ -374,9 +408,9 @@ const AdminDashboard = () => {
               </thead>
               <tbody>
                 {topOccurrences.map((row) => (
-                  <tr key={`${row.activityId}-${row.occurrenceDate}`} className="border-b border-gray-100">
-                    <td className="py-2 pr-4 font-medium text-gray-900">{row.titulo || '—'}</td>
-                    <td className="py-2 pr-4 tabular-nums text-gray-700">
+                  <tr key={`${row.activityId}-${row.occurrenceDate}`} className="border-b border-surface-border">
+                    <td className="py-2 pr-4 font-medium text-ink">{row.titulo || '—'}</td>
+                    <td className="py-2 pr-4 tabular-nums text-ink-soft">
                       {DateTime.fromFormat(String(row.occurrenceDate), 'yyyy-LL-dd', { zone: AR_TZ })
                         .setLocale('es-AR')
                         .toLocaleString(DateTime.DATE_MED)}
@@ -395,7 +429,7 @@ const AdminDashboard = () => {
               </tbody>
             </table>
           )}
-        </section>
+        </Card>
     </PageContainer>
   );
 };

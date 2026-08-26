@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { formatAuthError, normalizePhone } from '../../utils/authErrors';
 import { birthDateToInputValue, formatLocalDateToString } from '../../utils/dateUtils';
 import PageContainer from '../../components/layout/PageContainer';
-import DateInput from '../../components/common/DateInput';
+import { Alert, Button, Checkbox, DatePicker, Field, Input } from '../../components/ui';
 
 const RESTRICCIONES = [
   'Vegetariano',
@@ -101,160 +100,152 @@ const MyProfile = () => {
   if (!user) return null;
 
   return (
-    <PageContainer maxWidth="2xl" className="card">
-        <h1 className="text-2xl sm:text-3xl font-bold text-primary mb-2">Mi perfil</h1>
-        <p className="text-gray-600 mb-6">
-          Actualizá tus datos. Tus intereses se administran desde <Link to="/my-interests" className="text-primary font-medium">Mis intereses</Link>.
-        </p>
+    <PageContainer maxWidth="2xl" className="rounded-card border border-surface-border bg-surface p-4 shadow-card sm:p-6">
+      <h1 className="mb-2 text-2xl font-bold text-primary sm:text-3xl">Mi perfil</h1>
+      <p className="mb-6 text-ink-muted">
+        Actualizá tus datos. Tus intereses se administran desde{' '}
+        <Button variant="link" size="sm" to="/my-interests" className="min-h-0 px-0 py-0 align-baseline">
+          Mis intereses
+        </Button>
+        .
+      </p>
 
-        {user.estado === 'pending' && (
-          <div className="alert alert-info mb-6">
-            <p className="text-base">
-              Tu usuario está en validación. Podés completar/ajustar tu perfil mientras esperás la aprobación.
-            </p>
-          </div>
-        )}
+      {user.estado === 'pending' && (
+        <Alert tone="info" className="mb-6" title="Tu usuario está en validación">
+          Podés completar y ajustar tu perfil mientras esperás la aprobación.
+        </Alert>
+      )}
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="my-profile-nombre">Nombre</label>
-            <input
-              id="my-profile-nombre"
-              type="text"
-              name="nombre"
-              value={formData.nombre}
-              onChange={handleChange}
-              required
-              className="bg-white"
-              autoComplete="given-name"
-            />
-          </div>
+      <form onSubmit={handleSubmit}>
+        <Field label="Nombre" htmlFor="my-profile-nombre" required>
+          <Input
+            type="text"
+            name="nombre"
+            value={formData.nombre}
+            onChange={handleChange}
+            required
+            autoComplete="given-name"
+          />
+        </Field>
 
-          <div className="form-group">
-            <label htmlFor="my-profile-apellido">Apellido</label>
-            <input
-              id="my-profile-apellido"
-              type="text"
-              name="apellido"
-              value={formData.apellido}
-              onChange={handleChange}
-              required
-              className="bg-white"
-              autoComplete="family-name"
-            />
-          </div>
+        <Field label="Apellido" htmlFor="my-profile-apellido" required>
+          <Input
+            type="text"
+            name="apellido"
+            value={formData.apellido}
+            onChange={handleChange}
+            required
+            autoComplete="family-name"
+          />
+        </Field>
 
-          <div className="form-group">
-            <label htmlFor="my-profile-fechaNacimiento">Fecha de nacimiento</label>
-            <DateInput
-              id="my-profile-fechaNacimiento"
-              name="fechaNacimiento"
-              value={formData.fechaNacimiento}
-              onChange={handleChange}
-              required
-              max={formatLocalDateToString(new Date())}
-            />
-          </div>
+        <Field label="Fecha de nacimiento" htmlFor="my-profile-fechaNacimiento" required>
+          <DatePicker
+            id="my-profile-fechaNacimiento"
+            name="fechaNacimiento"
+            value={formData.fechaNacimiento}
+            onChange={(fechaNacimiento) =>
+              setFormData((previo) => ({ ...previo, fechaNacimiento }))
+            }
+            max={formatLocalDateToString(new Date())}
+          />
+        </Field>
 
-          <div className="form-group">
-            <label htmlFor="my-profile-dni">DNI</label>
-            <input
-              id="my-profile-dni"
-              type="text"
-              name="dni"
-              value={formData.dni}
-              onChange={handleChange}
-              required
-              inputMode="numeric"
-              autoComplete="off"
-              minLength={7}
-              maxLength={10}
-              pattern="\d{7,10}"
-              title="Ingresá entre 7 y 10 dígitos"
-              className="bg-white"
-            />
-          </div>
+        <Field
+          label="DNI"
+          htmlFor="my-profile-dni"
+          hint="Entre 7 y 10 dígitos, sin puntos"
+          required
+        >
+          <Input
+            type="text"
+            name="dni"
+            value={formData.dni}
+            onChange={handleChange}
+            required
+            inputMode="numeric"
+            autoComplete="off"
+            minLength={7}
+            maxLength={10}
+            pattern="\d{7,10}"
+            title="Ingresá entre 7 y 10 dígitos"
+          />
+        </Field>
 
-          <div className="form-group">
-            <label htmlFor="my-profile-email">Email</label>
-            <input
-              id="my-profile-email"
-              type="email"
-              name="email"
-              value={formData.email}
-              disabled
-              className="bg-white opacity-80 cursor-not-allowed"
-            />
-            <p className="text-sm text-gray-500 mt-1">
-              Para cambiar tu email, escribinos.
-            </p>
-          </div>
+        <Field
+          label="Email"
+          htmlFor="my-profile-email"
+          hint="Para cambiar tu email, escribinos."
+        >
+          <Input type="email" icon="mail" name="email" value={formData.email} disabled />
+        </Field>
 
-          <div className="form-group">
-            <label htmlFor="my-profile-telefono">Teléfono</label>
-            <input
-              id="my-profile-telefono"
-              type="tel"
-              name="telefono"
-              value={formData.telefono}
-              onChange={handleChange}
-              required
-              inputMode="tel"
-              autoComplete="tel"
-              minLength={8}
-              maxLength={22}
-              pattern="^[+]?[0-9]{8,20}$"
-              title="Ingresá un teléfono con al menos 8 dígitos (podés usar + y código de país)"
-              className="bg-white"
-            />
-          </div>
+        <Field
+          label="Teléfono"
+          htmlFor="my-profile-telefono"
+          hint="Al menos 8 dígitos. Podés incluir + y código de país"
+          required
+        >
+          <Input
+            type="tel"
+            icon="phone"
+            name="telefono"
+            value={formData.telefono}
+            onChange={handleChange}
+            required
+            inputMode="tel"
+            autoComplete="tel"
+            minLength={8}
+            maxLength={22}
+            pattern="^[+]?[0-9]{8,20}$"
+            title="Ingresá un teléfono con al menos 8 dígitos (podés usar + y código de país)"
+          />
+        </Field>
 
-          <div className="form-group">
-            <label className="mb-2 block">Toda la comida es Kosher. ¿Tenés algún tipo de restricción?</label>
-            <div className="space-y-2.5">
-              {RESTRICCIONES.map((restriccion) => (
-                <label
-                  key={restriccion}
-                  className="flex max-w-none cursor-pointer items-center gap-3 font-normal"
-                >
-                  <input
-                    type="checkbox"
-                    checked={formData.restriccionesAlimentarias?.includes(restriccion) || false}
-                    onChange={() => handleRestriccionChange(restriccion)}
-                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                  />
-                  <span className="text-gray-700">{restriccion}</span>
-                </label>
-              ))}
-            </div>
+        {/* <fieldset> + <legend>: hace que la pregunta se anuncie una vez
+            antes del grupo, en vez de repetirse en cada casilla. */}
+        <fieldset className="mb-5">
+          <legend className="mb-2 block text-sm font-medium text-ink-soft">
+            Toda la comida es Kosher. ¿Tenés algún tipo de restricción?
+          </legend>
+          <div className="space-y-2.5">
+            {RESTRICCIONES.map((restriccion) => (
+              <Checkbox
+                key={restriccion}
+                label={restriccion}
+                checked={formData.restriccionesAlimentarias?.includes(restriccion) || false}
+                onChange={() => handleRestriccionChange(restriccion)}
+              />
+            ))}
           </div>
+        </fieldset>
 
-          <div className="form-group">
-            <label htmlFor="my-profile-comoSeEntero">¿Cómo te enteraste de esta propuesta?</label>
-            <input
-              id="my-profile-comoSeEntero"
-              type="text"
-              name="comoSeEntero"
-              value={formData.comoSeEntero}
-              onChange={handleChange}
-              placeholder="Escribe cómo te enteraste..."
-              required
-              className="bg-white"
-            />
-          </div>
+        <Field
+          label="¿Cómo te enteraste de esta propuesta?"
+          htmlFor="my-profile-comoSeEntero"
+          required
+        >
+          <Input
+            type="text"
+            name="comoSeEntero"
+            value={formData.comoSeEntero}
+            onChange={handleChange}
+            placeholder="Escribí cómo te enteraste..."
+            required
+          />
+        </Field>
 
-          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <Link to="/my-interests" className="btn btn-secondary w-full justify-center sm:w-auto">
-              Mis intereses
-            </Link>
-            <button type="submit" className="btn btn-primary w-full justify-center sm:w-auto" disabled={saving}>
-              {saving ? 'Guardando...' : 'Guardar cambios'}
-            </button>
-          </div>
-        </form>
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Button variant="secondary" to="/my-interests" className="w-full sm:w-auto">
+            Mis intereses
+          </Button>
+          <Button type="submit" loading={saving} className="w-full sm:w-auto">
+            {saving ? 'Guardando...' : 'Guardar cambios'}
+          </Button>
+        </div>
+      </form>
     </PageContainer>
   );
 };
 
 export default MyProfile;
-

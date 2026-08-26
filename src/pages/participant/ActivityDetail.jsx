@@ -12,9 +12,8 @@ import InscriptionStatusBadge from '../../components/activities/InscriptionStatu
 import DateSelectionModal from '../../components/activities/DateSelectionModal';
 import LoadingScreen from '../../components/layout/LoadingScreen';
 import PageContainer from '../../components/layout/PageContainer';
-import Modal from '../../components/layout/Modal';
 import InscriptionConfirmModal from '../../components/activities/InscriptionConfirmModal';
-import EmptyState from '../../components/common/EmptyState';
+import { Button, Card, EmptyState, Icon, Modal, Spinner } from '../../components/ui';
 
 const ActivityDetail = () => {
   const { id } = useParams();
@@ -51,22 +50,9 @@ const ActivityDetail = () => {
     fetchActivity();
   }, [id]);
 
-  useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key !== 'Escape') return;
-      if (showCancelPolicyModal) {
-        setShowCancelPolicyModal(false);
-      } else if (showDateModal) {
-        setShowDateModal(false);
-        setSelectedDate(null);
-      } else if (showConfirmModal) {
-        setShowConfirmModal(false);
-        setSelectedDate(null);
-      }
-    };
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, [showDateModal, showConfirmModal, showCancelPolicyModal]);
+  // El cierre con Escape, la trampa de foco y el bloqueo de scroll los
+  // resuelve ui/Modal. Antes había acá un listener global de keydown que
+  // hacía sólo la primera de las tres cosas.
 
   const fetchActivity = async () => {
     try {
@@ -182,31 +168,41 @@ const ActivityDetail = () => {
 
   return (
     <PageContainer maxWidth="4xl">
-        <Link
-          to="/activities"
-          className="inline-flex items-center gap-1 text-primary hover:underline mb-6 text-sm font-medium"
-        >
-          ← Volver a la cartelera
-        </Link>
+        <Button variant="link" size="sm" icon="back" to="/activities" className="mb-6 min-h-0 px-0">
+          Volver a la cartelera
+        </Button>
 
-        <div className="bg-white rounded-lg shadow-md min-w-0">
+        <Card padding="none" className="min-w-0">
           <div className="p-4 sm:p-6">
-            <h1 className="text-xl font-bold text-gray-800 sm:text-2xl md:text-3xl mb-6">
+            <h1 className="mb-6 text-xl font-bold text-ink sm:text-2xl md:text-3xl">
               {activity.titulo}
             </h1>
 
-            {activity.fotos && activity.fotos.length > 0 && (
+            {activity.fotos && activity.fotos.length > 0 ? (
               <div className="mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {activity.fotos.map((foto, index) => (
                     <img
                       key={index}
                       src={foto}
                       alt={`${activity.titulo} - Imagen ${index + 1}`}
-                      className="w-full h-64 object-cover rounded-lg"
+                      className="h-64 w-full rounded-card object-cover"
                     />
                   ))}
                 </div>
+              </div>
+            ) : (
+              <div
+                aria-hidden="true"
+                className="mb-6 flex h-32 items-center justify-center rounded-card"
+                style={{ background: 'linear-gradient(135deg, #689b7814, #689b7842)' }}
+              >
+                <Icon
+                  name={activity.tipo === 'viaje' ? 'location' : activity.tipo === 'recurrente' ? 'time' : 'activity'}
+                  size="2xl"
+                  className="text-primary"
+                  strokeWidth={1.5}
+                />
               </div>
             )}
 
@@ -218,7 +214,7 @@ const ActivityDetail = () => {
 
             {activity.estadoInscripcion && activity.tipo === 'recurrente' && activity.fechaInscripcion && (
               <div className="mb-6">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-ink-muted">
                   Inscrito para: {formatUtcCalendarDateEsAR(activity.fechaInscripcion)}
                 </p>
               </div>
@@ -226,34 +222,38 @@ const ActivityDetail = () => {
 
             {activity.tipo === 'recurrente' && (
               <div className="mb-6">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">Fechas Disponibles</h2>
+                <h2 className="mb-4 text-xl font-semibold text-ink">Fechas disponibles</h2>
                 {loadingDates ? (
-                  <div className="text-center py-8">
-                    <div className="spinner mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Cargando fechas disponibles...</p>
+                  <div className="flex flex-col items-center py-8">
+                    <Spinner size="lg" label="Cargando fechas disponibles" />
+                    <p className="mt-4 text-ink-muted">Cargando fechas disponibles...</p>
                   </div>
                 ) : availableDates.length === 0 ? (
-                  <EmptyState card={false} message="No hay fechas disponibles en los próximos 30 días." />
+                  <EmptyState
+                    icon="activity"
+                    title="Sin fechas disponibles"
+                    description="No hay fechas en los próximos 30 días."
+                  />
                 ) : (
                   <div className="space-y-2">
                     {availableDates.slice(0, 5).map((dateOption, index) => (
                       <div
                         key={index}
-                        className={`p-3 rounded-lg border-2 ${
+                        className={`rounded-card border-2 p-3 ${
                           dateOption.estadoInscripcion === 'aceptada'
-                            ? 'border-green-500 bg-green-50'
+                            ? 'border-success-500 bg-success-50'
                             : dateOption.estadoInscripcion === 'pendiente'
-                            ? 'border-yellow-500 bg-yellow-50'
+                            ? 'border-warning-500 bg-warning-50'
                             : dateOption.estadoInscripcion === 'en_espera'
-                            ? 'border-blue-500 bg-blue-50'
+                            ? 'border-info-500 bg-info-50'
                             : dateOption.tieneCupo
-                            ? 'border-gray-300 bg-white'
-                            : 'border-gray-200 bg-gray-100 opacity-50'
+                            ? 'border-surface-border bg-surface'
+                            : 'border-surface-border bg-surface opacity-50'
                         }`}
                       >
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                           <div className="min-w-0 flex-1">
-                            <p className="font-semibold text-gray-800">
+                            <p className="font-semibold text-ink">
                               {formatUtcCalendarDateEsAR(dateOption.fecha, {
                                 weekday: 'long',
                                 year: 'numeric',
@@ -262,11 +262,11 @@ const ActivityDetail = () => {
                               })}
                             </p>
                             {dateOption.hora && (
-                              <p className="text-sm text-gray-600">Hora: {dateOption.hora}</p>
+                              <p className="text-sm text-ink-muted">Hora: {dateOption.hora}</p>
                             )}
                             {dateOption.cuposDisponibles !== null && (
                               <p className={`text-sm font-semibold ${
-                                dateOption.cuposDisponibles > 0 ? 'text-green-600' : 'text-red-600'
+                                dateOption.cuposDisponibles > 0 ? 'text-success-600' : 'text-danger-600'
                               }`}>
                                 {dateOption.cuposDisponibles > 0
                                   ? `${dateOption.cuposDisponibles} cupos disponibles`
@@ -281,7 +281,7 @@ const ActivityDetail = () => {
                       </div>
                     ))}
                     {availableDates.length > 5 && (
-                      <p className="text-sm text-gray-600 text-center mt-2">
+                      <p className="mt-2 text-center text-sm text-ink-muted">
                         Y {availableDates.length - 5} fecha(s) más...
                       </p>
                     )}
@@ -296,75 +296,80 @@ const ActivityDetail = () => {
                   <InscriptionStatusBadge estado={activity.estadoInscripcion} />
                 </div>
               ) : (
-                <button
-                  onClick={handleInscribeClick}
-                  className="btn btn-primary w-full justify-center min-w-0 sm:w-auto sm:min-w-[140px] sm:flex-1"
-                >
+                <Button onClick={handleInscribeClick} icon="check" className="w-full sm:w-auto">
                   Inscribirse
-                </button>
+                </Button>
               )}
 
               {(activity.tipo === 'unica' || activity.tipo === 'viaje') && activity.fecha && (
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  size="sm"
+                  size="sm"
+                  size="sm"
+                  icon="addToCalendar"
                   onClick={() => handleAddToCalendar()}
-                  className="btn btn-secondary w-full justify-center sm:w-auto"
                   title="Agregar al calendario"
+                  className="w-full sm:w-auto"
                 >
-                  📅 Agregar al Calendario
-                </button>
+                  Agregar al calendario
+                </Button>
               )}
 
               {activity.ubicacionOnline && (
-                <a
+                <Button
+                  variant="secondary"
+                  icon="location"
                   href={activity.ubicacionOnline}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-secondary w-full justify-center text-center sm:w-auto sm:whitespace-nowrap"
                   title="Ver ubicación en Google Maps"
+                  className="w-full sm:w-auto sm:whitespace-nowrap"
                 >
-                  🗺️ ¿Cómo llego?
-                </a>
+                  ¿Cómo llego?
+                </Button>
               )}
 
               {activity.tipo === 'recurrente' && availableDates.length > 0 && (
-                <button
+                <Button
+                  variant="secondary"
+                  icon="activity"
                   onClick={() => setShowDateModal(true)}
-                  className="btn btn-secondary w-full justify-center sm:w-auto"
+                  className="w-full sm:w-auto"
                 >
                   Ver todas las fechas
-                </button>
+                </Button>
               )}
 
               {activity.politicaCancelacion && (
-                <button
+                <Button
+                  variant="secondary"
+                  icon="policy"
                   onClick={() => setShowCancelPolicyModal(true)}
-                  className="btn btn-secondary w-full justify-center sm:w-auto"
+                  className="w-full sm:w-auto"
                 >
-                  📋 Política de Cancelación
-                </button>
+                  Política de cancelación
+                </Button>
               )}
             </div>
           </div>
-        </div>
+        </Card>
 
-        {/* Modal de Política de Cancelación */}
-        {showCancelPolicyModal && (
-          <Modal onClose={() => setShowCancelPolicyModal(false)} title="Política de Cancelación">
-            <div className="rounded-lg bg-gray-50 p-4 sm:p-6">
-              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                {activity.politicaCancelacion}
-              </p>
-            </div>
-            <div className="flex justify-end pt-4">
-              <button
-                onClick={() => setShowCancelPolicyModal(false)}
-                className="btn btn-primary w-full justify-center sm:w-auto"
-              >
-                Cerrar
-              </button>
-            </div>
-          </Modal>
-        )}
+        <Modal
+          open={showCancelPolicyModal}
+          onClose={() => setShowCancelPolicyModal(false)}
+          title="Política de cancelación"
+          footer={
+            <Button onClick={() => setShowCancelPolicyModal(false)}>Cerrar</Button>
+          }
+        >
+          <div className="rounded-card border border-surface-border bg-surface p-4 sm:p-6">
+            <p className="whitespace-pre-wrap leading-relaxed text-ink-soft">
+              {activity.politicaCancelacion}
+            </p>
+          </div>
+        </Modal>
 
         {showDateModal && (
           <DateSelectionModal

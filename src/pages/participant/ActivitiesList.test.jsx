@@ -24,7 +24,7 @@ describe('ActivitiesList', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /Cartelera de Actividades/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Cartelera/i })).toBeInTheDocument();
     });
   });
 });
