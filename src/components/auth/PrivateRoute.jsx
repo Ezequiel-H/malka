@@ -26,10 +26,9 @@ const PrivateRoute = ({ children, requireApproved = false }) => {
         <div className="mx-auto min-w-0 max-w-4xl">
           <Card>
             <h1 className="mb-5 break-words text-2xl font-semibold tracking-tight text-ink sm:mb-6 sm:text-3xl">
-              Bienvenido, {user?.nombre} {user?.apellido}
+              Te damos la bienvenida, {user?.nombre} {user?.apellido}
             </h1>
-            <Alert tone="info" title="Tu usuario está siendo validado"
-            titleAs="h2">
+            <Alert tone="info" title="Tu usuario está siendo validado" titleAs="h2">
               Tu cuenta está siendo validada por nuestro equipo. Este proceso puede tardar unos
               días. Una vez aprobada, vas a poder inscribirte en las actividades.
             </Alert>

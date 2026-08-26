@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
 import { formatUtcCalendarDateEsAR, formatUtcCalendarDateToString } from '../../utils/dateUtils';
 import { buildGoogleCalendarTemplateUrl } from '../../utils/googleCalendarActivityUrl';
@@ -304,9 +304,6 @@ const ActivityDetail = () => {
               {(activity.tipo === 'unica' || activity.tipo === 'viaje') && activity.fecha && (
                 <Button
                   variant="secondary"
-                  size="sm"
-                  size="sm"
-                  size="sm"
                   size="sm"
                   icon="addToCalendar"
                   onClick={() => handleAddToCalendar()}

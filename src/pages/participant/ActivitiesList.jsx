@@ -19,6 +19,7 @@ import BirthDatePrompt from '../../components/profile/BirthDatePrompt';
 import {
   Badge,
   Button, Card, EmptyState, Field, Input, Select,
+  cn,
   Icon,
   SkeletonCards,
 } from '../../components/ui';
@@ -34,6 +35,7 @@ const ActivitiesList = () => {
     periodo: '',
     categoria: ''
   });
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [availableDates, setAvailableDates] = useState([]);
   const [loadingDates, setLoadingDates] = useState(false);
@@ -366,6 +368,8 @@ const ActivitiesList = () => {
     })),
   ];
 
+  const activeFilterCount = [filters.periodo, filters.categoria].filter(Boolean).length;
+
   if (initialLoad) {
     return (
       <PageContainer title="Cartelera">
@@ -378,8 +382,9 @@ const ActivitiesList = () => {
     <PageContainer title="Cartelera">
       <BirthDatePrompt className="mb-6" />
 
-        {/* Filtros */}
-        <Card className="mb-8">
+        {/* Filtros. En mobile los selects viven detrás de un toggle: la card
+            entera ocupaba la primera pantalla y la cartelera quedaba abajo. */}
+        <Card className="mb-6 sm:mb-8">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Field label="Buscar" className="mb-0">
               <Input
@@ -391,24 +396,38 @@ const ActivitiesList = () => {
               />
             </Field>
 
-            <Field label="Período" className="mb-0">
-              <Select
-                options={PERIODO_OPTIONS}
-                value={filters.periodo}
-                onChange={(value) => setFilters({ ...filters, periodo: value ?? '' })}
-              />
-            </Field>
+            <div className={cn(filtersOpen ? 'contents' : 'max-sm:hidden sm:contents')}>
+              <Field label="Período" className="mb-0">
+                <Select
+                  options={PERIODO_OPTIONS}
+                  value={filters.periodo}
+                  onChange={(value) => setFilters({ ...filters, periodo: value ?? '' })}
+                />
+              </Field>
 
-            <Field label="Tags" className="mb-0">
-              <Select
-                options={tagOptions}
-                value={filters.categoria}
-                onChange={(value) => setFilters({ ...filters, categoria: value ?? '' })}
-                searchable={tagOptions.length > 8}
-                emptyMessage="No hay tags disponibles"
-              />
-            </Field>
+              <Field label="Tags" className="mb-0">
+                <Select
+                  options={tagOptions}
+                  value={filters.categoria}
+                  onChange={(value) => setFilters({ ...filters, categoria: value ?? '' })}
+                  searchable={tagOptions.length > 8}
+                  emptyMessage="No hay tags disponibles"
+                />
+              </Field>
+            </div>
           </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            icon="filter"
+            iconRight={filtersOpen ? 'chevronUp' : 'chevronDown'}
+            aria-expanded={filtersOpen}
+            onClick={() => setFiltersOpen((o) => !o)}
+            className="mt-3 min-h-0 px-2 py-1 sm:hidden"
+          >
+            Filtros{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ''}
+          </Button>
         </Card>
 
         {/* Lista de actividades */}
@@ -488,8 +507,6 @@ const ActivitiesList = () => {
                   className="mt-auto flex items-center justify-between gap-3 border-t border-surface-border pt-3"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {/* El "¿Cómo llego?" se fue de la card: el lugar ya está en la
-                      línea de datos y el mapa vive en el detalle. */}
                   {activity.estadoInscripcion ? (
                     <div className="flex min-w-0 flex-col gap-1">
                       <InscriptionStatusTag
@@ -503,14 +520,37 @@ const ActivitiesList = () => {
                       )}
                     </div>
                   ) : (
-                    <span className="text-sm text-ink-faint">Ver detalle</span>
-                  )}
-
-                  {!activity.estadoInscripcion && (
-                    <Button size="sm" icon="check" onClick={(e) => handleInscribeClick(activity, e)}>
-                      Inscribirse
+                    <Button
+                      variant="link"
+                      size="sm"
+                      iconRight="forward"
+                      to={`/activities/${activity._id}`}
+                      className="min-h-0 px-0"
+                    >
+                      Ver detalle
                     </Button>
                   )}
+
+                  <div className="flex shrink-0 items-center gap-2">
+                    {activity.ubicacionOnline && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon="location"
+                        iconOnly
+                        label="¿Cómo llego?"
+                        title="¿Cómo llego? Ver ubicación en Google Maps"
+                        href={activity.ubicacionOnline}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      />
+                    )}
+                    {!activity.estadoInscripcion && (
+                      <Button size="sm" icon="check" onClick={(e) => handleInscribeClick(activity, e)}>
+                        Inscribirse
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </Card>
             ))}

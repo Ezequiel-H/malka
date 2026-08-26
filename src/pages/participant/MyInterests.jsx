@@ -6,7 +6,7 @@ import PublicTagPicker from '../../components/tags/PublicTagPicker';
 import { userPublicTags } from '../../utils/tagFields';
 import LoadingScreen from '../../components/layout/LoadingScreen';
 import PageContainer from '../../components/layout/PageContainer';
-import { Button, Field } from '../../components/ui';
+import { Button, Card } from '../../components/ui';
 
 const MyInterests = () => {
   const { user, fetchUser, updateMyTags } = useAuth();
@@ -55,16 +55,16 @@ const MyInterests = () => {
   }
 
   return (
-    <PageContainer maxWidth="2xl" className="rounded-card border border-surface-border bg-surface p-4 shadow-card sm:p-6">
-      <h1 className="mb-2 text-2xl font-bold text-primary sm:text-3xl">Mis intereses</h1>
-      <p className="mb-6 text-ink-muted">
-        Elegí las áreas que te interesan. Las usamos para mostrarte actividades alineadas a tus
-        preferencias. Podés cambiar esta lista cuando quieras.
-      </p>
+    <PageContainer title="Mis intereses" maxWidth="4xl">
+      <Card>
+        <p className="mb-6 text-ink-muted">
+          Elegí las áreas que te interesan. Las usamos para mostrarte actividades alineadas a tus
+          preferencias. Podés cambiar esta lista cuando quieras.
+        </p>
 
-      <form onSubmit={handleSubmit}>
-        <Field label="Tags públicos">
+        <form onSubmit={handleSubmit}>
           <PublicTagPicker
+            variant="tile"
             availableTags={availableTags}
             selectedNames={tags}
             onChange={setTags}
@@ -74,12 +74,19 @@ const MyInterests = () => {
               </p>
             }
           />
-        </Field>
 
-        <Button type="submit" loading={saving} className="mt-6 w-full sm:w-auto">
-          {saving ? 'Guardando...' : 'Guardar'}
-        </Button>
-      </form>
+          <div className="mt-6 flex items-center justify-between gap-3">
+            <p className="text-sm text-ink-muted">
+              {tags.length === 0
+                ? 'Sin intereses elegidos'
+                : `${tags.length} ${tags.length === 1 ? 'interés elegido' : 'intereses elegidos'}`}
+            </p>
+            <Button type="submit" loading={saving}>
+              {saving ? 'Guardando...' : 'Guardar'}
+            </Button>
+          </div>
+        </form>
+      </Card>
     </PageContainer>
   );
 };

@@ -23,7 +23,7 @@ const Dashboard = () => {
     <PageContainer maxWidth="4xl">
       <Card>
         <h1 className="mb-5 break-words text-2xl font-semibold tracking-tight text-ink sm:mb-6 sm:text-3xl">
-          Bienvenido, {user?.nombre} {user?.apellido}
+          Te damos la bienvenida, {user?.nombre} {user?.apellido}
         </h1>
 
         <BirthDatePrompt className="mb-5 sm:mb-6" />

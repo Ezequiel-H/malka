@@ -68,7 +68,9 @@ const Button = forwardRef(
       'inline-flex items-center justify-center font-medium rounded-control',
       'transition-chrome duration-fast ease-standard',
       // El foco se ve siempre, pero sólo cuando se navega por teclado.
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-page',
+      // Ring semitransparente pegado al botón: un offset con color de fondo
+      // fijo se veía como un halo crema sobre las superficies blancas.
+      'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary/35',
       'disabled:opacity-55 disabled:cursor-not-allowed disabled:shadow-none',
       'active:scale-[0.98] disabled:active:scale-100',
       // Respeta a quien pidió menos movimiento en el sistema operativo.

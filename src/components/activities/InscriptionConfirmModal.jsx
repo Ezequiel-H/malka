@@ -15,10 +15,6 @@ const InfoRow = ({ label, children }) => (
 /**
  * Modal para confirmar una inscripción: resumen del evento en la fecha elegida,
  * instrucciones de pago (o coordinación por WhatsApp para viajes) y acciones.
- *
- * No cierra por Escape ni por click afuera: es el último paso antes de
- * confirmar y con un comprobante ya cargado, perderlo por un click al lado
- * sería costoso.
  */
 const InscriptionConfirmModal = ({
   activity,
@@ -46,7 +42,6 @@ const InscriptionConfirmModal = ({
       open
       onClose={onClose}
       title="Confirmar inscripción"
-      closeOnOverlay={false}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
@@ -83,22 +78,36 @@ const InscriptionConfirmModal = ({
 
           {activity.lugar && <InfoRow label="Lugar:">{activity.lugar}</InfoRow>}
 
-          {activity.ubicacionOnline && (
-            <InfoRow label="Ubicación:">
-              <a
-                href={activity.ubicacionOnline}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium text-primary hover:underline"
-              >
-                Ver en Google Maps
-              </a>
-            </InfoRow>
-          )}
-
           <InfoRow label="Precio:">{formatActivityPrice(activity)}</InfoRow>
 
           {activity.duracion && <InfoRow label="Duración:">{activity.duracion} minutos</InfoRow>}
+
+          {/* Las acciones sobre la fecha y el lugar viven junto a los datos a
+              los que refieren, no sueltas al pie del modal. */}
+          <div className="flex flex-wrap gap-2 border-t border-surface-border pt-3">
+            {activity.ubicacionOnline && (
+              <Button
+                variant="secondary"
+                size="sm"
+                icon="location"
+                href={activity.ubicacionOnline}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Ver ubicación en Google Maps"
+              >
+                ¿Cómo llego?
+              </Button>
+            )}
+            <Button
+              variant="secondary"
+              size="sm"
+              icon="addToCalendar"
+              onClick={onAddToCalendar}
+              title="Agregar al calendario"
+            >
+              Agregar al calendario
+            </Button>
+          </div>
         </div>
 
         {!activity.esGratuita && !esViaje && (
@@ -139,33 +148,6 @@ const InscriptionConfirmModal = ({
             </div>
           </Alert>
         )}
-
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          {activity.ubicacionOnline && (
-            <Button
-              variant="secondary"
-              size="sm"
-              icon="location"
-              href={activity.ubicacionOnline}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Ver ubicación en Google Maps"
-              className="w-full sm:w-auto"
-            >
-              ¿Cómo llego?
-            </Button>
-          )}
-          <Button
-            variant="secondary"
-            size="sm"
-            icon="addToCalendar"
-            onClick={onAddToCalendar}
-            title="Agregar al calendario"
-            className="w-full sm:w-auto"
-          >
-            Agregar al calendario
-          </Button>
-        </div>
       </div>
     </Modal>
   );

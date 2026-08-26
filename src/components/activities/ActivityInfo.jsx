@@ -27,6 +27,15 @@ const ActivityInfo = ({ activity, variant = 'detail', showPrice = true }) => {
 
   if (activity.tipo === 'recurrente' && activity.proximaOcurrencia) {
     items.push({ icon: 'activity', label: 'Próxima fecha', value: fmtDate(activity.proximaOcurrencia) });
+  } else if (activity.tipo === 'viaje' && !isDetail && activity.fecha && activity.fechaFin) {
+    /* En la card los dos extremos del viaje van como un solo rango: dos items
+       con el mismo icono de calendario y sin label se leían como fecha
+       repetida. */
+    items.push({
+      icon: 'activity',
+      label: 'Fechas',
+      value: `${fmtDate(activity.fecha)} → ${fmtDate(activity.fechaFin)}`,
+    });
   } else if (activity.fecha) {
     const label = activity.tipo === 'viaje' ? 'Inicio' : 'Fecha';
     let value = fmtDate(activity.fecha);
@@ -36,7 +45,7 @@ const ActivityInfo = ({ activity, variant = 'detail', showPrice = true }) => {
     items.push({ icon: 'activity', label, value });
   }
 
-  if (activity.tipo === 'viaje' && activity.fechaFin) {
+  if (activity.tipo === 'viaje' && activity.fechaFin && (isDetail || !activity.fecha)) {
     let value = fmtDate(activity.fechaFin);
     if (isDetail && activity.horaFin) {
       value = `${value} · ${activity.horaFin}`;
