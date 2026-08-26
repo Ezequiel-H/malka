@@ -14,6 +14,7 @@ import {
   Input,
   Spinner,
 } from '../../components/ui';
+import logoMalka from '../../assets/logo-malka-positivo.png';
 
 const RESTRICCIONES = [
   'Vegetariano',
@@ -128,6 +129,7 @@ const Register = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface-page px-4 py-10 sm:px-6 sm:py-12">
       <div className="w-full min-w-0 max-w-lg">
+        <img src={logoMalka} alt="Malka" className="mx-auto mb-8 h-14 w-auto sm:h-16" />
         <Card padding="lg">
           <h1 className="mb-5 text-center text-2xl font-bold text-primary sm:mb-6 sm:text-3xl">
             Registro
@@ -284,9 +286,9 @@ const Register = () => {
           </form>
 
           <p className="mt-6 text-center text-sm text-ink-muted">
-            ¿Ya tienes cuenta?{' '}
+            ¿Ya tenés cuenta?{' '}
             <Button variant="link" size="sm" to="/login" className="min-h-0 px-0 py-0 align-baseline">
-              Inicia sesión aquí
+              Iniciá sesión aquí
             </Button>
           </p>
         </Card>

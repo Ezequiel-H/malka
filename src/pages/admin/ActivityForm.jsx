@@ -408,7 +408,7 @@ const ActivityForm = () => {
   };
 
   return (
-    <PageContainer title={isEdit ? 'Editar Actividad' : 'Nueva Actividad'} maxWidth="4xl">
+    <PageContainer title={isEdit ? 'Editar actividad' : 'Nueva actividad'} maxWidth="4xl">
 
         {error && (
           <Alert tone="danger" className="mb-4">
