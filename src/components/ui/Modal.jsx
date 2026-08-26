@@ -93,7 +93,7 @@ const Modal = ({
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       <div
-        className="absolute inset-0 bg-ink/40 backdrop-blur-[2px] animate-fade-in"
+        className="absolute inset-0 bg-ink/40 backdrop-blur-[2px] animate-overlay-in motion-reduce:animate-none"
         onClick={closeOnOverlay ? onClose : undefined}
         aria-hidden="true"
       />
@@ -109,7 +109,7 @@ const Modal = ({
           // En mobile sube desde abajo y ocupa el ancho: es el patrón que la
           // gente espera en el teléfono.
           'rounded-t-panel sm:rounded-panel',
-          'animate-fade-in-up sm:animate-scale-in',
+          'animate-sheet-in sm:animate-modal-in motion-reduce:animate-none',
           SIZES[size],
           className
         )}

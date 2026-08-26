@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import AppShell from './components/layout/AppShell';
@@ -30,6 +31,13 @@ import DesignSystem from './pages/DesignSystem';
 function App() {
   const { user, loading } = useAuth();
   const location = useLocation();
+
+  /* Al navegar, la vista nueva arranca desde arriba: sin esto el router
+     conserva el scroll de la pantalla anterior y una ruta nueva puede abrir
+     "abajo de todo" (se nota sobre todo en mobile). */
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   if (loading) {
     return <LoadingScreen />;

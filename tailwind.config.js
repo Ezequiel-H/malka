@@ -128,6 +128,17 @@ export default {
           from: { opacity: '0', transform: 'translateX(100%)' },
           to: { opacity: '1', transform: 'translateX(0)' },
         },
+        /* Entradas de modal: más recorrido y más duración que los popovers.
+           Un dropdown debe aparecer ya; un modal es un cambio de contexto y
+           se banca (necesita) una transición perceptible. */
+        'modal-in': {
+          from: { opacity: '0', transform: 'scale(0.95) translateY(10px)' },
+          to: { opacity: '1', transform: 'scale(1) translateY(0)' },
+        },
+        'sheet-in': {
+          from: { transform: 'translateY(100%)' },
+          to: { transform: 'translateY(0)' },
+        },
         shimmer: {
           from: { backgroundPosition: '200% 0' },
           to: { backgroundPosition: '-200% 0' },
@@ -138,6 +149,9 @@ export default {
         'fade-in-up': 'fade-in-up 180ms cubic-bezier(0.16, 1, 0.3, 1)',
         'scale-in': 'scale-in 120ms cubic-bezier(0.16, 1, 0.3, 1)',
         'slide-in': 'slide-in 240ms cubic-bezier(0.16, 1, 0.3, 1)',
+        'modal-in': 'modal-in 280ms cubic-bezier(0.16, 1, 0.3, 1)',
+        'sheet-in': 'sheet-in 320ms cubic-bezier(0.16, 1, 0.3, 1)',
+        'overlay-in': 'fade-in 220ms ease-out',
         shimmer: 'shimmer 1.4s linear infinite',
       },
     },

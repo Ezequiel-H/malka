@@ -2,11 +2,13 @@ import { useEffect, useId, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button, Icon, cn } from '../ui';
+import InstallBanner from './InstallBanner';
 import logoMalka from '../../assets/logo-malka-positivo.png';
 
 /* Cada sección con su icono. `exact` evita que "Panel" (/admin) quede activo
    en todas las subrutas de admin; `also` agrupa rutas hermanas bajo la misma
-   entrada (tags públicos y privados son la misma sección). */
+   entrada (tags públicos y privados son la misma sección). Las primeras
+   ADMIN_TAB_COUNT entradas van a la tab bar mobile; el resto vive en "Más". */
 const ADMIN_LINKS = [
   { to: '/admin', label: 'Panel', icon: 'dashboard', exact: true },
   { to: '/admin/users', label: 'Usuarios', icon: 'users' },
@@ -15,19 +17,22 @@ const ADMIN_LINKS = [
   { to: '/admin/tags', label: 'Tags', icon: 'tag', also: ['/admin/tags-privados'] },
   { to: '/admin/settings', label: 'Ajustes', icon: 'settings' },
 ];
+const ADMIN_TAB_COUNT = 4;
 
+/* `tab` es la etiqueta corta para la barra inferior mobile. */
 const PARTICIPANT_LINKS = [
-  { to: '/activities', label: 'Actividades', icon: 'activity' },
-  { to: '/my-inscriptions', label: 'Mis inscripciones', icon: 'document' },
-  { to: '/my-interests', label: 'Mis intereses', icon: 'tag' },
-  { to: '/my-profile', label: 'Mi perfil', icon: 'user' },
+  { to: '/activities', label: 'Actividades', tab: 'Cartelera', icon: 'activity' },
+  { to: '/my-inscriptions', label: 'Mis inscripciones', tab: 'Inscripciones', icon: 'document' },
+  { to: '/my-interests', label: 'Mis intereses', tab: 'Intereses', icon: 'tag' },
+  { to: '/my-profile', label: 'Mi perfil', tab: 'Perfil', icon: 'user' },
 ];
 
 const SIDEBAR_KEY = 'malka.sidebar';
 
 /**
- * Estructura de la app autenticada: sidebar colapsable en desktop, barra
- * superior con panel lateral en mobile.
+ * Estructura de la app autenticada: sidebar colapsable en desktop; en mobile,
+ * barra superior con el logo y tab bar inferior (admin suma un "Más" que abre
+ * un sheet con las secciones restantes y el logout).
  *
  * El estado activo se marca por ruta — antes no había forma de saber en qué
  * sección estabas parado. El colapso persiste en localStorage para que la
@@ -47,7 +52,12 @@ const AppShell = ({ children }) => {
   );
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const links = user?.role === 'admin' ? ADMIN_LINKS : PARTICIPANT_LINKS;
+  const isAdmin = user?.role === 'admin';
+  const links = isAdmin ? ADMIN_LINKS : PARTICIPANT_LINKS;
+  /* Mobile app-like para ambos roles: los dos usan tab bar; admin no entra
+     completo, así que sus últimas secciones (y el logout) viven en "Más". */
+  const tabLinks = isAdmin ? ADMIN_LINKS.slice(0, ADMIN_TAB_COUNT) : PARTICIPANT_LINKS;
+  const moreLinks = isAdmin ? ADMIN_LINKS.slice(ADMIN_TAB_COUNT) : [];
 
   const isActive = ({ to, exact, also = [] }) => {
     const { pathname } = location;
@@ -216,22 +226,16 @@ const AppShell = ({ children }) => {
           <img src={logoMalka} alt="Malka" className="h-8 w-auto" />
         </button>
 
-        <Button
-          variant="secondary"
-          icon={menuOpen ? 'close' : 'menu'}
-          iconOnly
-          label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
-          aria-expanded={menuOpen}
-          aria-controls={panelId}
-          onClick={() => setMenuOpen((o) => !o)}
-        />
       </header>
 
-      {menuOpen && (
+      {/* ---------- Panel "Más" (mobile, admin) ----------
+          Sube desde abajo como sheet: las secciones que no entran en la tab
+          bar, más el logout. */}
+      {isAdmin && menuOpen && (
         <>
           <button
             type="button"
-            className="fixed inset-0 z-[60] m-0 cursor-default border-none bg-ink/40 p-0 backdrop-blur-[2px] lg:hidden"
+            className="fixed inset-0 z-[60] m-0 cursor-default border-none bg-ink/40 p-0 backdrop-blur-[2px] animate-overlay-in motion-reduce:animate-none lg:hidden"
             aria-label="Cerrar menú"
             onClick={() => setMenuOpen(false)}
           />
@@ -239,18 +243,28 @@ const AppShell = ({ children }) => {
             id={panelId}
             role="dialog"
             aria-modal="true"
-            aria-label="Menú de navegación"
-            className="fixed right-0 top-0 z-[70] flex h-full w-[min(20rem,calc(100vw-2rem))] max-w-full flex-col overflow-y-auto border-l border-surface-border bg-surface px-4 pb-6 pt-16 shadow-overlay lg:hidden"
+            aria-label="Más secciones"
+            className="fixed inset-x-0 bottom-0 z-[70] flex flex-col rounded-t-panel bg-surface px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-4 shadow-overlay animate-sheet-in motion-reduce:animate-none lg:hidden"
           >
-            <nav className="mb-4 space-y-1 border-b border-surface-border pb-4">
-              {links.map((link) => navItem(link, { inDrawer: true }))}
+            <div className="mb-3 flex items-center justify-between">
+              <p className="min-w-0 break-words px-1 text-sm font-medium text-ink-muted">
+                {user?.nombre} {user?.apellido}
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                icon="close"
+                iconOnly
+                label="Cerrar"
+                onClick={() => setMenuOpen(false)}
+              />
+            </div>
+
+            <nav className="mb-3 space-y-1 border-b border-surface-border pb-3">
+              {moreLinks.map((link) => navItem(link, { inDrawer: true }))}
             </nav>
 
-            <p className="mb-4 break-words px-1 text-sm font-medium text-ink-muted">
-              {user?.nombre} {user?.apellido}
-            </p>
-
-            <Button variant="secondary" icon="logout" onClick={handleLogout} fullWidth className="mt-auto">
+            <Button variant="secondary" icon="logout" onClick={handleLogout} fullWidth>
               Salir
             </Button>
           </div>
@@ -261,11 +275,66 @@ const AppShell = ({ children }) => {
       <main
         className={cn(
           'transition-[padding] duration-slow ease-standard motion-reduce:transition-none',
-          collapsed ? 'lg:pl-[4.75rem]' : 'lg:pl-64'
+          collapsed ? 'lg:pl-[4.75rem]' : 'lg:pl-64',
+          /* Aire para que la tab bar no tape el final del contenido. */
+          'pb-[calc(4.25rem+env(safe-area-inset-bottom))] lg:pb-0'
         )}
       >
+        <InstallBanner />
         {children}
       </main>
+
+      {/* ---------- Tab bar (mobile) ---------- */}
+      <nav
+        aria-label="Secciones"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-surface-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
+      >
+        <div className={cn('grid', isAdmin ? 'grid-cols-5' : 'grid-cols-4')}>
+          {tabLinks.map((link) => {
+            const active = isActive(link);
+            return (
+              <button
+                key={link.to}
+                type="button"
+                onClick={() => go(link.to)}
+                aria-current={active ? 'page' : undefined}
+                className={cn(
+                  isAdmin
+                    ? 'flex min-h-[3.5rem] flex-col items-center justify-center gap-0.5 px-0.5 text-[0.625rem] font-medium'
+                    : 'flex min-h-[3.5rem] flex-col items-center justify-center gap-0.5 px-1 text-[0.6875rem] font-medium',
+                  'transition-control duration-fast motion-reduce:transition-none',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40',
+                  active ? 'text-primary' : 'text-ink-faint'
+                )}
+              >
+                <Icon name={link.icon} size="md" strokeWidth={active ? 2.25 : 2} />
+                <span className="max-w-full truncate">{link.tab ?? link.label}</span>
+              </button>
+            );
+          })}
+
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setMenuOpen(true)}
+              aria-expanded={menuOpen}
+              aria-controls={panelId}
+              aria-current={moreLinks.some(isActive) ? 'page' : undefined}
+              className={cn(
+                isAdmin
+                    ? 'flex min-h-[3.5rem] flex-col items-center justify-center gap-0.5 px-0.5 text-[0.625rem] font-medium'
+                    : 'flex min-h-[3.5rem] flex-col items-center justify-center gap-0.5 px-1 text-[0.6875rem] font-medium',
+                'transition-control duration-fast motion-reduce:transition-none',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40',
+                moreLinks.some(isActive) ? 'text-primary' : 'text-ink-faint'
+              )}
+            >
+              <Icon name="menu" size="md" strokeWidth={moreLinks.some(isActive) ? 2.25 : 2} />
+              <span>Más</span>
+            </button>
+          )}
+        </div>
+      </nav>
     </div>
   );
 };

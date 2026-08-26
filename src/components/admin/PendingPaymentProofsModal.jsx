@@ -13,7 +13,7 @@ const adminUserPath = (userRef) => {
   return uid ? `/admin/users/${uid}` : null;
 };
 
-const ProofReviewCard = ({ inscription, processingId, onClose, onApprove, onReject, onOpenLightbox }) => {
+const ProofReviewCard = ({ inscription, onClose, onOpenLightbox }) => {
   const activity = inscription.activityId;
   const user = inscription.userId;
   const comprobanteUrl = inscription.pago?.comprobante?.url;
@@ -21,7 +21,6 @@ const ProofReviewCard = ({ inscription, processingId, onClose, onApprove, onReje
   const nombreCompleto =
     [user?.nombre, user?.apellido].filter(Boolean).join(' ').trim() || '—';
   const isPdf = isPdfComprobante(inscription);
-  const isBusy = processingId === inscription._id;
 
   return (
     <div className="overflow-hidden rounded-card border border-surface-border">
@@ -97,25 +96,6 @@ const ProofReviewCard = ({ inscription, processingId, onClose, onApprove, onReje
             </p>
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row lg:flex-col mt-auto pt-2">
-            <Button
-              icon="check"
-              loading={isBusy}
-              onClick={() => onApprove(inscription._id)}
-              fullWidth
-            >
-              {isBusy ? 'Procesando...' : 'Aprobar'}
-            </Button>
-            <Button
-              variant="danger"
-              icon="close"
-              disabled={isBusy}
-              onClick={() => onReject(inscription._id)}
-              fullWidth
-            >
-              Rechazar
-            </Button>
-          </div>
         </div>
       </div>
     </div>
@@ -244,27 +224,61 @@ const PendingPaymentProofsModal = ({ open, onClose, onReviewed, activityId }) =>
               ? `${currentIndex + 1} de ${inscriptions.length} pendientes`
               : '1 pendiente'
       }
-    >
-      {hasMultiple && !loading && inscriptions.length > 0 && (
-        <div className="-mx-5 -mt-5 mb-5 flex shrink-0 items-center justify-between gap-3 border-b border-surface-border px-5 py-3">
-          <Button variant="secondary" size="sm" icon="back" onClick={goPrev} disabled={!canGoPrev}>
-            Anterior
-          </Button>
-          <span className="text-sm tabular-nums text-ink-muted">
-            {currentIndex + 1} / {inscriptions.length}
-          </span>
-          <Button
-            variant="secondary"
-            size="sm"
-            iconRight="forward"
-            onClick={goNext}
-            disabled={!canGoNext}
-          >
-            Siguiente
-          </Button>
-        </div>
-      )}
+      /* Acciones y pager en el footer fijo del modal: el cuerpo scrollea
+         (sobre todo en mobile) pero Aprobar/Rechazar/Siguiente quedan
+         siempre a mano. */
+      footer={
+        !loading && inscription ? (
+          <div className="w-full space-y-2">
+            <div className="flex gap-2">
+              <Button
+                icon="check"
+                loading={processingId === inscription._id}
+                onClick={() => handleApprove(inscription._id)}
+                className="flex-1"
+              >
+                {processingId === inscription._id ? 'Procesando...' : 'Aprobar'}
+              </Button>
+              <Button
+                variant="danger"
+                icon="close"
+                disabled={processingId === inscription._id}
+                onClick={() => handleReject(inscription._id)}
+                className="flex-1"
+              >
+                Rechazar
+              </Button>
+            </div>
 
+            {hasMultiple && (
+              <div className="flex items-center justify-between gap-3">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon="back"
+                  onClick={goPrev}
+                  disabled={!canGoPrev}
+                >
+                  Anterior
+                </Button>
+                <span className="text-sm tabular-nums text-ink-muted">
+                  {currentIndex + 1} / {inscriptions.length}
+                </span>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  iconRight="forward"
+                  onClick={goNext}
+                  disabled={!canGoNext}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            )}
+          </div>
+        ) : undefined
+      }
+    >
       <div>
         {loading ? (
           <div className="flex flex-col items-center py-12">
@@ -280,10 +294,7 @@ const PendingPaymentProofsModal = ({ open, onClose, onReviewed, activityId }) =>
         ) : inscription ? (
           <ProofReviewCard
             inscription={inscription}
-            processingId={processingId}
             onClose={onClose}
-            onApprove={handleApprove}
-            onReject={handleReject}
             onOpenLightbox={setLightboxUrl}
           />
         ) : null}
