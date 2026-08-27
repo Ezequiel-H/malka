@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { formatUtcCalendarDateEsAR } from '../../utils/dateUtils';
 import { formatActivityPrice } from '../../utils/priceUtils';
+import { renderPlantilla, plantillaContext, buildWaLink } from '../../utils/whatsapp';
 import { Alert, Button, Field, FileInput, Modal } from '../ui';
 
 const LONG_DATE_OPTS = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -27,10 +29,21 @@ const InscriptionConfirmModal = ({
   /* El archivo se refleja acá sólo para poder mostrarlo en el FileInput; la
      página sigue siendo la dueña del valor que se envía. */
   const [comprobante, setComprobante] = useState(null);
+  const { user } = useAuth();
 
   if (!activity || !selectedDate) return null;
 
   const esViaje = activity.tipo === 'viaje';
+
+  /* El número y la plantilla vienen de Ajustes (resueltos por el back en la
+     actividad); las variables se completan acá, que conocemos al usuario. */
+  const waViajeLink = buildWaLink(
+    activity.whatsappViaje?.numero,
+    renderPlantilla(
+      activity.whatsappViaje?.mensaje,
+      plantillaContext({ user, activity, fecha: selectedDate.fecha, hora: selectedDate.hora })
+    )
+  );
 
   const handleComprobante = (file) => {
     setComprobante(file);
@@ -134,18 +147,20 @@ const InscriptionConfirmModal = ({
           <Alert tone="warning" title="Pago del viaje">
             No necesitás transferir ni subir comprobante ahora. Una vez confirmado tu cupo,
             coordinamos el pago por WhatsApp.
-            <div className="mt-3">
-              <Button
-                variant="secondary"
-                size="sm"
-                icon="whatsapp"
-                href="https://wa.me/5491134405730"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Escribinos por WhatsApp
-              </Button>
-            </div>
+            {waViajeLink && (
+              <div className="mt-3">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon="whatsapp"
+                  href={waViajeLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Escribinos por WhatsApp
+                </Button>
+              </div>
+            )}
           </Alert>
         )}
       </div>

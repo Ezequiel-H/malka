@@ -21,9 +21,11 @@ import {
   Field,
   Icon,
   ImageLightbox,
+  Modal,
   Select,
   useConfirm,
 } from '../../components/ui';
+import { renderPlantilla, plantillaContext, buildWaLink } from '../../utils/whatsapp';
 import { formatActivityPrice, formatPrice } from '../../utils/priceUtils';
 
 const GMAIL_INVITE_BODY_MAX = 7500;
@@ -216,10 +218,20 @@ const ActivityInscriptions = () => {
   const [comprobanteAbierto, setComprobanteAbierto] = useState(null);
   const [showProofsModal, setShowProofsModal] = useState(false);
   const [estadoFilter, setEstadoFilter] = useState('todos');
+  /* Contacto por WhatsApp con plantillas de Ajustes. */
+  const [waTarget, setWaTarget] = useState(null);
+  const [waPlantillas, setWaPlantillas] = useState([]);
 
   useEffect(() => {
     fetchActivity();
   }, [id]);
+
+  useEffect(() => {
+    axios
+      .get('/settings')
+      .then((res) => setWaPlantillas(res.data.settings?.plantillasWhatsApp || []))
+      .catch(() => setWaPlantillas([]));
+  }, []);
 
   useEffect(() => {
     if (activity) {
@@ -522,6 +534,17 @@ const ActivityInscriptions = () => {
                 Rechazar
               </Button>
             </>
+          )}
+          {inscription.userId?.telefono && (
+            <Button
+              size="sm"
+              variant="ghost"
+              icon="whatsapp"
+              iconOnly
+              label="Escribir por WhatsApp"
+              title="Escribir por WhatsApp"
+              onClick={() => setWaTarget(inscription)}
+            />
           )}
           <Select
             options={ESTADO_OPTIONS}
@@ -841,6 +864,69 @@ const ActivityInscriptions = () => {
         onClose={() => setShowProofsModal(false)}
         onReviewed={fetchInscriptions}
       />
+
+      <Modal
+        open={Boolean(waTarget)}
+        onClose={() => setWaTarget(null)}
+        size="sm"
+        title="Escribir por WhatsApp"
+        description={
+          waTarget
+            ? [waTarget.userId?.nombre, waTarget.userId?.apellido].filter(Boolean).join(' ') ||
+              waTarget.userId?.email
+            : undefined
+        }
+      >
+        {waTarget && (
+          <div className="space-y-2">
+            {waPlantillas.map((p) => {
+              const texto = renderPlantilla(
+                p.mensaje,
+                plantillaContext({
+                  user: waTarget.userId,
+                  activity,
+                  fecha: waTarget.fecha,
+                  hora: waTarget.hora || activity?.hora,
+                })
+              );
+              return (
+                <Button
+                  key={p._id ?? p.nombre}
+                  variant="secondary"
+                  icon="whatsapp"
+                  fullWidth
+                  href={buildWaLink(waTarget.userId?.telefono, texto)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setWaTarget(null)}
+                  className="justify-start text-left"
+                >
+                  {p.nombre}
+                </Button>
+              );
+            })}
+
+            <Button
+              variant="secondary"
+              icon="whatsapp"
+              fullWidth
+              href={buildWaLink(waTarget.userId?.telefono, '')}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setWaTarget(null)}
+              className="justify-start text-left"
+            >
+              Chat vacío (sin plantilla)
+            </Button>
+
+            {waPlantillas.length === 0 && (
+              <p className="pt-1 text-sm text-ink-muted">
+                Podés crear plantillas con variables en Ajustes → WhatsApp.
+              </p>
+            )}
+          </div>
+        )}
+      </Modal>
 
       <ImageLightbox
         open={Boolean(comprobanteAbierto)}
