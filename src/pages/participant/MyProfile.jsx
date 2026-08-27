@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { formatAuthError, normalizePhone } from '../../utils/authErrors';
+import { birthDateToInputValue, formatLocalDateToString } from '../../utils/dateUtils';
 import PageContainer from '../../components/layout/PageContainer';
 
 const RESTRICCIONES = [
@@ -24,6 +25,7 @@ const MyProfile = () => {
     return {
       nombre: user?.nombre ?? '',
       apellido: user?.apellido ?? '',
+      fechaNacimiento: birthDateToInputValue(user?.fechaNacimiento),
       dni: String(user?.dni ?? '').replace(/ /g, '').trim(),
       email: user?.email ?? '',
       telefono: normalizePhone(user?.telefono),
@@ -72,6 +74,7 @@ const MyProfile = () => {
       const payload = {
         nombre: formData.nombre,
         apellido: formData.apellido,
+        fechaNacimiento: formData.fechaNacimiento,
         dni: String(formData.dni ?? '').replace(/ /g, '').trim(),
         telefono: normalizePhone(formData.telefono),
         restriccionesAlimentarias: formData.restriccionesAlimentarias || [],
@@ -137,6 +140,20 @@ const MyProfile = () => {
               required
               className="bg-white"
               autoComplete="family-name"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="my-profile-fechaNacimiento">Fecha de nacimiento</label>
+            <input
+              id="my-profile-fechaNacimiento"
+              type="date"
+              name="fechaNacimiento"
+              value={formData.fechaNacimiento}
+              onChange={handleChange}
+              required
+              max={formatLocalDateToString(new Date())}
+              className="bg-white"
             />
           </div>
 

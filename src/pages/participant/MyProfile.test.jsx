@@ -52,6 +52,7 @@ describe('MyProfile', () => {
       dni: '12345678',
       email: 'ana@example.com',
       telefono: '+5491112345678',
+      fechaNacimiento: '1992-07-10',
       restriccionesAlimentarias: ['Sin TACC'],
       comoSeEntero: 'Instagram',
       estado: 'approved',
@@ -70,6 +71,7 @@ describe('MyProfile', () => {
 
     expect(screen.getByLabelText('Nombre')).toHaveValue('Ana');
     expect(screen.getByLabelText('Apellido')).toHaveValue('Perez');
+    expect(screen.getByLabelText('Fecha de nacimiento')).toHaveValue('1992-07-10');
     expect(screen.getByLabelText('DNI')).toHaveValue('12345678');
     expect(screen.getByLabelText('Teléfono')).toHaveValue('+5491112345678');
     expect(screen.getByLabelText('Email')).toHaveValue('ana@example.com');
@@ -111,6 +113,7 @@ describe('MyProfile', () => {
     expect(patchMock).toHaveBeenCalledWith('/users/me', {
       nombre: 'Ana',
       apellido: 'Perez',
+      fechaNacimiento: '1992-07-10',
       dni: '12345678',
       telefono: '+5491100000000',
       restriccionesAlimentarias: ['Vegano'],

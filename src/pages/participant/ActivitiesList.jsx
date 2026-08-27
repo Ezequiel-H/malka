@@ -16,6 +16,7 @@ import InscriptionStatusBadge from '../../components/activities/InscriptionStatu
 import DateSelectionModal from '../../components/activities/DateSelectionModal';
 import InscriptionConfirmModal from '../../components/activities/InscriptionConfirmModal';
 import EmptyState from '../../components/common/EmptyState';
+import BirthDatePrompt from '../../components/profile/BirthDatePrompt';
 
 const ActivitiesList = () => {
   const { showSuccess, showError } = useToast();
@@ -347,6 +348,7 @@ const ActivitiesList = () => {
 
   return (
     <PageContainer title="Cartelera de Actividades">
+        <BirthDatePrompt className="mb-6" />
 
         {/* Filtros */}
         <div className="card mb-8">

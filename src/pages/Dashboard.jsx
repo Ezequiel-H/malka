@@ -2,6 +2,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { useEffect } from 'react';
 import PageContainer from '../components/layout/PageContainer';
+import BirthDatePrompt from '../components/profile/BirthDatePrompt';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -23,6 +24,7 @@ const Dashboard = () => {
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-5 sm:mb-6 text-primary break-words">
             Bienvenido, {user?.nombre} {user?.apellido}
           </h1>
+          <BirthDatePrompt className="mb-5 sm:mb-6" />
           {user?.estado === 'pending' && (
             <div className="alert alert-info">
               <h2 className="text-lg sm:text-xl font-semibold mb-2">Tu usuario está siendo validado</h2>
