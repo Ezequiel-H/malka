@@ -7,7 +7,7 @@ const CalendarIcon = () => (
     strokeWidth="1.75"
     strokeLinecap="round"
     strokeLinejoin="round"
-    className="h-5 w-5"
+    className="h-4 w-4"
     aria-hidden="true"
   >
     <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />

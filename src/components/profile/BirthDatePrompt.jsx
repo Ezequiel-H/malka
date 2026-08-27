@@ -61,7 +61,7 @@ const BirthDatePrompt = ({ className = '' }) => {
         </div>
         <button
           type="submit"
-          className="btn btn-primary w-full justify-center"
+          className="btn btn-primary w-full justify-center !min-h-0 h-11 py-2"
           disabled={saving || !fechaNacimiento}
         >
           {saving ? 'Guardando...' : 'Guardar'}
