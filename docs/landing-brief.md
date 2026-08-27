@@ -189,33 +189,62 @@ su dashboard (o ve la landing con el botón cambiado a "Ir a mi cuenta").
    secundario *"Ver qué hay esta semana"* → sección de actividades.
    *El CTA del sitio actual, ahora sí, abre una puerta.*
 
-3. **Actividades / Qué pasa en Malka** — la fila de 6 categorías con ícono que
-   ya existe (**Judaísmo · Actividades · Coworking · Asaditos · Huerta ·
-   Música**) como tarjetas, más una nota clara de que la agenda y la
-   inscripción viven adentro del sistema, con CTA a registrarse.
-   *Decisión abierta:* mostrar aquí las **próximas actividades reales** en vivo
+3. **La semana en Malka** — el pulso fijo, no un calendario. Esta es la
+   resolución del problema de fondo: la landing es estática y la agenda cambia,
+   así que la landing muestra **el ritmo** y el sistema muestra **las fechas**.
+   Lo fijo no vence nunca, así que se puede escribir en piedra:
+
+   - *Lunes a viernes, 14 a 21* — la casa abierta: cowork, café, malkear.
+   - *Viernes* — **Shabat**: la mesa larga, las mejores ceremonias de la casa.
+   - *Durante la semana* — **espacios de estudio**: shiurim y La Ieshive.
+
+   Tres o cuatro beats como máximo, en tira horizontal (o columna en mobile),
+   cada uno con su foto real. Va con el hedge que ellos mismos ya escribieron:
+   *"si es feriado o festividad, puede que estemos cerrados o tengamos horarios
+   especiales, ¡así que chill!"*.
+
+   **Los shiurim no llevan sección propia.** Una sección dedicada quedaría
+   flaca (no hay listado real que poner) y, peor, filtra gente: alguien de 24
+   que no viene de una casa observante lee "shiurim" y se cae del embudo. Se
+   nombran como un beat de la semana y se desarrollan dentro del bloque de
+   **La Ieshive**, que ya está escrito y ya es general y abierto por sí solo
+   — *"un ambiente innovador, abierto y plural"*. La generalidad no es tibieza
+   acá: es la puerta.
+
+4. **Y además, lo que cambia** — deliberadamente general, sin listar nada.
+   Las 6 categorías con ícono que ya existen (**Judaísmo · Actividades ·
+   Coworking · Asaditos · Huerta · Música**) como el sabor de lo que aparece,
+   y un cierre del tipo *"cada semana hay algo nuevo — la agenda vive adentro"*
+   con CTA a registrarse. Que no listar sea el argumento: no se puede ver todo
+   desde afuera, y por eso te registrás.
+
+   *Decisión abierta:* mostrar acá las **próximas actividades reales** en vivo
    requiere un endpoint público nuevo en el backend — hoy `GET /activities`
    pide `authenticate`, sólo `GET /tags` es público. Arrancamos estático y, si
    se quiere, se suma después.
 
-4. **Quiénes somos / Conocé la casa** — el recorrido por el edificio en cuatro
+   > **Pendiente de dato real**: hace falta el cronograma fijo confirmado por
+   > Malka (¿el Shabat es todos los viernes? ¿los shiurim tienen día fijo?).
+   > Los tres beats de arriba son la estructura, no el dato — no inventar días.
+
+5. **Quiénes somos / Conocé la casa** — el recorrido por el edificio en cuatro
    momentos (salón y Shabat, quincho con parrilla, cowork del primer piso, La
    Ieshive y el estudio), con las fotos reales. Formato editorial alternado
    texto/imagen. Cierra con la terraza y **"Vení a conocer Malka. Te esperamos
    para que abras la puerta que elijas."** Incluye **La Ieshive** como bloque
    propio y el **Staff** en una tira sobria.
 
-5. **Preguntas frecuentes** — acordeón con las 8 preguntas ya redactadas, una
+6. **Preguntas frecuentes** — acordeón con las 8 preguntas ya redactadas, una
    sola vez en todo el sitio (hoy están repetidas en tres páginas).
 
-6. **Contacto y ubicación** — dirección, horario, mapa o foto de la fachada,
+7. **Contacto y ubicación** — dirección, horario, mapa o foto de la fachada,
    Instagram, WhatsApp y mail. Sin formulario: el canal real es WhatsApp e
    Instagram, y quien quiere entrar se registra.
 
-7. **CTA de cierre** — banda verde a todo el ancho, cerrando con la invitación
+8. **CTA de cierre** — banda verde a todo el ancho, cerrando con la invitación
    a registrarse y el link chico a iniciar sesión para quien ya tiene cuenta.
 
-8. **Footer** — logo, nav corta, redes, "Creada por la Comunidad Amijai"
+9. **Footer** — logo, nav corta, redes, "Creada por la Comunidad Amijai"
    (link a amijai.org) y el año actual (no "2024" hardcodeado).
 
 ### Además
@@ -234,3 +263,64 @@ su dashboard (o ve la landing con el botón cambiado a "Ir a mi cuenta").
 - Tratamiento de las 6 categorías: íconos de línea heredados vs. `Icon` de
   lucide del DS.
 - Si el mosaico de fotos sobrevive como galería o se reparte entre secciones.
+
+---
+
+## 4. Movimiento y assets: three.js e imagen generada
+
+Dos herramientas sobre la mesa. Mi recomendación, con el motivo:
+
+### three.js — no en la landing, salvo una excepción
+
+Esta página es la puerta de calle y la mayoría llega **desde el link de
+Instagram, en un celular de gama media, con datos**. three.js pesa del orden de
+150 KB gzip en su import más chico, que es el orden de magnitud de todo el
+resto de la landing junta, y compite con el único trabajo que la página tiene:
+que alguien se registre. Sumale que no hay un modelo 3D de la casa — habría que
+construirlo, y eso es un proyecto en sí mismo, no un detalle de la landing.
+
+La excepción que sí vale, y que **no necesita three.js**:
+
+- **Las llamas de la K.** El wordmark tiene una januquiá de tres llamas en
+  lugar de la K. Un parpadeo cálido y lento ahí — SVG + CSS, o un canvas 2D de
+  veinte líneas — es el gesto exacto de la marca ("casa abierta", "siempre hay
+  un mate esperándote") por dos órdenes de magnitud menos de peso. Si hay un
+  solo lugar donde la página respira, es ese.
+- **El recorrido por la casa** (salón → quincho → cowork → Ieshive → terraza)
+  es lo único genuinamente espacial de todo el sitio, y ahí la tentación del 3D
+  es real. Pero el tratamiento correcto es una secuencia de **fotos reales**
+  atada al scroll: la casa existe y se ve bien, no hay nada que simular.
+- Todo lo demás lo cubren los tokens de motion que ya están en el DS
+  (`fade-in-up`, easing `entrance`, duraciones calibradas), respetando
+  `prefers-reduced-motion`.
+
+Si más adelante aparece un uso con sentido (un tour real de la terraza, por
+ejemplo), entra como ruta aparte con carga diferida — nunca en el bundle del
+hero.
+
+### Higgsfield — sí, pero sobre las fotos que ya existen
+
+El uso que **no** recomiendo es generar imágenes de la casa o de la gente.
+Malka tiene fotos reales de encuentros reales, y en un espacio comunitario eso
+es precisamente lo que convence: la mesa larga llena de gente es creíble porque
+pasó. Una foto sintética de una mesa de Shabat presentada como Malka es, además
+de menos persuasiva, una tergiversación de un lugar y una comunidad concretos.
+No hace falta.
+
+Donde Higgsfield rinde de verdad acá:
+
+1. **Levantar el material existente.** Las fotos del sitio son JPGs
+   redimensionados por WordPress y de calidad despareja. `upscale_image` para
+   el hero y `reframe` para sacar los aspect ratios que pida el diseño (16:9
+   del hero, cuadrado de las tarjetas, 4:5 para mobile) es la ganancia más
+   grande y más honesta: mejora lo real en lugar de reemplazarlo.
+2. **Fondos y texturas abstractas.** El login ya tiene una textura de papel
+   hecha con radial-gradients; una textura de lino o grano cálido, sin gente y
+   sin lugar, puede darle cuerpo al crema sin afirmar nada falso.
+3. **La imagen de Open Graph.** Hoy compartir casamalka.org por WhatsApp no
+   muestra nada. Una composición de marca (logo + una foto real + el claim)
+   resuelve eso.
+4. `remove_background` para recortes limpios si el diseño los pide.
+
+Para los íconos de las 6 categorías me quedo con **lucide**, que ya está en el
+DS: consistencia con toda la app y peso cero.
