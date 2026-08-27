@@ -41,13 +41,13 @@ const BirthDatePrompt = ({ className = '' }) => {
   };
 
   return (
-    <div className={`alert alert-info ${className}`.trim()}>
+    <div className={`alert alert-info min-w-0 overflow-hidden ${className}`.trim()}>
       <h2 className="text-lg sm:text-xl font-semibold mb-2">Completá tu fecha de nacimiento</h2>
       <p className="text-base mb-4">
         Necesitamos esta información para completar tu perfil. Solo tenés que ingresarla una vez.
       </p>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <div className="form-group flex-1 mb-0">
+      <form onSubmit={handleSubmit} className="flex flex-col items-start gap-3 sm:flex-row sm:items-end">
+        <div className="form-group mb-0 min-w-0">
           <label htmlFor="birth-date-prompt">Fecha de nacimiento</label>
           <input
             id="birth-date-prompt"
@@ -57,12 +57,12 @@ const BirthDatePrompt = ({ className = '' }) => {
             onChange={(e) => setFechaNacimiento(e.target.value)}
             required
             max={formatLocalDateToString(new Date())}
-            className="bg-white"
+            className="bg-white form-input-date"
           />
         </div>
         <button
           type="submit"
-          className="btn btn-primary w-full justify-center sm:w-auto"
+          className="btn btn-primary w-full justify-center sm:w-auto sm:self-end"
           disabled={saving || !fechaNacimiento}
         >
           {saving ? 'Guardando...' : 'Guardar'}

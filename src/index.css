@@ -74,6 +74,16 @@
       'Courier New', monospace;
   }
 
+  /* Fecha calendario: ancho natural (evita overflow en iOS con type="date") */
+  .form-group input.form-input-date {
+    @apply px-4 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all;
+    width: auto;
+    max-width: 100%;
+    min-width: 0;
+    flex-grow: 0;
+    flex-shrink: 0;
+  }
+
   .card {
     @apply bg-white rounded-xl p-4 sm:p-6 mb-5 shadow-md hover:shadow-lg transition-shadow;
   }

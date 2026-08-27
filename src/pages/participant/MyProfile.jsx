@@ -153,7 +153,7 @@ const MyProfile = () => {
               onChange={handleChange}
               required
               max={formatLocalDateToString(new Date())}
-              className="bg-white"
+              className="bg-white form-input-date"
             />
           </div>
 
