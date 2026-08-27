@@ -63,6 +63,18 @@ export const formatUtcCalendarDateToString = (value) => {
   return `${y}-${m}-${day}`;
 };
 
+/**
+ * Valor para `<input type="date">` a partir de fecha de nacimiento guardada.
+ * Acepta YYYY-MM-DD (formato actual) o ISO legacy sin cambiar el día calendario.
+ */
+export const birthDateToInputValue = (value) => {
+  if (!value) return '';
+  if (typeof value === 'string' && DATE_ONLY_REGEX.test(value.trim())) {
+    return value.trim();
+  }
+  return formatUtcCalendarDateToString(value);
+};
+
 export const formatUtcCalendarDateEsAR = (value, options) => {
   const d = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(d.getTime())) return '';

@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import PublicTagPicker from '../../components/tags/PublicTagPicker';
+import { formatLocalDateToString } from '../../utils/dateUtils';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -10,6 +11,7 @@ const Register = () => {
     password: '',
     nombre: '',
     apellido: '',
+    fechaNacimiento: '',
     dni: '',
     telefono: '',
     restriccionesAlimentarias: [],
@@ -128,6 +130,19 @@ const Register = () => {
                 value={formData.apellido}
                 onChange={handleChange}
                 required
+                className="bg-white"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Fecha de nacimiento</label>
+              <input
+                type="date"
+                name="fechaNacimiento"
+                value={formData.fechaNacimiento}
+                onChange={handleChange}
+                required
+                max={formatLocalDateToString(new Date())}
                 className="bg-white"
               />
             </div>

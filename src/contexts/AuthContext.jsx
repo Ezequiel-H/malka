@@ -121,6 +121,7 @@ export const AuthProvider = ({ children }) => {
       telefono: telefonoNorm,
       restriccionesAlimentarias: registerPayload.restriccionesAlimentarias,
       comoSeEntero: registerPayload.comoSeEntero,
+      fechaNacimiento: registerPayload.fechaNacimiento,
       tags
     };
 
