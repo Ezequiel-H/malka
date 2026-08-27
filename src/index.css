@@ -47,7 +47,7 @@
     @apply mb-0 flex items-center font-medium;
   }
 
-  .form-group input:not([type='checkbox']):not([type='radio']):not([type='color']):not([type='range']):not([type='file']):not([type='hidden']):not(.form-input-hex),
+  .form-group input:not([type='checkbox']):not([type='radio']):not([type='color']):not([type='range']):not([type='file']):not([type='hidden']):not(.form-input-hex):not(.form-input-date),
   .form-group textarea,
   .form-group select {
     @apply w-full px-4 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all;
@@ -74,14 +74,26 @@
       'Courier New', monospace;
   }
 
-  /* Fecha calendario: ancho natural (evita overflow en iOS con type="date") */
-  .form-group input.form-input-date {
-    @apply px-4 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all;
-    width: auto;
+  /* Fecha calendario con icono: ancho completo del contenedor */
+  .form-group .form-date-field {
+    @apply w-full min-w-0;
+  }
+
+  .form-group .form-date-field input.form-input-date {
+    @apply w-full min-w-0 px-4 py-2.5 pr-11 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all;
     max-width: 100%;
-    min-width: 0;
-    flex-grow: 0;
-    flex-shrink: 0;
+    box-sizing: border-box;
+  }
+
+  .form-group .form-date-field input.form-input-date::-webkit-calendar-picker-indicator {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    cursor: pointer;
   }
 
   .card {

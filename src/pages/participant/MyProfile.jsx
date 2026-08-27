@@ -6,6 +6,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { formatAuthError, normalizePhone } from '../../utils/authErrors';
 import { birthDateToInputValue, formatLocalDateToString } from '../../utils/dateUtils';
 import PageContainer from '../../components/layout/PageContainer';
+import DateInput from '../../components/common/DateInput';
 
 const RESTRICCIONES = [
   'Vegetariano',
@@ -145,15 +146,13 @@ const MyProfile = () => {
 
           <div className="form-group">
             <label htmlFor="my-profile-fechaNacimiento">Fecha de nacimiento</label>
-            <input
+            <DateInput
               id="my-profile-fechaNacimiento"
-              type="date"
               name="fechaNacimiento"
               value={formData.fechaNacimiento}
               onChange={handleChange}
               required
               max={formatLocalDateToString(new Date())}
-              className="bg-white form-input-date"
             />
           </div>
 

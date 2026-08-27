@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { formatAuthError } from '../../utils/authErrors';
 import { formatLocalDateToString } from '../../utils/dateUtils';
+import DateInput from '../common/DateInput';
 
 export const userNeedsBirthDate = (user) =>
   user?.role === 'participant' && !user?.fechaNacimiento;
@@ -46,23 +47,21 @@ const BirthDatePrompt = ({ className = '' }) => {
       <p className="text-base mb-4">
         Necesitamos esta información para completar tu perfil. Solo tenés que ingresarla una vez.
       </p>
-      <form onSubmit={handleSubmit} className="flex flex-col items-start gap-3 sm:flex-row sm:items-end">
-        <div className="form-group mb-0 min-w-0">
+      <form onSubmit={handleSubmit} className="flex w-full flex-col gap-3">
+        <div className="form-group mb-0 w-full min-w-0">
           <label htmlFor="birth-date-prompt">Fecha de nacimiento</label>
-          <input
+          <DateInput
             id="birth-date-prompt"
-            type="date"
             name="fechaNacimiento"
             value={fechaNacimiento}
             onChange={(e) => setFechaNacimiento(e.target.value)}
             required
             max={formatLocalDateToString(new Date())}
-            className="bg-white form-input-date"
           />
         </div>
         <button
           type="submit"
-          className="btn btn-primary w-full justify-center sm:w-auto sm:self-end"
+          className="btn btn-primary w-full justify-center"
           disabled={saving || !fechaNacimiento}
         >
           {saving ? 'Guardando...' : 'Guardar'}

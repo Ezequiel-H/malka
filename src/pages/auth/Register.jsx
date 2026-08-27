@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import PublicTagPicker from '../../components/tags/PublicTagPicker';
+import DateInput from '../../components/common/DateInput';
 import { formatLocalDateToString } from '../../utils/dateUtils';
 
 const Register = () => {
@@ -136,14 +137,12 @@ const Register = () => {
 
             <div className="form-group">
               <label>Fecha de nacimiento</label>
-              <input
-                type="date"
+              <DateInput
                 name="fechaNacimiento"
                 value={formData.fechaNacimiento}
                 onChange={handleChange}
                 required
                 max={formatLocalDateToString(new Date())}
-                className="bg-white form-input-date"
               />
             </div>
 
