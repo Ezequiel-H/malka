@@ -18,7 +18,7 @@ import {
   SkeletonCards,
   useConfirm,
 } from '../../components/ui';
-import ExportDateModal from '../../components/activities/ExportDateModal';
+import ExportModal from '../../components/activities/ExportModal';
 
 const ESTADO_OPTIONS = [
   { value: '', label: 'Todas' },
@@ -144,9 +144,12 @@ const ActivitiesManagement = () => {
     }
   };
 
-  const downloadExport = async (activity, fechaStr) => {
+  const downloadExport = async (activity, { fecha, estados, columnas } = {}) => {
     try {
-      const params = fechaStr ? { fecha: fechaStr } : undefined;
+      const params = {};
+      if (fecha) params.fecha = fecha;
+      if (estados?.length) params.estados = estados.join(',');
+      if (columnas?.length) params.columnas = columnas.join(',');
       const response = await axios.get(`/activities/${activity._id}/export`, {
         params,
         responseType: 'blob'
@@ -164,7 +167,7 @@ const ActivitiesManagement = () => {
       };
 
       const cleanTitle = activity.titulo.replace(/[^a-z0-9\s]/gi, '').replace(/\s+/g, '_');
-      const eventDate = fechaStr || formatUtcCalendarDateToString(activity.fecha) || 'sin-fecha';
+      const eventDate = fecha || formatUtcCalendarDateToString(activity.fecha) || 'sin-fecha';
       const exportDateTime = formatDateTimeForFilename(new Date());
       const filename = `${cleanTitle}_${eventDate}_exportado_${exportDateTime}.xlsx`;
 
@@ -189,13 +192,11 @@ const ActivitiesManagement = () => {
   };
 
   const handleExportClick = async (activity) => {
-    if (activity.tipo !== 'recurrente') {
-      await downloadExport(activity);
-      return;
-    }
-
     setExportActivity(activity);
     setExportDates([]);
+    if (activity.tipo !== 'recurrente') {
+      return;
+    }
     setExportDatesLoading(true);
 
     try {
@@ -226,11 +227,11 @@ const ActivitiesManagement = () => {
     }
   };
 
-  const handleExportDateSelect = async (fechaStr) => {
+  const handleExport = async (opciones) => {
     const activity = exportActivity;
     closeExportModal();
     if (activity) {
-      await downloadExport(activity, fechaStr);
+      await downloadExport(activity, opciones);
     }
   };
 
@@ -481,12 +482,12 @@ const ActivitiesManagement = () => {
         )}
 
         {exportActivity && (
-          <ExportDateModal
+          <ExportModal
             activity={exportActivity}
             dates={exportDates}
             loading={exportDatesLoading}
             onClose={closeExportModal}
-            onSelect={handleExportDateSelect}
+            onExport={handleExport}
           />
         )}
     </PageContainer>
