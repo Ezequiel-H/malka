@@ -15,6 +15,7 @@ import {
   Spinner,
 } from '../../components/ui';
 import logoMalka from '../../assets/logo-malka-positivo.png';
+import { invalidEs } from '../../utils/formValidation';
 
 const RESTRICCIONES = [
   'Vegetariano',
@@ -186,6 +187,7 @@ const Register = () => {
                 maxLength={10}
                 pattern="\d{7,10}"
                 title="Ingresá entre 7 y 10 dígitos"
+                {...invalidEs('Ingresá entre 7 y 10 dígitos, sin puntos')}
               />
             </Field>
 
@@ -214,6 +216,7 @@ const Register = () => {
                 maxLength={22}
                 pattern="^[+]?[0-9]{8,20}$"
                 title="Ingresá un teléfono con al menos 8 dígitos (podés usar + y código de país)"
+                {...invalidEs('Ingresá un teléfono con al menos 8 dígitos (podés usar + y código de país)')}
               />
             </Field>
 

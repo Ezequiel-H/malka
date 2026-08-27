@@ -18,7 +18,7 @@ test.describe('Rutas públicas', () => {
     await installApiMock(page);
     await page.goto('/register');
     await expect(page.getByRole('heading', { name: 'Registro' })).toBeVisible();
-    await page.getByRole('link', { name: 'Inicia sesión aquí' }).click();
+    await page.getByRole('link', { name: 'Iniciá sesión aquí' }).click();
     await expect(page).toHaveURL(/\/login$/);
   });
 });
@@ -87,6 +87,7 @@ test.describe('Registro', () => {
     await page.locator('input[name="email"]').fill('nuevo@e2e.test');
     await page.locator('input[name="telefono"]').fill('+5411999999999');
     await page.locator('input[name="password"]').fill('secret12');
+    await page.locator('input[name="comoSeEntero"]').fill('Un amigo');
     await page.getByRole('button', { name: 'Registrarse' }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
     await expect(page.getByRole('heading', { name: 'Tu usuario está siendo validado' })).toBeVisible();

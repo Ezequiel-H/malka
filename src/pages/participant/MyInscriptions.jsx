@@ -68,9 +68,10 @@ const MyInscriptions = () => {
     }
   };
 
-  const handleCancel = async (inscriptionId) => {
+  const handleCancel = async (inscription) => {
+    const titulo = inscription.activityId?.titulo;
     const ok = await confirm({
-      title: '¿Cancelar esta inscripción?',
+      title: titulo ? `¿Cancelar tu inscripción a «${titulo}»?` : '¿Cancelar esta inscripción?',
       description: 'Si después querés volver, vas a tener que inscribirte de nuevo.',
       confirmLabel: 'Cancelar inscripción',
       cancelLabel: 'Volver',
@@ -78,7 +79,7 @@ const MyInscriptions = () => {
     if (!ok) return;
 
     try {
-      await axios.put(`/inscriptions/${inscriptionId}/cancel`);
+      await axios.put(`/inscriptions/${inscription._id}/cancel`);
       showSuccess('Inscripción cancelada exitosamente');
       fetchInscriptions();
     } catch (error) {
@@ -174,7 +175,19 @@ const MyInscriptions = () => {
                             </span>
                           </div>
 
-                          {!cancelada && (
+                          {cancelada ? (
+                            activity && (
+                              <Button
+                                size="sm"
+                                variant="link"
+                                iconRight="forward"
+                                to={`/activities/${activity._id}`}
+                                className="min-h-0 shrink-0 px-0"
+                              >
+                                Inscribirse de nuevo
+                              </Button>
+                            )
+                          ) : (
                             /* Acción destructiva pero secundaria: presencia mínima
                                hasta el hover, la confirmación fuerte vive en el
                                diálogo. */
@@ -182,7 +195,7 @@ const MyInscriptions = () => {
                               size="sm"
                               variant="ghost"
                               icon="close"
-                              onClick={() => handleCancel(inscription._id)}
+                              onClick={() => handleCancel(inscription)}
                               className="min-h-0 shrink-0 px-2 py-1 text-danger-600 hover:bg-danger-50 hover:text-danger-700"
                             >
                               Cancelar
