@@ -324,3 +324,39 @@ Donde Higgsfield rinde de verdad acá:
 
 Para los íconos de las 6 categorías me quedo con **lucide**, que ya está en el
 DS: consistencia con toda la app y peso cero.
+
+---
+
+## 7. Dónde está cada cosa
+
+Todo lo que el diseño necesita ya está en el repo, no hay que ir a buscarlo afuera:
+
+| Qué | Dónde |
+|---|---|
+| Tokens (crema, verde, radios, sombras, motion) | `tailwind.config.js` |
+| Componentes del DS (~24) | `src/components/ui` — se importan desde `components/ui` |
+| Logo | `src/assets/logo-malka-positivo.png` (798×201, PNG con alfa) |
+| **Las 7 fotos usables, ya elegidas y renombradas por rol** | `src/assets/landing/` |
+| Referencia de estilo público | `src/pages/auth/Login.jsx` |
+| Ruta a reemplazar | `src/App.jsx`, la última `<Route path="/">` |
+
+Las fotos quedaron con el nombre de lo que muestran, no el del WordPress:
+`mesa-shabat.jpg` (1920×1920, la del hero) · `parrilla.jpg` · `noche.jpg` ·
+`taller-totebags.jpg` · `salon-colchonetas.jpg` · `cowork-sillon.jpg` ·
+`la-ieshive.jpg`. Son las siete distintas de la auditoría; las siete repetidas
+de la mesa larga quedaron afuera a propósito.
+
+### Decisiones que el diseño tiene que tomar sí o sí
+
+1. Cormorant Garamond (la de la app) o Playfair Display (la del sitio actual).
+2. Si `/` pasa a ser la landing pública y el usuario logueado sigue yendo a su
+   dashboard.
+3. Cuánto crema y cuánto verde pleno.
+
+### Datos que todavía no están (no bloquean, pero no inventarlos)
+
+- El cronograma fijo confirmado por Malka: ¿el Shabat es todos los viernes?,
+  ¿los shiurim tienen día fijo? La sección "La semana en Malka" tiene la
+  estructura, le falta el dato.
+- Fotos del espacio sin gente: fachada, salón vacío, terraza, huerta, cowork.
+  Hoy no existe ninguna.
