@@ -53,10 +53,37 @@ export default {
         info: { 50: '#eef4f7', 500: '#3d7d99', 600: '#2f647c', 700: '#254e61' },
       },
 
+      /* Texturas de marca. Van acá y no en el componente porque llevan color:
+         un radial-gradient escrito en el JSX sería un hex suelto disfrazado.
+         `paper-*` es la textura tipo papel del login, generalizada. */
+      backgroundImage: {
+        'paper-cream':
+          'radial-gradient(circle at 18% 12%, rgba(104, 155, 120, 0.10) 0%, transparent 45%), radial-gradient(circle at 84% 74%, rgba(104, 155, 120, 0.07) 0%, transparent 42%), radial-gradient(circle at 50% 100%, rgba(235, 228, 216, 0.85) 0%, transparent 55%)',
+        'paper-green':
+          'radial-gradient(circle at 12% 8%, rgba(255, 255, 255, 0.09) 0%, transparent 46%), radial-gradient(circle at 88% 82%, rgba(46, 68, 53, 0.32) 0%, transparent 48%)',
+        /* Halo cálido de las tres llamas de la K del wordmark. */
+        'flame-glow':
+          'radial-gradient(closest-side, rgba(201, 138, 30, 0.55) 0%, rgba(201, 138, 30, 0.22) 45%, transparent 72%)',
+      },
+
       fontFamily: {
+        /* Grotesca de la landing. NO reemplaza a `display`: la app entera
+           sigue en Cormorant y ese lenguaje está terminado. Acá afuera, en
+           cambio, la serif delicada leía como invitación de casamiento y no
+           como un lugar para gente de veinticinco. */
+        grotesk: ['Archivo', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
         display: ['"Cormorant Garamond"', 'Georgia', 'serif'],
         sans: ['ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+      },
+
+      letterSpacing: {
+        /* A tamaño de titular la tipografía necesita cerrarse: lo que a 16px
+           es respiración, a 96px es un agujero. */
+        display: '-0.03em',
+        headline: '-0.02em',
+        /* Y al revés para las etiquetas chiquitas en mayúscula. */
+        label: '0.14em',
       },
 
       borderRadius: {
@@ -89,6 +116,9 @@ export default {
         base: '160ms',
         slow: '240ms',
         deliberate: '400ms',
+        /* Sólo para la coreografía de la landing: entradas de bloques
+           grandes, donde 400ms se lee como un parpadeo y no como un gesto. */
+        cinematic: '900ms',
       },
       transitionTimingFunction: {
         entrance: 'cubic-bezier(0.16, 1, 0.3, 1)', // salida rápida, llegada suave
@@ -139,6 +169,33 @@ export default {
           from: { transform: 'translateY(100%)' },
           to: { transform: 'translateY(0)' },
         },
+        /* Las tres llamas de la K: respiración lenta, no un parpadeo nervioso.
+           Un ciclo largo se lee como "hay alguien adentro"; uno corto, como un
+           GIF de 2004. */
+        flame: {
+          '0%, 100%': { opacity: '0.35', transform: 'scale(0.94)' },
+          '50%': { opacity: '0.75', transform: 'scale(1.06)' },
+        },
+        /* Entrada del titular del hero: cada línea sube desde detrás de su
+           propio recorte. El bloque tiene `overflow-hidden`, así que la línea
+           no aparece — se asoma. Es el gesto que hace que un titular grande
+           se sienta impreso y no pegado. */
+        'line-rise': {
+          from: { transform: 'translateY(105%)' },
+          to: { transform: 'translateY(0)' },
+        },
+        /* Cinta de categorías. Recorre exactamente la mitad del contenido
+           porque la lista va duplicada: al llegar al 50% el segundo juego
+           está donde arrancó el primero y el salto es invisible. */
+        marquee: {
+          from: { transform: 'translateX(0)' },
+          to: { transform: 'translateX(-50%)' },
+        },
+        /* Regla que se dibuja sola de izquierda a derecha. */
+        'rule-draw': {
+          from: { transform: 'scaleX(0)' },
+          to: { transform: 'scaleX(1)' },
+        },
         shimmer: {
           from: { backgroundPosition: '200% 0' },
           to: { backgroundPosition: '-200% 0' },
@@ -152,6 +209,10 @@ export default {
         'modal-in': 'modal-in 280ms cubic-bezier(0.16, 1, 0.3, 1)',
         'sheet-in': 'sheet-in 320ms cubic-bezier(0.16, 1, 0.3, 1)',
         'overlay-in': 'fade-in 220ms ease-out',
+        flame: 'flame 4.2s ease-in-out infinite',
+        'line-rise': 'line-rise 900ms cubic-bezier(0.16, 1, 0.3, 1) both',
+        marquee: 'marquee 38s linear infinite',
+        'rule-draw': 'rule-draw 900ms cubic-bezier(0.16, 1, 0.3, 1) both',
         shimmer: 'shimmer 1.4s linear infinite',
       },
     },

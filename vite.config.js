@@ -14,7 +14,9 @@ export default defineConfig({
         short_name: 'Malka',
         description: 'Actividades del centro cultural Malka',
         lang: 'es',
-        start_url: '/',
+        /* La raíz es la landing pública. Quien se instaló la app quiere
+           abrir la app, no la vitrina. */
+        start_url: '/dashboard',
         display: 'standalone',
         background_color: '#f9f2e8',
         theme_color: '#f9f2e8',

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import AppShell from './components/layout/AppShell';
 import ErrorBoundary from './components/layout/ErrorBoundary';
@@ -7,6 +7,7 @@ import LoadingScreen from './components/layout/LoadingScreen';
 import LoginGate from './components/auth/LoginGate';
 import Register from './pages/auth/Register';
 import Dashboard from './pages/Dashboard';
+import Landing from './pages/Landing';
 import ActivitiesList from './pages/participant/ActivitiesList';
 import ActivityDetail from './pages/participant/ActivityDetail';
 import MyInscriptions from './pages/participant/MyInscriptions';
@@ -23,6 +24,7 @@ import Settings from './pages/admin/Settings';
 import UserDetail from './pages/admin/UserDetail';
 import MyInterests from './pages/participant/MyInterests';
 import MyProfile from './pages/participant/MyProfile';
+import PostAuthRedirect from './components/auth/PostAuthRedirect';
 import PrivateRoute from './components/auth/PrivateRoute';
 import AdminRoute from './components/auth/AdminRoute';
 // TEMPORAL: vitrina del design system. Se borra junto con su ruta /ds.
@@ -202,7 +204,10 @@ function App() {
           }
         />
 
-        <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
+        {/* La raíz es la vitrina pública: reemplaza a casamalka.org como
+            puerta de entrada. Quien ya tiene sesión no la ve — sigue yendo
+            a donde le corresponde por su rol, igual que antes. */}
+        <Route path="/" element={user ? <PostAuthRedirect /> : <Landing />} />
       </Routes>
     </ErrorBoundary>
   );

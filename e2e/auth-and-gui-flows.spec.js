@@ -7,11 +7,59 @@ import {
 } from './helpers/apiMock.js';
 
 test.describe('Rutas públicas', () => {
-  test('redirige la raíz al login sin sesión', async ({ page }) => {
+  test('la raíz muestra la landing pública sin sesión', async ({ page }) => {
     await installApiMock(page);
     await page.goto('/');
+    await expect(page).toHaveURL(/\/$/);
+    await expect(
+      page.getByRole('heading', { name: 'El punto de encuentro para tu identidad judía', level: 1 })
+    ).toBeVisible();
+    // La landing no lleva el shell de la app.
+    await expect(page.getByRole('navigation', { name: 'Principal' })).toBeVisible();
+  });
+
+  test('la landing lleva al registro y al login', async ({ page }) => {
+    await installApiMock(page);
+    await page.goto('/');
+    await page.getByRole('link', { name: 'Entrá a tu casa' }).first().click();
+    await expect(page).toHaveURL(/\/register$/);
+
+    await page.goto('/');
+    await page.getByRole('link', { name: 'Ingresar' }).first().click();
     await expect(page).toHaveURL(/\/login$/);
-    await expect(page.getByRole('heading', { name: 'Iniciar Sesión' })).toBeVisible();
+  });
+
+  test('las preguntas frecuentes abren y cierran', async ({ page }) => {
+    await installApiMock(page);
+    await page.goto('/');
+    const respuesta = page.getByText('Podés caer de lunes a viernes, entre las 14 y las 21 h.', {
+      exact: false
+    });
+    await expect(respuesta).toBeHidden();
+    await page.getByText('¿Cuándo puedo ir a Malka?', { exact: true }).click();
+    await expect(respuesta).toBeVisible();
+  });
+
+  test.describe('con prefers-reduced-motion', () => {
+    test.use({ reducedMotion: 'reduce' });
+
+    /* La aparición al scrollear parte de opacidad 0. Si el usuario pidió
+       menos movimiento nunca se activa, así que todo tiene que estar visible
+       de entrada — no una landing en blanco. */
+    test('el contenido de abajo se ve sin haber scrolleado', async ({ page }) => {
+      await installApiMock(page);
+      await page.goto('/');
+      await expect(page.getByRole('heading', { name: 'Preguntas frecuentes' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Vení a conocer Malka.' })).toBeVisible();
+      /* La cinta de categorías se queda quieta y se pliega: si siguiera en
+         una sola fila, el recorte de la banda se la comería por los costados
+         y las seis palabras quedarían a medias. */
+      await expect(page.getByText('Coworking').first()).toBeVisible();
+      const desborda = await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth
+      );
+      expect(desborda).toBe(false);
+    });
   });
 
   test('muestra el formulario de registro y enlace a login', async ({ page }) => {

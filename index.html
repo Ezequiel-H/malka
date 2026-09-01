@@ -10,12 +10,57 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!--
+      Dos familias en un solo pedido. Archivo es variable (un archivo cubre de
+      400 a 800) y la usa la landing; Cormorant la usa la app por dentro.
+      Google Fonts sólo descarga el .woff2 de la familia que la página
+      realmente pinta, así que la landing no se baja Cormorant ni la app se
+      baja Archivo: viaja una hoja de estilos de un par de kB y nada más.
+    -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@400..800&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap"
       rel="stylesheet"
     />
     <link rel="icon" type="image/png" sizes="32x32" href="/cropped-favicon-32x32.png" />
-    <title>Malka</title>
+
+    <title>Malka — El punto de encuentro para tu identidad judía</title>
+
+    <!--
+      Metadatos para compartir. Hoy pasar el link de Malka por WhatsApp no
+      muestra absolutamente nada: ni título, ni bajada, ni imagen.
+
+      Las URLs absolutas son obligatorias — WhatsApp y Facebook no resuelven
+      rutas relativas en `og:image`. Si la app termina viviendo en un dominio
+      distinto de casamalka.org, hay que cambiarlo en los tres lugares de acá
+      abajo y en ningún otro.
+    -->
+    <meta
+      name="description"
+      content="Malka es un espacio de reunión, intercambio y actividades para jóvenes judíos de 18 a 35 años. Cowork, Shabat, estudio, asaditos y música en 3 de Febrero 1325, CABA. Registrate y mirá la agenda."
+    />
+    <link rel="canonical" href="https://casamalka.org/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Malka" />
+    <meta property="og:locale" content="es_AR" />
+    <meta property="og:url" content="https://casamalka.org/" />
+    <meta property="og:title" content="Malka — El punto de encuentro para tu identidad judía" />
+    <meta
+      property="og:description"
+      content="Un espacio de reunión, intercambio y actividades para jóvenes judíos de 18 a 35 años. Registrate y mirá qué se viene esta semana."
+    />
+    <meta property="og:image" content="https://casamalka.org/og-malka.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="La mesa larga de Shabat en el salón de Malka, llena de gente" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Malka — El punto de encuentro para tu identidad judía" />
+    <meta
+      name="twitter:description"
+      content="Un espacio de reunión, intercambio y actividades para jóvenes judíos de 18 a 35 años."
+    />
+    <meta name="twitter:image" content="https://casamalka.org/og-malka.jpg" />
   </head>
   <body>
     <div id="root"></div>
