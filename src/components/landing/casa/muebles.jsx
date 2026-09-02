@@ -860,41 +860,85 @@ export const Menora = ({ x, y, alto = 22 }) => {
  * La sucá de la terraza: tres paños de tela, el techo de ramas —que tiene que
  * dejar ver el cielo, esa es la gracia— y las guirnaldas de fruta adentro.
  */
-export const Suca = ({ x, y, ancho = 76, alto = 62 }) => (
-  <g>
-    <g className={filete} strokeWidth={TRAZO}>
-      {/* Los paños */}
-      <path d={`M ${x} ${y} L ${x} ${y - alto} L ${x + ancho} ${y - alto} L ${x + ancho} ${y} Z`} className="fill-primary-100/80" />
+export const Suca = ({ x, y, ancho = 84, alto = 66 }) => {
+  const dx = FONDO.x * 0.42;
+  const dy = FONDO.y * 0.42;
+  return (
+    <g>
+      {/* El piso de la sucá, para que apoye */}
       <path
-        d={`M ${x + ancho} ${y} L ${x + ancho} ${y - alto} L ${x + ancho + FONDO.x * 0.5} ${y - alto + FONDO.y * 0.5} L ${x + ancho + FONDO.x * 0.5} ${y + FONDO.y * 0.5} Z`}
-        className="fill-primary-200/70"
+        d={`M ${x} ${y} L ${x + ancho} ${y} L ${x + ancho + dx} ${y + dy} L ${x + dx} ${y + dy} Z`}
+        className="fill-barro-claro/70"
       />
-      {/* La estructura */}
+
+      {/* La pared del fondo y la lateral: lona clara con sus costuras. El
+          frente va abierto —una sucá se mira desde afuera y se entra— y por eso
+          se ve la mesa adentro. */}
       <path
-        d={`M ${x} ${y} L ${x} ${y - alto} M ${x + ancho} ${y} L ${x + ancho} ${y - alto} M ${x} ${y - alto} L ${x + ancho} ${y - alto}`}
-        className="stroke-barro-oscuro"
+        d={`M ${x + dx} ${y + dy} L ${x + ancho + dx} ${y + dy} L ${x + ancho + dx} ${y - alto + dy} L ${x + dx} ${y - alto + dy} Z`}
+        className="fill-primary-100 stroke-ink/40"
+        strokeWidth={TRAZO}
+      />
+      <path
+        d={`M ${x + ancho} ${y} L ${x + ancho + dx} ${y + dy} L ${x + ancho + dx} ${y - alto + dy} L ${x + ancho} ${y - alto} Z`}
+        className="fill-primary-200 stroke-ink/40"
+        strokeWidth={TRAZO}
+      />
+      {Array.from({ length: 5 }, (_, i) => (
+        <path
+          key={i}
+          d={`M ${x + dx + 10 + i * (ancho / 5.6)} ${y + dy} L ${x + dx + 10 + i * (ancho / 5.6)} ${y - alto + dy}`}
+          className="stroke-ink/12"
+          strokeWidth="1.2"
+        />
+      ))}
+
+      {/* Los parantes de madera, en las cuatro esquinas */}
+      {[
+        [x, y, x, y - alto],
+        [x + ancho, y, x + ancho, y - alto],
+        [x + dx, y + dy, x + dx, y - alto + dy],
+        [x + ancho + dx, y + dy, x + ancho + dx, y - alto + dy],
+      ].map(([x1, y1, x2, y2]) => (
+        <path key={`${x1}-${y1}`} d={`M ${x1} ${y1} L ${x2} ${y2}`} className="stroke-barro-oscuro" strokeWidth="3.4" strokeLinecap="round" />
+      ))}
+      <path
+        d={`M ${x} ${y - alto} L ${x + ancho} ${y - alto} L ${x + ancho + dx} ${y - alto + dy} L ${x + dx} ${y - alto + dy} Z`}
+        className="fill-none stroke-barro-oscuro"
         strokeWidth="3"
+        strokeLinejoin="round"
       />
-    </g>
-    {/* El sjaj: ramas cruzadas, sueltas, que dejan pasar el cielo */}
-    {Array.from({ length: 9 }, (_, i) => (
-      <path
-        key={i}
-        d={`M ${x + 2 + i * 8.6} ${y - alto - 3} l ${6 + (i % 3) * 3} ${-2 - (i % 2) * 2}`}
-        className="stroke-primary-600"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-      />
-    ))}
-    {/* Adentro cuelga fruta, como corresponde */}
-    {[0.28, 0.5, 0.72].map((f, i) => (
-      <g key={f}>
-        <path d={`M ${x + ancho * f} ${y - alto} L ${x + ancho * f} ${y - alto + 8 + i * 2}`} className="stroke-ink/40" strokeWidth="1" />
-        <circle cx={x + ancho * f} cy={y - alto + 10 + i * 2} r="2.6" className={i === 1 ? 'fill-flame' : 'fill-primary-400'} />
+
+      {/* El sjaj: ramas cruzadas y desparejas, apoyadas sobre el techo. Tienen
+          que dejar ver el cielo entre medio — esa es toda la gracia de una
+          sucá, y un techo cerrado la convertiría en una carpa. */}
+      {Array.from({ length: 12 }, (_, i) => {
+        const t = i / 11;
+        const px = x + 4 + t * (ancho - 8);
+        const py = y - alto - 2;
+        const largo = 12 + (i % 3) * 5;
+        const giro = -22 + (i % 4) * 14;
+        return (
+          <g key={i} transform={`translate(${px + dx * t} ${py + dy * t}) rotate(${giro})`}>
+            <path d={`M 0 0 L ${largo} 0`} className="stroke-primary-600" strokeWidth="2.6" strokeLinecap="round" />
+            {i % 3 === 0 && <ellipse cx={largo * 0.6} cy={-2.4} rx="4" ry="2.4" className="fill-primary-400" />}
+          </g>
+        );
+      })}
+
+      {/* Adentro: la mesa chica y las guirnaldas de fruta que se cuelgan */}
+      <g transform={`translate(${dx * 0.55} ${dy * 0.55})`}>
+        <Caja x={x + ancho * 0.3} y={y - 22} ancho={ancho * 0.42} alto={4} prof={0.16} />
+        {[0.26, 0.5, 0.74].map((f, i) => (
+          <g key={f}>
+            <path d={`M ${x + ancho * f} ${y - alto + 4} L ${x + ancho * f} ${y - alto + 12 + i * 3}`} className="stroke-ink/35" strokeWidth="1" />
+            <circle cx={x + ancho * f} cy={y - alto + 14 + i * 3} r="2.8" className={i === 1 ? 'fill-flame' : 'fill-primary-400'} />
+          </g>
+        ))}
       </g>
-    ))}
-  </g>
-);
+    </g>
+  );
+};
 
 /**
  * El sauna: cabina de tablas verticales, puerta de vidrio, banco adentro y la

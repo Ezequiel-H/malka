@@ -38,6 +38,16 @@ const SECCIONES = [
      la misma pantalla era exactamente el problema. */
   { id: 'entrada', piso: 'todo', zona: 'todo', portada: true },
   {
+    id: 'intro',
+    piso: 'todo',
+    zona: 'casa',
+    kicker: 'Casa Malka · Comunidad Amijai',
+    titulo: 'Es una casa.',
+    entrada: 'Con subsuelo, dos plantas, terraza y la puerta abierta.',
+    texto:
+      'Un lugar para jóvenes judíos de 18 a 35 en 3 de Febrero 1325. Abre de lunes a viernes de 14 a 21, no hace falta ser socio y no hay que anotarse para venir.',
+  },
+  {
     id: 'puerta',
     piso: 'planta',
     zona: 'puerta',
@@ -135,6 +145,13 @@ const Casa = () => {
    */
   const enPortada = zona === 'todo';
 
+  /* El botón de la portada no navega: baja. Con `smooth` lo maneja el
+     navegador, así que la cámara —que sólo mira en qué sección estás— la
+     acompaña sola. */
+  const bajar = () => {
+    document.getElementById('intro')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
   useEffect(() => {
     const obs = new IntersectionObserver(
       (entradas) => {
@@ -154,7 +171,15 @@ const Casa = () => {
 
   return (
     <div className="min-h-screen bg-surface-page font-grotesk text-ink">
-      <header className="sticky top-0 z-50 border-b border-ink/10 bg-surface-page/90 backdrop-blur-xl">
+      {/* La barra no existe en la portada: aparece cuando empezás a recorrer.
+          Una casa no te recibe con el cartel de "iniciar sesión" en la cara. */}
+      <header
+        className={`sticky top-0 z-50 border-b bg-surface-page/90 backdrop-blur-xl transition-all duration-500 ${
+          enPortada
+            ? 'pointer-events-none -translate-y-3 border-transparent opacity-0'
+            : 'translate-y-0 border-ink/10 opacity-100'
+        }`}
+      >
         <nav className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-5 sm:px-8">
           <img src={logoMalka} alt="Malka" className="h-6 w-auto shrink-0" />
           <div className="ml-auto flex items-center gap-3">
@@ -180,7 +205,7 @@ const Casa = () => {
           <div className="sticky top-16 z-30 -mx-5 bg-surface-page/95 px-5 backdrop-blur sm:-mx-8 sm:px-8 lg:top-16 lg:z-auto lg:col-span-6 lg:mx-0 lg:flex lg:h-[calc(100vh-4rem)] lg:items-center lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
             <div
               className={`relative w-full transition-transform duration-[1100ms] ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none ${
-                enPortada ? 'lg:translate-x-1/2 lg:-translate-y-[16%] lg:scale-[0.68]' : ''
+                enPortada ? 'lg:translate-x-1/2 lg:-translate-y-[22%] lg:scale-[0.6]' : ''
               }`}
             >
             <CasaDibujada
@@ -197,7 +222,7 @@ const Casa = () => {
               /* La portada vive fuera del envoltorio que se transforma —si no,
                  el texto se achica y se mueve con la casa— y se corre al centro
                  por su cuenta, porque la columna ocupa media pantalla. */
-              className={`pointer-events-none absolute inset-x-0 bottom-4 hidden flex-col items-center gap-5 text-center transition-opacity duration-700 lg:flex lg:translate-x-1/2 ${
+              className={`pointer-events-none absolute inset-x-0 bottom-4 hidden flex-col items-center gap-5 text-center transition-opacity duration-700 lg:flex lg:translate-x-1/2 lg:gap-4 ${
                 enPortada ? 'opacity-100' : 'opacity-0'
               }`}
             >
@@ -207,19 +232,33 @@ const Casa = () => {
               <img
                 src={logoMalka}
                 alt="Malka"
-                className="h-11 w-auto animate-fade-in-up [animation-delay:1250ms] [animation-duration:700ms] [animation-fill-mode:backwards]"
+                className="h-14 w-auto animate-fade-in-up [animation-delay:1250ms] [animation-duration:700ms] [animation-fill-mode:backwards]"
               />
-              <p className="max-w-lg animate-fade-in-up font-grotesk text-[1.6rem] font-semibold leading-tight tracking-tight text-ink [animation-delay:1420ms] [animation-duration:700ms] [animation-fill-mode:backwards]">
+              <p className="max-w-xl animate-fade-in-up font-grotesk text-[2rem] font-semibold leading-[1.1] tracking-tight text-ink [animation-delay:1400ms] [animation-duration:700ms] [animation-fill-mode:backwards]">
                 El punto de encuentro para tu identidad judía.
               </p>
-              <div className="pointer-events-auto mt-1 flex animate-fade-in-up flex-col items-center gap-4 [animation-delay:1620ms] [animation-fill-mode:backwards]">
-                <LandingButton to="/register" size="lg">
-                  Entrá a tu casa
-                </LandingButton>
-                <span className="flex items-center gap-3 text-[0.66rem] font-semibold uppercase tracking-label text-ink-muted">
-                  Bajá y conocé la casa
-                  <span className="h-px w-10 origin-left animate-rule-draw bg-ink-faint [animation-delay:1800ms]" />
-                </span>
+
+              {/* Los tres datos que decide cualquiera que llega: para quién,
+                  cuándo y dónde. En la portada valen más que cualquier frase de
+                  bienvenida. */}
+              <ul className="flex animate-fade-in-up flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[0.68rem] font-semibold uppercase tracking-label text-ink-soft [animation-delay:1520ms] [animation-fill-mode:backwards]">
+                {['18 a 35 años', 'Lunes a viernes, 14 a 21', '3 de Febrero 1325'].map((d, i) => (
+                  <li key={d} className="flex items-center gap-3">
+                    {i > 0 && <span className="h-1 w-1 rounded-pill bg-ink-faint" />}
+                    {d}
+                  </li>
+                ))}
+              </ul>
+
+              <div className="pointer-events-auto mt-2 flex animate-fade-in-up flex-col items-center gap-5 [animation-delay:1640ms] [animation-fill-mode:backwards]">
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <LandingButton size="lg" icon="chevronDown" onClick={bajar}>
+                    Conocé la casa
+                  </LandingButton>
+                  <LandingButton to="/register" variant="outline" size="lg">
+                    Entrá a tu casa
+                  </LandingButton>
+                </div>
               </div>
             </div>
           </div>
