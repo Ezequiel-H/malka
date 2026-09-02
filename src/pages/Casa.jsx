@@ -321,13 +321,13 @@ const Casa = () => {
           <div className="sticky top-16 z-30 -mx-5 bg-surface-page/95 px-5 backdrop-blur sm:-mx-8 sm:px-8 lg:top-16 lg:z-auto lg:col-span-6 lg:mx-0 lg:flex lg:h-[calc(100vh-4rem)] lg:items-center lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
             <div
               className={`relative w-full transition-transform duration-[1100ms] ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none ${
-                enPortada ? 'lg:translate-x-1/2 lg:-translate-y-[3%] lg:scale-[0.94]' : ''
+                enPortada ? 'lg:translate-x-1/2 lg:-translate-y-[2%] lg:scale-[1.06]' : ''
               }`}
             >
             <CasaDibujada
               activo={activo}
               zona={zona}
-              className="mx-auto h-[36vh] w-auto max-w-full py-2 lg:h-auto lg:max-h-[calc(100vh-12rem)] lg:w-full lg:py-0"
+              className="mx-auto h-[36vh] w-auto max-w-full py-2 lg:h-auto lg:max-h-[calc(100vh-7rem)] lg:w-full lg:py-0"
             />
 
             </div>

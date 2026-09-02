@@ -27,7 +27,7 @@ import {
   Farol,
   Microfono,
   Notas,
-  Parrilla,
+  ParrillaArgentina,
   Pizarra,
   Plato,
   Platillo,
@@ -36,9 +36,11 @@ import {
   QuinchoCerrado,
   Piso,
   Jacuzzi,
+  EnLaPileta,
   Pileta,
   Porton,
   Reposera,
+  Toalla,
   PuertaEntrada,
   RinconCafe,
   Silla,
@@ -99,32 +101,32 @@ const FOCOS = {
      mismo encuadre, la segunda se siente un déjà vu y el recorrido pierde el
      hilo. Por eso hay tres planos generales distintos —la ciudad, la fachada y
      la casa— y no uno usado tres veces. */
-  todo: { x: 318, y: 262, s: 0.8 },
-  ciudad: { x: 320, y: 222, s: 0.7 },
-  fachada: { x: 196, y: 300, s: 1.02 },
-  casa: { x: 250, y: 262, s: 1.28 },
-  vereda: { x: 44, y: P0v - 40, s: 1.44 },
+  todo: { x: 318, y: 262, s: 1.0 },
+  ciudad: { x: 320, y: 222, s: 0.92 },
+  fachada: { x: 196, y: 300, s: 1.3 },
+  casa: { x: 250, y: 262, s: 1.62 },
+  vereda: { x: 44, y: P0v - 40, s: 1.86 },
 
-  patio: { x: 546, y: P0v - 56, s: 1.42 },
-  pileta: { x: 476, y: P0v - 24, s: 1.98 },
-  quincho: { x: 572, y: P0v - 58, s: 1.86 },
+  patio: { x: 546, y: P0v - 56, s: 1.8 },
+  pileta: { x: 476, y: P0v - 24, s: 2.45 },
+  quincho: { x: 572, y: P0v - 58, s: 2.25 },
 
   /* El zoom no es el mismo en todas: la puerta y el baño son un objeto y piden
      estar encima; la mesa, el cowork y la clase son un ambiente con gente y se
      entienden de más lejos. Un zoom parejo para todo obliga a elegir entre
      perder el detalle o perder el contexto. */
-  puerta: { x: 96, y: P0v - 50, s: 2.1 },
-  mesa: { x: 172, y: P0v - 46, s: 1.5 },
-  cocina: { x: 352, y: P0v - 50, s: 1.72 },
+  puerta: { x: 96, y: P0v - 50, s: 2.4 },
+  mesa: { x: 172, y: P0v - 46, s: 1.94 },
+  cocina: { x: 352, y: P0v - 50, s: 2.2 },
 
-  cowork: { x: 224, y: P1v - 46, s: 1.46 },
-  bano: { x: 352, y: P1v - 48, s: 1.86 },
+  cowork: { x: 224, y: P1v - 46, s: 1.9 },
+  bano: { x: 352, y: P1v - 48, s: 2.3 },
 
-  banda: { x: 178, y: 84, s: 1.58 },
-  equipo: { x: 252, y: 90, s: 1.24 },
-  suca: { x: 372, y: 88, s: 1.86 },
+  banda: { x: 178, y: 84, s: 1.96 },
+  equipo: { x: 252, y: 90, s: 1.6 },
+  suca: { x: 372, y: 88, s: 2.35 },
 
-  clase: { x: 304, y: SSv - 48, s: 1.5 },
+  clase: { x: 304, y: SSv - 48, s: 1.94 },
   cochera: { x: 116, y: SSv - 46, s: 1.84 },
 };
 
@@ -617,8 +619,8 @@ const CasaDibujada = ({ activo = 'todo', zona = 'todo', className = '' }) => {
             <QuinchoCerrado x={PATIO.x1 + 68} y={SUELO} ancho={148} alto={98} prof={0.62} />
             <Humo x={PATIO.x1 + 118} y={SUELO - 142} delay={200} escala={1.1} />
             <Humo x={PATIO.x1 + 126} y={SUELO - 136} delay={1400} escala={0.9} />
-            <Parrilla x={PATIO.x1 + 104} y={SUELO - 48} piso={SUELO} ancho={62} />
-            <Chispas x={PATIO.x1 + 130} y={SUELO - 50} />
+            <ParrillaArgentina x={PATIO.x1 + 90} y={SUELO} ancho={112} alto={94} />
+            <Chispas x={PATIO.x1 + 128} y={SUELO - 58} />
           </g>
           <g transform={fuga(0.24)}>
             <Persona x={PATIO.x1 + 96} y={SUELO} alto={74} kipa delay={600} brazo="voltear" brazoDelay={300} />
@@ -628,10 +630,12 @@ const CasaDibujada = ({ activo = 'todo', zona = 'todo', className = '' }) => {
               fondo queda tapada por el quincho y se lee como una baldosa. */}
           <g transform={fuga(0.16)}>
             <Pileta x={PATIO.x1 + 4} y={SUELO - 6} ancho={116} fondo={0.46} />
+            <EnLaPileta x={PATIO.x1 + 34} y={SUELO - 18} />
           </g>
           <g transform={fuga(0.02)}>
-            <Reposera x={PATIO.x1 + 62} y={SUELO} />
-            <Persona x={PATIO.x1 + 168} y={SUELO} alto={70} mirando={-1} pelo delay={1800} ritmo />
+            <Reposera x={PATIO.x1 + 70} y={SUELO} />
+            <Toalla x={PATIO.x1 + 96} y={SUELO - 26} />
+            <Persona x={PATIO.x1 + 186} y={SUELO} alto={70} mirando={-1} pelo delay={1800} ritmo />
           </g>
         </g>
 

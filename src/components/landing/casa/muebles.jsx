@@ -1158,3 +1158,113 @@ export const Cantero = ({ x, y, ancho = 70 }) => (
     ))}
   </g>
 );
+
+/* ------------------------------------------------------------------ */
+/* La parrilla, en serio                                               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Una parrilla argentina de verdad: mampostería, campana con tiro, brasero al
+ * costado para hacer el fuego, la parrilla en V con manija para subirla y
+ * bajarla, y la carne encima.
+ *
+ * Lo que la distingue de "una plancha con fuego" son tres cosas, y las tres
+ * están dibujadas: el **brasero separado** —donde se hace la brasa antes de
+ * pasarla debajo—, la **campana** que se la traga, y la **manija de la rueda**
+ * que regula la altura. Sin eso es un anafe.
+ */
+export const ParrillaArgentina = ({ x, y, ancho = 132, alto = 118 }) => {
+  const mesada = y - 46;
+  return (
+    <g className={filete} strokeWidth={TRAZO} strokeLinejoin="round">
+      {/* El cuerpo de mampostería */}
+      <rect x={x} y={mesada} width={ancho} height={46} className="fill-casa-costado" />
+      {Array.from({ length: 3 }, (_, f) =>
+        Array.from({ length: 5 }, (_, c) => (
+          <rect
+            key={`${f}-${c}`}
+            x={x + 4 + c * ((ancho - 8) / 5) + (f % 2) * 6}
+            y={mesada + 6 + f * 12}
+            width={(ancho - 8) / 5 - 5}
+            height="9"
+            rx="1"
+            className="fill-none stroke-ink/15"
+            strokeWidth="1"
+          />
+        ))
+      )}
+
+      {/* La campana y su tiro */}
+      <path
+        d={`M ${x - 4} ${mesada - alto + 52} L ${x + ancho + 4} ${mesada - alto + 52} L ${x + ancho - 16} ${mesada - alto + 84} L ${x + 16} ${mesada - alto + 84} Z`}
+        className="fill-casa-costado"
+      />
+      {/* El tiro sube y se va por la chimenea del quincho, así que acá se corta:
+          dos chimeneas en el mismo techo se leen como un error de dibujo. */}
+      <rect x={x + ancho / 2 - 9} y={mesada - alto + 34} width="18" height="20" className="fill-casa-costado" />
+
+      {/* El brasero, al costado: acá se hace la brasa y de acá se pasa abajo */}
+      <rect x={x + ancho - 34} y={mesada - 30} width="30" height="26" rx="2" className="fill-ink" />
+      {[0, 7, 14, 21].map((d) => (
+        <rect key={d} x={x + ancho - 30 + d} y={mesada - 22} width="6" height="5" rx="1.5" className={d % 14 === 0 ? 'fill-flame' : 'fill-flame-deep'} />
+      ))}
+
+      {/* La cama de brasas debajo de la parrilla */}
+      {Array.from({ length: 7 }, (_, i) => (
+        <rect
+          key={`br-${i}`}
+          x={x + 12 + i * 11}
+          y={mesada - 12}
+          width="8"
+          height="5"
+          rx="2"
+          className={i % 2 ? 'fill-flame' : 'fill-flame-deep'}
+        />
+      ))}
+
+      {/* La parrilla: barras en V, con la carne encima */}
+      <rect x={x + 8} y={mesada - 24} width={ancho - 46} height="4" className="fill-ink" />
+      {Array.from({ length: 8 }, (_, i) => (
+        <rect key={`v-${i}`} x={x + 12 + i * ((ancho - 54) / 8)} y={mesada - 26} width="3" height="4" className="fill-ink/70" />
+      ))}
+      {/* Chorizos y tira de asado */}
+      {[0, 1, 2].map((i) => (
+        <rect key={`ch-${i}`} x={x + 16 + i * 13} y={mesada - 31} width="11" height="5" rx="2.5" className="fill-barro-oscuro" />
+      ))}
+      <rect x={x + 60} y={mesada - 32} width={34} height="7" rx="2" className="fill-barro" />
+      <path d={`M ${x + 64} ${mesada - 30} L ${x + 90} ${mesada - 30}`} className="stroke-barro-claro" strokeWidth="1.6" />
+
+      {/* La rueda y la manija que suben y bajan la parrilla */}
+      <circle cx={x + ancho - 8} cy={mesada - 34} r="6" className="fill-none stroke-ink" strokeWidth="2" />
+      <path d={`M ${x + ancho - 8} ${mesada - 28} L ${x + ancho - 8} ${mesada - 22}`} className="stroke-ink" strokeWidth="2" />
+
+      {/* Los fierros colgados: pinza y pala */}
+      <path d={`M ${x + 6} ${mesada - 62} L ${x + 6} ${mesada - 40} M ${x + 16} ${mesada - 62} L ${x + 16} ${mesada - 44}`} className="stroke-ink/60" strokeWidth="2" strokeLinecap="round" />
+      <path d={`M ${x + 12} ${mesada - 44} l 8 0 l 0 6 l -8 0 Z`} className="fill-ink/60" />
+    </g>
+  );
+};
+
+/** Un flotador en el agua, y alguien adentro de la pileta. */
+export const EnLaPileta = ({ x, y }) => (
+  <g>
+    {/* El flotador */}
+    <ellipse cx={x} cy={y} rx="13" ry="6" className="fill-flame/80 stroke-ink/40" strokeWidth={TRAZO} />
+    <ellipse cx={x} cy={y} rx="6" ry="2.6" className="fill-primary-300" />
+    {/* Alguien nadando: cabeza y brazo, que es todo lo que se ve del agua */}
+    <g className="animate-respirar motion-reduce:animate-none" style={{ animationDelay: '600ms' }}>
+      <circle cx={x + 34} cy={y - 4} r="5" className="fill-ink" />
+      <path d={`M ${x + 40} ${y - 6} q 7 -8 12 -2`} className="fill-none stroke-ink" strokeWidth="4" strokeLinecap="round" />
+      {/* La estela */}
+      <path d={`M ${x + 24} ${y + 3} q 8 3 16 0`} className="fill-none stroke-surface/80" strokeWidth="2" strokeLinecap="round" />
+    </g>
+  </g>
+);
+
+/** Toalla colgada, para el borde de la pileta. */
+export const Toalla = ({ x, y }) => (
+  <g className={filete} strokeWidth="1.2">
+    <path d={`M ${x} ${y} l 16 0 l -2 22 l -12 0 Z`} className="fill-primary-200" />
+    <path d={`M ${x + 1} ${y + 8} l 14 0`} className="stroke-primary-400" strokeWidth="2" />
+  </g>
+);
