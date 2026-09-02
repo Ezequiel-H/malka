@@ -15,6 +15,7 @@ import {
   Laptop,
   Mesa,
   Microfono,
+  Notas,
   Parrilla,
   Pizarra,
   Plato,
@@ -62,9 +63,12 @@ import { quiereQuietud } from '../scrollFx';
 const centro = (id) => {
   const p = PISOS[id];
   return {
-    x: (CASA.x1 + CASA.x2) / 2 + FONDO.x * 0.35 + (id === 'planta' ? 16 : 0),
+    x: (CASA.x1 + CASA.x2) / 2 + FONDO.x * 0.35,
     y: (p.techo + p.piso) / 2 + FONDO.y * 0.35,
-    s: 1.45,
+    /* La planta baja se mira más de lejos que el resto: es la escena más ancha
+       de la casa —la vereda por donde llega alguien de un lado, el quincho del
+       otro— y con el zoom de los demás pisos se recortaba justo la puerta. */
+    s: id === 'planta' ? 1.16 : 1.45,
   };
 };
 
@@ -79,7 +83,7 @@ const FOCOS = {
 /* La lámina tiene cielo de más arriba de la terraza. No es decorativo: sin ese
    aire, la cámara no puede centrarse en el último piso sin salirse del dibujo,
    y el encuadre queda siempre corrido hacia abajo. */
-const VISTA = { x: 0, y: -110, ancho: 480, alto: 760 };
+const VISTA = { x: -62, y: -110, ancho: 544, alto: 760 };
 
 /**
  * El encuadre, atado a los bordes del dibujo.
@@ -213,13 +217,13 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
             alrededor, el nivel de abajo se lee como un piso más de un edificio
             flotando, y no como lo que es. */}
         <path
-          d={`M 0 ${SUELO} L ${VISTA.ancho} ${SUELO} L ${VISTA.ancho} ${PISOS.subsuelo.piso + 26} L 0 ${PISOS.subsuelo.piso + 26} Z`}
+          d={`M ${VISTA.x} ${SUELO} L ${VISTA.x + VISTA.ancho} ${SUELO} L ${VISTA.x + VISTA.ancho} ${PISOS.subsuelo.piso + 26} L ${VISTA.x} ${PISOS.subsuelo.piso + 26} Z`}
           className="fill-casa-sombra/25"
         />
 
         {/* ---- la vereda ---- */}
         <path
-          d={`M 8 ${SUELO} L ${QUINCHO.x2 + FONDO.x + 14} ${SUELO}`}
+          d={`M ${VISTA.x + 8} ${SUELO} L ${QUINCHO.x2 + FONDO.x + 14} ${SUELO}`}
           className="stroke-ink/70"
           strokeWidth={TRAZO * 1.2}
           strokeLinecap="round"
@@ -238,7 +242,7 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
               gente termina sentada */}
           <g transform={fuga(0.66)}>
             <Sillon x={68} y={P1} ancho={64} />
-            <PersonaSilla x={98} y={P1} alto={58} color="fill-primary-700" pelo delay={900} />
+            <PersonaSilla x={98} y={P1} alto={58} color="fill-primary-700" pelo delay={900} brazo="estirar" brazoDelay={2400} />
           </g>
 
           {/* Dos escritorios con sus sillas */}
@@ -287,7 +291,10 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
               propósito: pasa una vez cada veintiún segundos, como pasaría de
               verdad, y no como un personaje en loop. */}
           <g className="animate-caminar motion-reduce:animate-none">
-            <g className="animate-paso motion-reduce:animate-none">
+            <g
+              className="animate-andar motion-reduce:animate-none"
+              style={{ transformBox: 'fill-box', transformOrigin: 'bottom center' }}
+            >
               <Persona x={38} y={P0} alto={66} color="fill-primary-700" pelo delay={600} />
             </g>
           </g>
@@ -305,6 +312,10 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
             <Plato x={116} y={P0 - 52} />
             <Plato x={178} y={P0 - 52} />
             <Plato x={262} y={P0 - 52} />
+            {/* El vapor de la comida recién servida: el gesto propio de este
+                piso, además de las velas. */}
+            <Humo x={116} y={P0 - 58} escala={0.5} delay={400} />
+            <Humo x={262} y={P0 - 58} escala={0.5} delay={2600} />
             <Vela x={140} y={P0 - 62} alto={14} />
             <Vela x={158} y={P0 - 62} alto={14} delay={700} />
           </g>
@@ -336,7 +347,7 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
             <Humo x={QUINCHO.x1 + 44} y={P0 - 58} delay={1100} escala={0.8} />
           </g>
           <g transform={fuga(0.12)}>
-            <Persona x={QUINCHO.x2 - 22} y={P0 - 2} alto={74} mirando={-1} kipa delay={1200} />
+            <Persona x={QUINCHO.x2 - 22} y={P0 - 2} alto={74} mirando={-1} kipa delay={1200} brazo="voltear" brazoDelay={600} />
           </g>
         </g>
 
@@ -358,15 +369,15 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
               flotando a la altura de su cabeza. */}
           <g transform={fuga(0.34)}>
             <Alfombra x={182} y={SS - 2} ancho={38} prof={0.3} color="fill-primary-200" />
-            <PersonaSentada x={200} y={SS - 2} alto={54} pelo delay={0} />{/* Los tres respiran juntos: en una clase de yoga la respiración es guiada, y sincronizarlos dice eso sin escribirlo. */}
+            <PersonaSentada x={200} y={SS - 2} alto={54} pelo delay={0} brazo="estirar" />{/* Los tres respiran juntos: en una clase de yoga la respiración es guiada, y sincronizarlos dice eso sin escribirlo. */}
           </g>
           <g transform={fuga(0.22)}>
             <Alfombra x={228} y={SS - 2} ancho={38} prof={0.3} color="fill-primary-200" />
-            <PersonaSentada x={246} y={SS - 2} alto={56} color="fill-primary-700" delay={0} />
+            <PersonaSentada x={246} y={SS - 2} alto={56} color="fill-primary-700" delay={0} brazo="estirar" />
           </g>
           <g transform={fuga(0.1)}>
             <Alfombra x={272} y={SS - 2} ancho={38} prof={0.3} color="fill-primary-200" />
-            <PersonaSentada x={290} y={SS - 2} alto={52} pelo delay={0} />
+            <PersonaSentada x={290} y={SS - 2} alto={52} pelo delay={0} brazo="estirar" />
           </g>
           <g transform={fuga(0.5)}>
             <Persona x={306} y={SS} alto={62} mirando={-1} delay={1400} />
@@ -454,6 +465,11 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
             />
             <Platillo x={196} y={PISOS.terraza.piso} alto={34} />
           </g>
+
+          {/* Las notas salen de donde está la música: una tanda sobre el
+              teclado y otra sobre las cuerdas, no del centro de la terraza. */}
+          <Notas x={186} y={PISOS.terraza.piso - 62} cantidad={4} />
+          <Notas x={276} y={PISOS.terraza.piso - 58} cantidad={3} escala={0.9} />
 
           {/* La baranda va al final: pasa por delante de todos y por eso el
               conjunto se lee arriba de una terraza y no flotando. */}

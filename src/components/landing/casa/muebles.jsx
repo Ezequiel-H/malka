@@ -377,3 +377,31 @@ export const Porton = ({ x, y, ancho = 52, alto = 60 }) => (
     ))}
   </g>
 );
+
+/**
+ * Notas flotando desde donde sale la música.
+ *
+ * Cada una sube, se corre un poco y se apaga antes de llegar al borde de la
+ * terraza. Salen desfasadas ocho tiempos entre sí —la misma grilla que toca la
+ * banda—, así que aparecen a un ritmo que coincide con lo que se está tocando
+ * en vez de gotear a un compás propio.
+ */
+export const Notas = ({ x, y, cantidad = 4, escala = 1 }) => (
+  <g transform={`translate(${x} ${y}) scale(${escala})`}>
+    {Array.from({ length: cantidad }, (_, i) => (
+      <g
+        key={i}
+        className="animate-flotar motion-reduce:hidden"
+        style={{ animationDelay: `${i * 1200}ms` }}
+      >
+        <g transform={`translate(${(i % 2) * 9 - 4} 0)`} className="fill-ink/45">
+          <ellipse cx="0" cy="0" rx="3.1" ry="2.3" transform="rotate(-22)" />
+          <rect x="2.1" y="-11" width="1.3" height="11" />
+          {/* La corchea lleva su corchete; la negra no. Dos formas distintas
+              alcanzan para que no se lea como el mismo sello repetido. */}
+          {i % 2 === 0 && <path d="M 3.4 -11 q 5.4 3 0.6 7.4" className="fill-none stroke-ink/45" strokeWidth="1.4" />}
+        </g>
+      </g>
+    ))}
+  </g>
+);

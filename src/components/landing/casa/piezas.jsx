@@ -122,7 +122,7 @@ export const Persona = ({
 };
 
 /** Alguien sentado con las piernas cruzadas. */
-export const PersonaSentada = ({ x, y, alto = 26, color = 'fill-ink', delay = 0 }) => (
+export const PersonaSentada = ({ x, y, alto = 26, color = 'fill-ink', delay = 0, brazo = null, brazoDelay = 0 }) => (
   <g transform={`translate(${x} ${y})`}>
     <Sombra x={0} y={0} ancho={alto * 0.9} opacidad={0.4} />
     <g
@@ -146,6 +146,20 @@ export const PersonaSentada = ({ x, y, alto = 26, color = 'fill-ink', delay = 0 
             Q 0 ${-alto * 0.3} ${alto * 0.3} ${-alto * 0.2}
             L ${alto * 0.42} 0 Z`}
       />
+      {brazo && (
+        <g transform={`translate(${alto * 0.13} ${-alto * 0.56})`}>
+          <g
+            className={`animate-${brazo} motion-reduce:animate-none`}
+            style={{
+              transformBox: 'fill-box',
+              transformOrigin: 'top left',
+              animationDelay: `${brazoDelay}ms`,
+            }}
+          >
+            <rect x={0} y={0} width={alto * 0.09} height={alto * 0.3} rx={alto * 0.045} />
+          </g>
+        </g>
+      )}
     </g>
   </g>
 );

@@ -345,6 +345,33 @@ export default {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-1.6px)' },
         },
+        /* Las notas que suben desde la banda. Ocho tiempos de vida: suficiente
+           para cruzar la terraza y desvanecerse antes de llegar al borde. */
+        flotar: {
+          '0%': { opacity: '0', transform: 'translate(0, 0) scale(0.6) rotate(-8deg)' },
+          '18%': { opacity: '0.8' },
+          '70%': { opacity: '0.5' },
+          '100%': { opacity: '0', transform: 'translate(16px, -52px) scale(1.05) rotate(12deg)' },
+        },
+        /* El brazo que sube y se queda arriba un momento: el estiramiento de
+           una clase de yoga y el de alguien que lleva cinco horas sentado. */
+        estirar: {
+          '0%, 62%, 100%': { transform: 'rotate(0deg)' },
+          '72%, 88%': { transform: 'rotate(-162deg)' },
+        },
+        /* Dar vuelta la carne. */
+        voltear: {
+          '0%, 100%': { transform: 'rotate(0deg)' },
+          '50%': { transform: 'rotate(-26deg)' },
+        },
+        /* Caminar sin piernas: el cuerpo se inclina apenas de un lado al otro.
+           Con rebote vertical la figura no camina, salta — es lo que pasa
+           cuando se le pone el gesto de un paso a una silueta que no tiene pies
+           que apoyar. */
+        andar: {
+          '0%, 100%': { transform: 'rotate(-1.4deg)' },
+          '50%': { transform: 'rotate(1.4deg)' },
+        },
         shimmer: {
           from: { backgroundPosition: '200% 0' },
           to: { backgroundPosition: '-200% 0' },
@@ -380,8 +407,12 @@ export default {
         tecla: 'tecla 0.6s ease-in-out infinite',
         pantalla: 'pantalla 4.8s ease-in-out infinite',
         onda: 'onda 1.8s ease-out infinite',
-        caminar: 'caminar 21s linear infinite',
+        caminar: 'caminar 26s linear infinite',
         paso: 'paso 0.9s ease-in-out infinite',
+        flotar: 'flotar 4.8s linear infinite',
+        estirar: 'estirar 9.6s ease-in-out infinite',
+        voltear: 'voltear 2.4s ease-in-out infinite',
+        andar: 'andar 1.2s ease-in-out infinite',
         shimmer: 'shimmer 1.4s linear infinite',
       },
     },
