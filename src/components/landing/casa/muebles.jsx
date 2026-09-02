@@ -424,53 +424,69 @@ export const Notas = ({ x, y, cantidad = 4, escala = 1 }) => (
  * como una sola polilínea y el ojo la completa. Con el eje, los escalones y esa
  * curva alcanza — una caracol de hierro no es mucho más que eso.
  */
-export const Caracol = ({ x, base, alto, radio = 18, subida = 21, porVuelta = 8 }) => {
-  const pasos = Math.max(2, Math.round(alto / subida));
+export const Caracol = ({ x, base, alto, radio = 27, subida = 20, porVuelta = 10 }) => {
+  const pasos = Math.round(alto / subida);
+
   const punto = (i) => {
     const ang = (i / porVuelta) * Math.PI * 2;
     return {
-      x: x + Math.sin(ang) * radio,
-      y: base - i * subida + Math.cos(ang) * radio * 0.3,
+      i,
+      dx: Math.sin(ang) * radio,
+      /* El coseno achatado es la profundidad del peldaño: es la misma cuenta
+         que usa la casa para la fuga, aplicada escalón por escalón. */
+      dy: Math.cos(ang) * radio * 0.34,
+      y: base - i * subida,
       frente: Math.cos(ang) > 0,
     };
   };
 
-  const escalones = Array.from({ length: pasos }, (_, i) => ({ i, ...punto(i) }));
-  const pasamanos = escalones
-    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y - 26}`)
-    .join(' ');
+  const escalones = Array.from({ length: pasos }, (_, i) => punto(i));
+
+  /* Cada peldaño es una chapa, no una línea: sale angosto del eje y se abre
+     hacia afuera, que es la forma real de un escalón de caracol y lo que hace
+     que se entienda a simple vista. */
+  const chapa = (p) => `
+    M ${x} ${p.y - 2.2}
+    L ${x + p.dx} ${p.y + p.dy - 3.6}
+    L ${x + p.dx} ${p.y + p.dy + 2.4}
+    L ${x} ${p.y + 2.6} Z`;
+
+  /* El pasamanos se muestrea cuatro veces por escalón: con un punto por
+     peldaño la hélice sale poligonal y se ve el truco. */
+  const rail = Array.from({ length: pasos * 4 }, (_, k) => {
+    const p = punto(k / 4);
+    return `${k === 0 ? 'M' : 'L'} ${x + p.dx} ${p.y + p.dy - 30}`;
+  }).join(' ');
+
+  const plancha = (grupo) =>
+    grupo.map((p) => (
+      <path key={p.i} d={chapa(p)} className={`${p.frente ? 'fill-barro-claro' : 'fill-barro'} stroke-ink`} strokeWidth="1.2" strokeLinejoin="round" />
+    ));
 
   return (
     <g>
-      {/* El eje */}
-      <rect x={x - 1.8} y={base - alto} width="3.6" height={alto} className="fill-ink/85" />
+      {/* Primero los peldaños de atrás, después el eje, después los de
+          adelante: ese orden es todo lo que hace falta para que la espiral se
+          vea girar en vez de verse como un abanico plano. */}
+      {plancha(escalones.filter((p) => !p.frente))}
 
-      {escalones.map((p) => (
-        <path
-          key={p.i}
-          d={`M ${x} ${base - p.i * subida} L ${p.x} ${p.y}`}
-          /* Los de adelante en madera clara y los de atrás en oscura: es lo
-             único que hace que la espiral se lea como espiral y no como un
-             abanico plano. */
-          className={p.frente ? 'stroke-barro-claro' : 'stroke-barro-oscuro'}
-          strokeWidth="4"
-          strokeLinecap="round"
-        />
-      ))}
+      <rect x={x - 2.6} y={base - alto - 4} width="5.2" height={alto + 4} className="fill-ink" />
+      <ellipse cx={x} cy={base} rx="9" ry="3" className="fill-ink/80" />
 
-      <path d={pasamanos} className="fill-none stroke-ink/45" strokeWidth="1.6" strokeLinejoin="round" />
-      {/* Un balaustre cada dos escalones. Con uno por escalón la caracol se
-          convierte en una maraña a este tamaño. */}
+      {plancha(escalones.filter((p) => p.frente))}
+
+      {/* Balaustres cada dos escalones y el pasamanos por encima de todo. */}
       {escalones
         .filter((p) => p.i % 2 === 0)
         .map((p) => (
           <path
             key={`b-${p.i}`}
-            d={`M ${p.x} ${p.y} L ${p.x} ${p.y - 26}`}
-            className="stroke-ink/30"
-            strokeWidth="1.1"
+            d={`M ${x + p.dx} ${p.y + p.dy} L ${x + p.dx} ${p.y + p.dy - 30}`}
+            className={p.frente ? 'stroke-ink/45' : 'stroke-ink/25'}
+            strokeWidth="1.2"
           />
         ))}
+      <path d={rail} className="fill-none stroke-ink/60" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
     </g>
   );
 };
@@ -510,5 +526,97 @@ export const Chispas = ({ x, y }) => (
         style={{ animationDelay: `${d}ms` }}
       />
     ))}
+  </g>
+);
+
+/* ------------------------------------------------------------------ */
+/* La cocina                                                           */
+/* ------------------------------------------------------------------ */
+
+/** Mesada con bajo mesada y una hornalla encendida. */
+export const Mesada = ({ x, y, ancho = 86 }) => (
+  <g>
+    <Caja x={x} y={y - 34} ancho={ancho} alto={34} prof={0.24} claro="fill-casa-piso" base="fill-casa-costado" oscuro="fill-casa-sombra" />
+    {/* Las puertas del bajo mesada */}
+    {Array.from({ length: Math.floor(ancho / 28) }, (_, i) => (
+      <rect
+        key={i}
+        x={x + 5 + i * 28}
+        y={y - 28}
+        width="22"
+        height="24"
+        rx="2"
+        className="fill-none stroke-ink/25"
+        strokeWidth="1.2"
+      />
+    ))}
+    {/* Las hornallas, vistas desde arriba en fuga */}
+    {[0.3, 0.52].map((f, i) => (
+      <ellipse
+        key={f}
+        cx={x + ancho * f + FONDO.x * 0.12}
+        cy={y - 34 + FONDO.y * 0.12}
+        rx="6"
+        ry="2.6"
+        className={i === 0 ? 'fill-flame/70' : 'fill-ink/25'}
+      />
+    ))}
+  </g>
+);
+
+/** Campana extractora. */
+export const Campana = ({ x, y, ancho = 40 }) => (
+  <g className={filete} strokeWidth={TRAZO}>
+    <path d={`M ${x} ${y} L ${x + ancho} ${y} L ${x + ancho - 9} ${y - 16} L ${x + 9} ${y - 16} Z`} className="fill-casa-costado" />
+    <rect x={x + ancho / 2 - 6} y={y - 30} width="12" height="15" className="fill-casa-costado" />
+  </g>
+);
+
+/** Alacena con vajilla a la vista. */
+export const Alacena = ({ x, y, ancho = 54 }) => (
+  <g className={filete} strokeWidth={TRAZO}>
+    <rect x={x} y={y} width={ancho} height="26" rx="2" className="fill-casa-fondo" />
+    {[0, 1, 2].map((i) => (
+      <ellipse key={i} cx={x + 12 + i * 15} cy={y + 18} rx="5.5" ry="5.5" className="fill-primary-100 stroke-ink/30" strokeWidth="1.1" />
+    ))}
+  </g>
+);
+
+/** Cafetera y torre de cakes: el rincón de café del cowork. */
+export const RinconCafe = ({ x, y }) => (
+  <g>
+    <Caja x={x} y={y - 26} ancho={54} alto={26} prof={0.24} claro="fill-casa-piso" base="fill-casa-costado" oscuro="fill-casa-sombra" />
+    <g className={filete} strokeWidth={TRAZO}>
+      <rect x={x + 6} y={y - 46} width="16" height="20" rx="2" className="fill-ink" />
+      <rect x={x + 9} y={y - 32} width="10" height="5" className="fill-flame/60" />
+      {/* La torre de cakes, con su campana de vidrio */}
+      <path d={`M ${x + 32} ${y - 26} L ${x + 32} ${y - 30} M ${x + 44} ${y - 26} L ${x + 44} ${y - 30}`} className="stroke-ink" />
+      <ellipse cx={x + 38} cy={y - 30} rx="9" ry="2.6" className="fill-barro-claro" />
+      <path d={`M ${x + 29} ${y - 31} a 9 11 0 0 1 18 0 Z`} className="fill-primary-100/70" />
+    </g>
+  </g>
+);
+
+/** El espejo de la sala del subsuelo. */
+export const Espejo = ({ x, y, ancho = 110, alto = 60 }) => (
+  <g className={filete} strokeWidth={TRAZO}>
+    <rect x={x} y={y} width={ancho} height={alto} rx="2" className="fill-primary-100/60" />
+    {/* El reflejo: dos diagonales y nada más. Cualquier intento de espejar el
+        dibujo de verdad se lee como un error, no como un espejo. */}
+    <path
+      d={`M ${x + 10} ${y + alto - 8} L ${x + 34} ${y + 8} M ${x + 30} ${y + alto - 8} L ${x + 54} ${y + 8}`}
+      className="stroke-surface/70"
+      strokeWidth="3"
+      strokeLinecap="round"
+    />
+  </g>
+);
+
+/** Parlante en su pie: la clase necesita música. */
+export const Parlante = ({ x, y, alto = 44 }) => (
+  <g className={filete} strokeWidth={TRAZO}>
+    <path d={`M ${x} ${y} L ${x} ${y - alto + 16} M ${x - 7} ${y} L ${x + 7} ${y}`} className="stroke-ink" strokeLinecap="round" />
+    <rect x={x - 8} y={y - alto} width="16" height="18" rx="2" className="fill-ink" />
+    <circle cx={x} cy={y - alto + 10} r="4" className="fill-casa-piso" />
   </g>
 );

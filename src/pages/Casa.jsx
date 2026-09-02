@@ -42,7 +42,7 @@ const PISOS = [
     titulo: 'El salón',
     entrada: 'Acá se pone la mesa larga y se hace Shabat.',
     texto:
-      'Es el primer lugar en el que entrás y donde pasan las ceremonias de la casa. Al fondo está el quincho con parrilla: se come, se discute de todo un poco y se sigue hasta que alguien apaga la luz.',
+      'Es el primer lugar en el que entrás y donde pasan las ceremonias de la casa. Al fondo están la cocina y la parrilla: se come, se discute de todo un poco y se sigue hasta que alguien apaga la luz.',
   },
   {
     id: 'primero',
@@ -51,7 +51,7 @@ const PISOS = [
     titulo: 'El cowork',
     entrada: 'Un martes cualquiera, traés la compu y te sentás.',
     texto:
-      'Wifi, escritorio y café con cakes. Es el piso mínimo de Malka: no hace falta que haya una actividad para que vengas, y de hecho así es como la mayoría empieza a venir. En el mismo piso se dan las charlas y los cursos.',
+      'Una mesa larga para trabajar, wifi y el rincón del café con cakes. Es el piso mínimo de Malka: no hace falta que haya una actividad para que vengas, y de hecho así es como la mayoría empieza a venir. En el mismo piso se dan las charlas y los cursos.',
   },
   {
     id: 'terraza',
@@ -69,7 +69,7 @@ const PISOS = [
     titulo: 'El subsuelo',
     entrada: 'Yoga, movimiento y la cochera.',
     texto:
-      'El nivel de abajo es el más callado de la casa: se usa para las clases que piden piso y silencio, y es por donde entran los autos.',
+      'El nivel de abajo es la sala de movimiento: espejo, colchonetas y las clases que piden piso y silencio. Del otro lado, la cochera, que es por donde entran los autos.',
   },
 ];
 

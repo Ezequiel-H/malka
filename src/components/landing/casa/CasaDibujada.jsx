@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Guirnalda, Humo, Persona, PersonaSentada, PersonaSilla, Planta, Vela } from './piezas';
 import {
+  Alacena,
   Alfombra,
   Auto,
   Arco,
@@ -17,21 +18,25 @@ import {
   Jalot,
   Laptop,
   Mesa,
+  Mesada,
+  Campana,
+  Espejo,
   Microfono,
   Notas,
   Parrilla,
   Pizarra,
   Plato,
   Platillo,
+  Parlante,
   Porton,
-  Rollo,
+  RinconCafe,
   Silla,
   Sillon,
   Tanque,
   Taza,
   Teclado,
 } from './muebles';
-import { CASA, FONDO, PISOS, QUINCHO, SUELO, TRAZO, costado, planoPiso, paredFondo } from './geometria';
+import { CASA, FONDO, PISOS, SERVICIO, SUELO, TRAZO, costado, planoPiso, paredFondo } from './geometria';
 import { quiereQuietud } from '../scrollFx';
 
 /**
@@ -56,9 +61,12 @@ import { quiereQuietud } from '../scrollFx';
  * dibujo, mientras que una perspectiva empieza a pedir realismo.
  *
  * **La cámara** es el otro cambio: al pasar de piso no se enciende y apaga
- * nada de golpe, la vista se acerca. El encuadre se interpola frame a frame
- * hacia el piso activo con un amortiguado simple —cada frame recorre el 8% de
- * lo que falta—, que es lo que hace que se sienta una cámara y no un salto.
+ * nada de golpe, la vista viaja. El encuadre se interpola con una duración
+ * propia y una curva suave en las dos puntas, y —lo que de verdad hace la
+ * diferencia— **se abre mientras viaja y se cierra al llegar**, que es lo que
+ * hace un camarógrafo cuando cambia de encuadre: abre para no perder el
+ * contexto en el camino. Sin eso hay un desplazamiento; con eso hay un viaje,
+ * y de paso se entiende que los pisos son parte de la misma casa.
  */
 
 /* Dónde mira la cámara en cada piso, y cuánto se acerca. El centro se corre
@@ -118,7 +126,7 @@ const CENTRO = { x: (CASA.x1 + CASA.x2) / 2, y: 300 };
 
 /* La caracol va contra la pared derecha: es donde no le roba lugar a ninguna
    escena y donde estaría en una casa angosta de verdad. */
-const ESCALERA = { x: CASA.x2 - 24 };
+const ESCALERA = { x: 276 };
 
 const fuga = (t) => {
   /* El achique de lo lejano se hace alrededor del centro del dibujo y no del
@@ -134,7 +142,7 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
   const poseRef = useRef({ ...FOCOS.todo });
 
   /* El quincho es planta baja: mirar el salón es mirar los dos. */
-  const foco = activo === 'quincho' ? 'planta' : activo;
+  const foco = activo;
 
   useEffect(() => {
     const g = camaraRef.current;
@@ -156,20 +164,39 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
       return undefined;
     }
 
-    let id;
-    const paso = () => {
-      const p = poseRef.current;
-      p.x += (destino.x - p.x) * 0.08;
-      p.y += (destino.y - p.y) * 0.08;
-      p.s += (destino.s - p.s) * 0.08;
-      aplicar(p);
+    const desde = { ...poseRef.current };
+    const salto = Math.hypot(destino.x - desde.x, destino.y - desde.y);
+    if (salto < 0.5 && Math.abs(destino.s - desde.s) < 0.01) return undefined;
 
-      const falta =
-        Math.abs(destino.x - p.x) + Math.abs(destino.y - p.y) + Math.abs(destino.s - p.s) * 100;
-      /* Se corta cuando ya no se distingue: seguir interpolando medio píxel es
-         tener un requestAnimationFrame vivo para siempre sin que se note. */
-      if (falta > 0.4) id = requestAnimationFrame(paso);
+    /* Viajes largos tardan más, pero no proporcionalmente: si la duración
+       creciera con la distancia, ir del subsuelo a la terraza se sentiría
+       eterno. */
+    const duracion = Math.min(1500, 620 + salto * 1.1);
+
+    /* La cámara se aleja mientras viaja y vuelve a acercarse al llegar. Es lo
+       que hace un camarógrafo cuando tiene que cambiar de encuadre: abre para
+       no perder el contexto en el camino. Sin esto el movimiento es un
+       desplazamiento; con esto es un viaje, y además se entiende que los pisos
+       son parte de la misma casa. */
+    const apertura = Math.min(0.3, salto / 900);
+
+    let id;
+    const suave = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
+    const arranque = performance.now();
+
+    const paso = (ahora) => {
+      const t = Math.min(1, (ahora - arranque) / duracion);
+      const e = suave(t);
+      const pose = {
+        x: desde.x + (destino.x - desde.x) * e,
+        y: desde.y + (destino.y - desde.y) * e,
+        s: (desde.s + (destino.s - desde.s) * e) * (1 - apertura * Math.sin(Math.PI * e)),
+      };
+      poseRef.current = pose;
+      aplicar(pose);
+      if (t < 1) id = requestAnimationFrame(paso);
     };
+
     id = requestAnimationFrame(paso);
     return () => cancelAnimationFrame(id);
   }, [foco]);
@@ -231,7 +258,7 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
 
         {/* ---- la vereda ---- */}
         <path
-          d={`M ${VISTA.x + 8} ${SUELO} L ${QUINCHO.x2 + FONDO.x + 14} ${SUELO}`}
+          d={`M ${VISTA.x + 8} ${SUELO} L ${CASA.x2 + FONDO.x + 14} ${SUELO}`}
           className="stroke-ink/70"
           strokeWidth={TRAZO * 1.2}
           strokeLinecap="round"
@@ -241,52 +268,60 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
         <g className={grupo('primero')}>
           <Volumen {...PISOS.primero} />
 
-          <g transform={fuga(0.85)}>
-            <Estante x={146} y={P1 - 92} ancho={86} />
-            <Pizarra x={240} y={P1 - 130} ancho={64} alto={42} />
+          <g transform={fuga(0.86)}>
+            <Pizarra x={168} y={P1 - 126} ancho={74} alto={46} />
+            <Estante x={70} y={P1 - 96} ancho={86} />
           </g>
 
-          {/* El sillón del cowork, que en la casa real existe y es donde la
-              gente termina sentada */}
-          <g transform={fuga(0.66)}>
-            <Sillon x={68} y={P1} ancho={64} />
-            <PersonaSilla x={98} y={P1} alto={58} color="fill-primary-700" pelo delay={900} brazo="estirar" brazoDelay={2400} />
+          {/* El sillón, que en la casa real existe y es donde la gente termina
+              sentada */}
+          <g transform={fuga(0.68)}>
+            <Sillon x={66} y={P1} ancho={68} />
+            <PersonaSilla x={100} y={P1} alto={58} color="fill-primary-700" pelo delay={900} brazo="estirar" brazoDelay={2400} />
           </g>
 
-          {/* Dos escritorios con sus sillas */}
-          <g transform={fuga(0.55)}>
-            <Mesa x={150} y={P1 - 48} ancho={78} piso={P1} />
+          {/* La mesa larga compartida: cuatro puestos, dos de cada lado. Un
+              cowork son personas de los dos lados de una misma mesa, no
+              escritorios sueltos. */}
+          <g transform={fuga(0.56)}>
+            <Mesa x={150} y={P1 - 48} ancho={110} piso={P1} prof={0.34} />
             <Laptop x={168} y={P1 - 48} />
-            <Taza x={210} y={P1 - 48} />
-            <Humo x={215} y={P1 - 60} escala={0.6} />
+            <Laptop x={222} y={P1 - 48} mirando={-1} />
+            <Taza x={198} y={P1 - 48} />
+            <Humo x={203} y={P1 - 60} escala={0.6} />
+          </g>
+          <g transform={fuga(0.76)}>
+            <Silla x={172} y={P1} alto={42} mirando={-1} />
+            <Silla x={226} y={P1} alto={42} mirando={-1} />
+            <PersonaSilla x={172} y={P1} alto={62} mirando={-1} kipa delay={700} brazo="teclear" brazoDelay={220} />
+            <PersonaSilla x={226} y={P1} alto={60} mirando={-1} color="fill-primary-700" pelo delay={2100} />
+          </g>
+          <g transform={fuga(0.16)}>
+            <Silla x={186} y={P1} alto={42} />
+            <Silla x={238} y={P1} alto={42} />
+            <PersonaSilla x={186} y={P1} alto={66} kipa delay={300} brazo="tomar" brazoDelay={900} />
+            <PersonaSilla x={238} y={P1} alto={64} color="fill-primary-700" pelo delay={1600} brazo="teclear" brazoDelay={480} />
+          </g>
+
+          {/* El rincón de café, en la franja de servicio */}
+          <g transform={fuga(0.72)}>
+            <RinconCafe x={SERVICIO.x1 + 34} y={P1} />
+            <Estante x={SERVICIO.x1 + 30} y={P1 - 84} ancho={62} />
           </g>
           <g transform={fuga(0.2)}>
-            <Silla x={182} y={P1} alto={42} />
-            <PersonaSilla x={182} y={P1} alto={64} kipa delay={300} brazo="tomar" brazoDelay={900} />
-          </g>
-
-          <g transform={fuga(0.34)}>
-            <Mesa x={226} y={P1 - 48} ancho={62} piso={P1} />
-            <Laptop x={240} y={P1 - 48} />
-          </g>
-          <g transform={fuga(0.04)}>
-            <Silla x={254} y={P1} alto={42} />
-            <PersonaSilla x={254} y={P1} alto={62} color="fill-primary-700" pelo delay={1600} brazo="teclear" brazoDelay={480} />
-          </g>
-
-          <g transform={fuga(0.12)}>
-            <Planta x={192} y={P1 - 2} alto={32} delay={1100} />
+            <Persona x={SERVICIO.x1 + 22} y={P1} alto={68} mirando={-1} pelo delay={1900} brazo="tomar" brazoDelay={4200} />
+            <Planta x={SERVICIO.x2 - 8} y={P1 - 2} alto={34} delay={1100} />
           </g>
         </g>
 
-        {/* ================= PLANTA BAJA: el salón y la mesa de Shabat ===== */}
+        {/* ================= PLANTA BAJA: salón, cocina y parrilla ========= */}
         <g className={grupo('planta')}>
           <Volumen {...PISOS.planta} />
 
-          {/* La lámpara y su charco de luz */}
-          <path d={`M 196 ${PISOS.planta.techo} L 196 ${P0 - 92}`} className="stroke-ink/50" strokeWidth={TRAZO} />
-          <path d={`M 180 ${P0 - 74} L 212 ${P0 - 74} L 204 ${P0 - 92} L 188 ${P0 - 92} Z`} className="fill-ink" />
-          <ellipse cx={200} cy={P0 - 32} rx={96} ry={44} fill="url(#casa-luz)" className="animate-latir motion-reduce:animate-none" />
+          {/* La lámpara y su charco de luz sobre la mesa */}
+          <path d={`M 176 ${PISOS.planta.techo} L 176 ${P0 - 92}`} className="stroke-ink/50" strokeWidth={TRAZO} />
+          <path d={`M 160 ${P0 - 74} L 192 ${P0 - 74} L 184 ${P0 - 92} L 168 ${P0 - 92} Z`} className="fill-ink" />
+          <ellipse cx={180} cy={P0 - 32} rx={96} ry={44} fill="url(#casa-luz)" className="animate-latir motion-reduce:animate-none" />
 
           {/* La puerta: un hueco en la pared, sin hoja. La casa está abierta y
               dibujar una hoja cerrada diría lo contrario. */}
@@ -296,9 +331,7 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
           />
           <rect x={CASA.x1 - 24} y={P0 - 4} width={24} height="4" className="fill-barro" />
           <Cartel x={CASA.x1 + 8} y={P0 - 68} />
-          {/* Alguien llega, camina por la vereda y entra. El ciclo es largo a
-              propósito: pasa una vez cada veintiún segundos, como pasaría de
-              verdad, y no como un personaje en loop. */}
+
           <g className="animate-caminar motion-reduce:animate-none">
             <g
               className="animate-andar motion-reduce:animate-none"
@@ -308,93 +341,107 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
             </g>
           </g>
 
-          <Alfombra x={96} y={P0 - 3} ancho={186} prof={0.6} color="fill-barro-claro/60" />
+          <Alfombra x={84} y={P0 - 3} ancho={170} prof={0.6} color="fill-barro-claro/60" />
 
-          {/* La mesa puesta: velas, kidush, vino y las dos jalot bajo el paño */}
+          {/* La mesa puesta: velas, kidush, vino, las dos jalot bajo el paño */}
           <g transform={fuga(0.5)}>
-            <Mesa x={94} y={P0 - 50} ancho={182} piso={P0} prof={0.36} />
-            <Candelabro x={140} y={P0 - 50} />
-            <Candelabro x={158} y={P0 - 50} />
-            <Jalot x={200} y={P0 - 50} />
-            <Copa x={228} y={P0 - 50} />
-            <Botella x={244} y={P0 - 50} />
-            <Plato x={116} y={P0 - 52} />
-            <Plato x={178} y={P0 - 52} />
-            <Plato x={262} y={P0 - 52} />
-            {/* El vapor de la comida recién servida: el gesto propio de este
-                piso, además de las velas. */}
-            <Humo x={116} y={P0 - 58} escala={0.5} delay={400} />
-            <Humo x={262} y={P0 - 58} escala={0.5} delay={2600} />
-            <Vela x={140} y={P0 - 62} alto={14} />
-            <Vela x={158} y={P0 - 62} alto={14} delay={700} />
+            <Mesa x={80} y={P0 - 50} ancho={158} piso={P0} prof={0.36} />
+            <Candelabro x={126} y={P0 - 50} />
+            <Candelabro x={144} y={P0 - 50} />
+            <Jalot x={184} y={P0 - 50} />
+            <Copa x={202} y={P0 - 50} />
+            <Botella x={216} y={P0 - 50} />
+            <Plato x={104} y={P0 - 52} />
+            <Plato x={164} y={P0 - 52} />
+            <Plato x={228} y={P0 - 52} />
+            <Humo x={104} y={P0 - 58} escala={0.5} delay={400} />
+            <Humo x={228} y={P0 - 58} escala={0.5} delay={2600} />
+            <Vela x={126} y={P0 - 62} alto={14} />
+            <Vela x={144} y={P0 - 62} alto={14} delay={700} />
           </g>
 
-          {/* Sentados de los dos lados, y alguien de pie sirviendo */}
           <g transform={fuga(0.74)}>
-            <Silla x={128} y={P0} alto={44} mirando={-1} />
-            <Silla x={182} y={P0} alto={44} mirando={-1} />
-            <Silla x={236} y={P0} alto={44} mirando={-1} />
-            <PersonaSilla x={128} y={P0} alto={74} mirando={-1} kipa delay={0} />
-            <PersonaSilla x={182} y={P0} alto={72} mirando={-1} color="fill-primary-700" pelo delay={900} ritmo />
-            <PersonaSilla x={236} y={P0} alto={76} mirando={-1} kipa delay={1800} brazo="brindar" brazoDelay={3200} />
+            <Silla x={116} y={P0} alto={44} mirando={-1} />
+            <Silla x={170} y={P0} alto={44} mirando={-1} />
+            <Silla x={212} y={P0} alto={44} mirando={-1} />
+            <PersonaSilla x={116} y={P0} alto={74} mirando={-1} kipa delay={0} />
+            <PersonaSilla x={170} y={P0} alto={72} mirando={-1} color="fill-primary-700" pelo delay={900} ritmo />
+            <PersonaSilla x={212} y={P0} alto={76} mirando={-1} kipa delay={1800} brazo="brindar" brazoDelay={3200} />
           </g>
           <g transform={fuga(0.06)}>
-            <Silla x={146} y={P0} alto={44} />
-            <Silla x={214} y={P0} alto={44} />
-            <PersonaSilla x={146} y={P0} alto={78} pelo delay={500} brazo="brindar" />
-            <PersonaSilla x={214} y={P0} alto={76} color="fill-primary-700" kipa delay={2200} ritmo />
-            <Persona x={264} y={P0} alto={82} mirando={-1} pelo delay={1300} brazo="servir" brazoDelay={1200} />
+            <Silla x={134} y={P0} alto={44} />
+            <Silla x={192} y={P0} alto={44} />
+            <PersonaSilla x={134} y={P0} alto={78} pelo delay={500} brazo="brindar" />
+            <PersonaSilla x={192} y={P0} alto={76} color="fill-primary-700" kipa delay={2200} ritmo />
+          </g>
+
+          {/* La cocina y la parrilla, en la franja de servicio. Un tabique bajo
+              las separa del salón: en la casa son dos ambientes, no uno. */}
+          <path
+            d={`M ${SERVICIO.x1 - 12} ${P0} L ${SERVICIO.x1 - 12} ${P0 - 58}`}
+            className="stroke-ink/25"
+            strokeWidth={TRAZO * 1.5}
+          />
+          <g transform={fuga(0.8)}>
+            <Campana x={SERVICIO.x1 + 16} y={P0 - 78} ancho={40} />
+            <Alacena x={SERVICIO.x1 + 62} y={P0 - 96} ancho={48} />
+            <Mesada x={SERVICIO.x1 + 8} y={P0} ancho={100} />
+          </g>
+          <g transform={fuga(0.46)}>
+            <Parrilla x={SERVICIO.x1 + 46} y={P0 - 46} piso={P0} ancho={54} />
+            <Humo x={SERVICIO.x1 + 60} y={P0 - 60} delay={200} />
+            <Humo x={SERVICIO.x1 + 80} y={P0 - 58} delay={1100} escala={0.8} />
+            <Chispas x={SERVICIO.x1 + 70} y={P0 - 50} />
+          </g>
+          <g transform={fuga(0.2)}>
+            <Persona x={SERVICIO.x1 + 26} y={P0 - 2} alto={74} kipa delay={1200} brazo="voltear" brazoDelay={600} />
+            <Persona x={SERVICIO.x2 - 14} y={P0 - 2} alto={70} mirando={-1} pelo delay={2400} brazo="servir" brazoDelay={2600} />
           </g>
         </g>
 
-        {/* ================= QUINCHO ====================================== */}
-        <g className={grupo('quincho')}>
-          <Volumen techo={QUINCHO.techo} piso={P0} x1={QUINCHO.x1} x2={QUINCHO.x2} />
-          <g transform={fuga(0.5)}>
-            <Parrilla x={QUINCHO.x1 + 10} y={P0 - 46} piso={P0} ancho={58} />
-            <Humo x={QUINCHO.x1 + 24} y={P0 - 60} delay={200} />
-            <Humo x={QUINCHO.x1 + 44} y={P0 - 58} delay={1100} escala={0.8} />
-            <Chispas x={QUINCHO.x1 + 34} y={P0 - 50} />
-          </g>
-          <g transform={fuga(0.12)}>
-            <Persona x={QUINCHO.x2 - 22} y={P0 - 2} alto={74} mirando={-1} kipa delay={1200} brazo="voltear" brazoDelay={600} />
-          </g>
-        </g>
-
-        {/* ================= SUBSUELO: yoga y cochera ===================== */}
+        {/* ================= SUBSUELO: cochera y sala de movimiento ======== */}
         <g className={grupo('subsuelo')}>
           <Volumen {...PISOS.subsuelo} />
 
-          {/* El portón y la rampa por donde bajan los autos */}
-          <g transform={fuga(0.8)}>
-            <Porton x={CASA.x1 + 8} y={SS} ancho={46} alto={56} />
+          {/* La cochera, a la izquierda */}
+          <g transform={fuga(0.82)}>
+            <Porton x={CASA.x1 + 10} y={SS} ancho={52} alto={62} />
           </g>
           <g transform={fuga(0.34)}>
-            <Auto x={CASA.x1 + 14} y={SS} largo={74} />
+            <Auto x={CASA.x1 + 20} y={SS} largo={86} />
           </g>
 
-          {/* La clase: colchonetas apoyadas y gente sentada arriba */}
-          {/* Cada colchoneta a la misma profundidad que quien está sentado
-              arriba: si la colchoneta va más al fondo que la persona, se ve
-              flotando a la altura de su cabeza. */}
-          <g transform={fuga(0.34)}>
-            <Alfombra x={182} y={SS - 2} ancho={38} prof={0.3} color="fill-primary-200" />
-            <PersonaSentada x={200} y={SS - 2} alto={54} pelo delay={0} brazo="estirar" />{/* Los tres respiran juntos: en una clase de yoga la respiración es guiada, y sincronizarlos dice eso sin escribirlo. */}
+          {/* La sala: espejo al fondo, parlante y la clase en fila */}
+          <g transform={fuga(0.86)}>
+            <Espejo x={230} y={SS - 88} ancho={162} alto={58} />
           </g>
-          <g transform={fuga(0.22)}>
-            <Alfombra x={228} y={SS - 2} ancho={38} prof={0.3} color="fill-primary-200" />
-            <PersonaSentada x={246} y={SS - 2} alto={56} color="fill-primary-700" delay={0} brazo="estirar" />
+          <g transform={fuga(0.66)}>
+            <Parlante x={214} y={SS} alto={46} />
           </g>
-          <g transform={fuga(0.1)}>
-            <Alfombra x={264} y={SS - 2} ancho={38} prof={0.3} color="fill-primary-200" />
-            <PersonaSentada x={282} y={SS - 2} alto={52} pelo delay={0} brazo="estirar" />
-          </g>
-          <g transform={fuga(0.5)}>
-            <Persona x={268} y={SS} alto={62} mirando={-1} delay={1400} brazo="estirar" brazoDelay={-600} />
-          </g>
-          <g transform={fuga(0.78)}>
-            <Rollo x={168} y={SS} alto={28} />
-            <Rollo x={181} y={SS} alto={24} />
+
+          {[
+            { x: 246, t: 0.44, alto: 54, pelo: true },
+            { x: 290, t: 0.32, alto: 56, pelo: false },
+            { x: 334, t: 0.2, alto: 52, pelo: true },
+            { x: 378, t: 0.08, alto: 55, pelo: false },
+          ].map((y) => (
+            <g key={y.x} transform={fuga(y.t)}>
+              <Alfombra x={y.x - 18} y={SS - 2} ancho={38} prof={0.3} color="fill-primary-200" />
+              <PersonaSentada
+                x={y.x}
+                y={SS - 2}
+                alto={y.alto}
+                pelo={y.pelo}
+                color={y.pelo ? 'fill-ink' : 'fill-primary-700'}
+                delay={0}
+                brazo="estirar"
+              />
+            </g>
+          ))}
+
+          {/* Quien guía la clase levanta los brazos medio segundo antes. */}
+          <g transform={fuga(0.6)}>
+            <Persona x={404} y={SS} alto={64} mirando={-1} delay={1400} brazo="estirar" brazoDelay={-600} />
           </g>
         </g>
 
@@ -402,17 +449,17 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
         <g className={grupo('terraza')}>
           <path d={planoPiso(PISOS.terraza.piso)} className="fill-casa-piso stroke-ink/15" strokeWidth="1" />
           <g transform={fuga(0.86)}>
-            <Tanque x={CASA.x2 - 46} y={PISOS.terraza.piso - 4} />
+            <Tanque x={CASA.x2 - 58} y={PISOS.terraza.piso - 4} />
           </g>
           <Guirnalda x1={CASA.x1 + 12} x2={CASA.x2 + FONDO.x - 12} y={44} caida={13} />
 
           {/* La huerta, en cantero contra el fondo */}
           <g transform={fuga(0.8)}>
-            <Caja x={CASA.x1 + 4} y={PISOS.terraza.piso - 10} ancho={62} alto={10} prof={0.26} />
-            {[9, 25, 41, 55].map((dx, i) => (
+            <Caja x={CASA.x1 + 6} y={PISOS.terraza.piso - 10} ancho={84} alto={10} prof={0.26} />
+            {[10, 30, 50, 70].map((dx, i) => (
               <Planta
                 key={dx}
-                x={CASA.x1 + 4 + dx}
+                x={CASA.x1 + 6 + dx}
                 y={PISOS.terraza.piso - 10}
                 alto={24 + (i % 3) * 5}
                 delay={i * 700}
@@ -425,70 +472,39 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
               percusión adelante. Es el orden real de una banda chica y, de
               paso, el que deja ver a todos. */}
           <g transform={fuga(0.74)}>
-            <Teclado x={134} y={PISOS.terraza.piso} ancho={48} />
-            <Persona x={158} y={PISOS.terraza.piso} alto={52} kipa delay={400} brazo="teclear" ritmo />
+            <Teclado x={168} y={PISOS.terraza.piso} ancho={52} />
+            <Persona x={196} y={PISOS.terraza.piso} alto={52} kipa delay={400} brazo="teclear" ritmo />
           </g>
 
           <g transform={fuga(0.52)}>
-            <Microfono x={196} y={PISOS.terraza.piso} alto={46} ondas />
-            <Persona x={212} y={PISOS.terraza.piso} alto={54} pelo delay={1200} brazo="arco-brazo" ritmo />
-            <Cuerdas x={200} y={PISOS.terraza.piso - 28} tipo="violin" mirando={-1} />
-            <Arco x={190} y={PISOS.terraza.piso - 31} largo={20} />
+            <Microfono x={236} y={PISOS.terraza.piso} alto={46} ondas />
+            <Persona x={252} y={PISOS.terraza.piso} alto={54} pelo delay={1200} brazo="arco-brazo" ritmo />
+            <Cuerdas x={240} y={PISOS.terraza.piso - 28} tipo="violin" mirando={-1} />
+            <Arco x={230} y={PISOS.terraza.piso - 31} largo={20} />
           </g>
 
           <g transform={fuga(0.3)}>
-            <Microfono x={238} y={PISOS.terraza.piso} alto={44} mirando={-1} />
-            <Persona
-              x={254}
-              y={PISOS.terraza.piso}
-              alto={56}
-              kipa
-              delay={2000}
-              brazo="rasgueo"
-              ritmo
-            />
-            <Cuerdas x={264} y={PISOS.terraza.piso - 26} tipo="guitarra" />
-            {/* El bajo rasguea a contratiempo —medio tiempo de desfasaje— que
-                es lo que hace que dos personas tocando no se vean como una
-                sola animación duplicada. */}
-            <Persona
-              x={286}
-              y={PISOS.terraza.piso}
-              alto={54}
-              color="fill-primary-700"
-              delay={800}
-              brazo="rasgueo"
-              brazoDelay={300}
-              ritmo
-            />
-            <Cuerdas x={295} y={PISOS.terraza.piso - 25} tipo="bajo" />
+            <Microfono x={284} y={PISOS.terraza.piso} alto={44} mirando={-1} />
+            <Persona x={300} y={PISOS.terraza.piso} alto={56} kipa delay={2000} brazo="rasgueo" ritmo />
+            <Cuerdas x={310} y={PISOS.terraza.piso - 26} tipo="guitarra" />
+            <Persona x={344} y={PISOS.terraza.piso} alto={54} color="fill-primary-700" delay={800} brazo="rasgueo" brazoDelay={300} ritmo />
+            <Cuerdas x={353} y={PISOS.terraza.piso - 25} tipo="bajo" />
           </g>
 
           <g transform={fuga(0.1)}>
-            <Cajon x={162} y={PISOS.terraza.piso} />
-            <PersonaSilla
-              x={172}
-              y={PISOS.terraza.piso}
-              alto={52}
-              color="fill-primary-700"
-              pelo
-              delay={1600}
-              brazo="golpear"
-              ritmo
-            />
-            <Platillo x={196} y={PISOS.terraza.piso} alto={34} />
+            <Cajon x={200} y={PISOS.terraza.piso} />
+            <PersonaSilla x={210} y={PISOS.terraza.piso} alto={52} color="fill-primary-700" pelo delay={1600} brazo="golpear" ritmo />
+            <Platillo x={234} y={PISOS.terraza.piso} alto={34} />
           </g>
 
-          {/* Las notas salen de donde está la música: una tanda sobre el
-              teclado y otra sobre las cuerdas, no del centro de la terraza. */}
-          <Notas x={186} y={PISOS.terraza.piso - 62} cantidad={4} />
-          <Notas x={276} y={PISOS.terraza.piso - 58} cantidad={3} escala={0.9} />
+          <Notas x={222} y={PISOS.terraza.piso - 62} cantidad={4} />
+          <Notas x={322} y={PISOS.terraza.piso - 58} cantidad={3} escala={0.9} />
 
           {/* La baranda va al final: pasa por delante de todos y por eso el
               conjunto se lee arriba de una terraza y no flotando. */}
           <g className="stroke-ink/45" strokeWidth={TRAZO} strokeLinecap="round">
             <path d={`M ${CASA.x1 + 4} 98 L ${CASA.x2 - 4} 98`} />
-            {Array.from({ length: 13 }, (_, i) => CASA.x1 + 10 + i * 20).map((x) => (
+            {Array.from({ length: 18 }, (_, i) => CASA.x1 + 10 + i * 20).map((x) => (
               <path key={x} d={`M ${x} 98 L ${x} ${PISOS.terraza.piso - 4}`} />
             ))}
           </g>
@@ -500,13 +516,13 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
             cada losa se sugiere con un plano más oscuro por donde pasa. */}
         <g className="transition-opacity duration-cinematic ease-standard opacity-100">
           {[PISOS.primero.piso, PISOS.planta.piso].map((y) => (
-            <path key={y} d={planoPiso(y, ESCALERA.x - 20, ESCALERA.x + 20)} className="fill-casa-fondo" />
+            <path key={y} d={planoPiso(y, ESCALERA.x - 30, ESCALERA.x + 30)} className="fill-casa-fondo" />
           ))}
           <Caracol
             x={ESCALERA.x}
             base={PISOS.subsuelo.piso}
             alto={PISOS.subsuelo.piso - PISOS.terraza.piso}
-            radio={18}
+            radio={27}
           />
         </g>
 
@@ -520,7 +536,6 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
           <path
             d={`M ${CASA.x1} ${PISOS.terraza.piso} L ${CASA.x1 + FONDO.x} ${PISOS.terraza.piso + FONDO.y} L ${CASA.x2 + FONDO.x} ${PISOS.terraza.piso + FONDO.y} L ${CASA.x2} ${PISOS.terraza.piso}`}
           />
-          <path d={`M ${QUINCHO.x1} ${SUELO} L ${QUINCHO.x1} ${QUINCHO.techo} L ${QUINCHO.x2} ${QUINCHO.techo} L ${QUINCHO.x2} ${SUELO}`} />
         </g>
       </g>
     </svg>

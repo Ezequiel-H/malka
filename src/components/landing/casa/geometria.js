@@ -18,8 +18,19 @@
    deforma los muebles. */
 export const FONDO = { x: 44, y: -26 };
 
-export const CASA = { x1: 58, x2: 314 };
-export const QUINCHO = { x1: 322, x2: 416, techo: 322 };
+/**
+ * La casa es un solo bloque de punta a punta: todos los niveles miden lo mismo.
+ * Antes el quincho era un anexo bajito pegado a la derecha y los pisos de
+ * arriba terminaban antes; en una casa de verdad la planta se repite y lo que
+ * cambia es lo que hay adentro.
+ */
+export const CASA = { x1: 58, x2: 416 };
+
+/* La franja de servicio, contra la pared derecha: abajo la cochera, en la
+   planta la cocina y la parrilla, arriba el rincón de café. Tener una columna
+   fija para eso es lo que hace que la casa se lea como una casa y no como tres
+   escenas apiladas. */
+export const SERVICIO = { x1: 300, x2: 410 };
 
 /* Un solo grosor de trazo para todo el dibujo. Es lo que separa una
    ilustración de un collage: si cada objeto trae su propio filete, el ojo lee
