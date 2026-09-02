@@ -33,7 +33,6 @@ import {
   Plato,
   Platillo,
   Parlante,
-  Pileta,
   Piso,
   Jacuzzi,
   Porton,
@@ -81,27 +80,34 @@ import { quiereQuietud } from '../scrollFx';
  * piso a otro, ves la casa entera.
  */
 
-/* Dónde mira la cámara en cada piso, y cuánto se acerca. El centro se corre
-   hacia adentro (un tercio del fondo) porque el volumen del piso no está sobre
-   el borde del corte sino un poco más atrás. */
-const centro = (id) => {
-  const p = PISOS[id];
-  return {
-    x: (CASA.x1 + CASA.x2) / 2 + FONDO.x * 0.35,
-    y: (p.techo + p.piso) / 2 + FONDO.y * 0.35,
-    /* La planta baja se mira más de lejos que el resto: es la escena más ancha
-       de la casa —la vereda por donde llega alguien de un lado, el quincho del
-       otro— y con el zoom de los demás pisos se recortaba justo la puerta. */
-    s: id === 'planta' ? 1.42 : 1.66,
-  };
-};
+const P1v = PISOS.primero.piso;
+const P0v = PISOS.planta.piso;
+const SSv = PISOS.subsuelo.piso;
 
+/**
+ * Los encuadres, por **espacio** y no por piso.
+ *
+ * Enfocar un piso entero era quedarse a mitad de camino: una planta baja son
+ * dos escenas distintas —la mesa puesta y la cocina— y mirarlas juntas es no
+ * mirar ninguna. Cada sección de la página apunta acá con su `data-zona`, así
+ * que agregar un encuadre nuevo es agregar una línea, no tocar la cámara.
+ */
 const FOCOS = {
   todo: { x: 236, y: 262, s: 0.92 },
-  terraza: centro('terraza'),
-  primero: centro('primero'),
-  planta: centro('planta'),
-  subsuelo: centro('subsuelo'),
+  casa: { x: 236, y: 262, s: 1.05 },
+
+  puerta: { x: 104, y: P0v - 46, s: 2.05 },
+  mesa: { x: 176, y: P0v - 44, s: 1.85 },
+  cocina: { x: 352, y: P0v - 48, s: 2 },
+
+  cowork: { x: 226, y: P1v - 44, s: 1.85 },
+  bano: { x: 352, y: P1v - 46, s: 1.95 },
+
+  banda: { x: 288, y: 86, s: 1.85 },
+  suca: { x: 350, y: 92, s: 2.05 },
+
+  clase: { x: 306, y: SSv - 46, s: 1.85 },
+  cochera: { x: 112, y: SSv - 44, s: 2 },
 };
 
 /* La lámina tiene cielo de más arriba de la terraza. No es decorativo: sin ese
@@ -160,85 +166,112 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
       );
     };
 
-    const secciones = [...document.querySelectorAll('[data-piso]')];
+    const secciones = [...document.querySelectorAll('[data-zona]')];
     if (!secciones.length) return undefined;
 
     const suave = (t) => t * t * (3 - 2 * t);
 
     /**
-     * La cámara es una función del scroll, no una animación disparada por un
-     * cambio de sección.
+     * El objetivo lo manda el scroll; el encuadre lo alcanza con un resorte.
      *
-     * Antes viajaba de un piso al siguiente cuando un observer avisaba que
-     * habías llegado: el movimiento arrancaba tarde y terminaba solo, y por eso
-     * se sentía despegado de la mano. Ahora el encuadre se interpola entre el
-     * piso que dejás y el que viene según **dónde está el scroll en este
-     * instante**: frenás a la mitad y la cámara queda a la mitad. Nada corre
-     * por su cuenta.
-     *
-     * Y en el medio del viaje se abre —el zoom baja hasta un tercio y vuelve a
-     * subir— que es lo que hace un camarógrafo para no perder el contexto
-     * mientras cambia de encuadre. Acá además cuenta algo: mientras pasás de un
-     * piso a otro, ves la casa entera.
+     * Atarlo uno a uno al scroll lo hacía exacto pero duro: la cámara se movía
+     * como una barra de scroll, no como una cámara. Ahora el scroll dice
+     * **adónde** hay que mirar y un resorte crítico —empuje proporcional a lo
+     * que falta, más rozamiento— se encarga de **cómo** se llega. Eso es lo que
+     * da la inercia: la cámara arranca decidida, desacelera sola y se asienta
+     * sin rebote. Y como el objetivo sigue siendo una función del scroll, si
+     * frenás en el medio, la cámara frena con vos.
      */
-    const encuadreDelScroll = () => {
-      const centro = window.innerHeight / 2;
+    const objetivo = () => {
+      const centroPantalla = window.innerHeight / 2;
       const marcas = secciones.map((n) => {
         const r = n.getBoundingClientRect();
-        return { piso: n.dataset.piso, y: r.top + r.height / 2 };
+        return { zona: n.dataset.zona, y: r.top + r.height / 2 };
       });
 
-      if (centro >= marcas[0].y) return { ...encuadrar(FOCOS[marcas[0].piso] ?? FOCOS.todo) };
+      /* Las secciones vienen en orden de documento, así que sus centros crecen
+         con el índice: la de más abajo está más abajo en pantalla. Tener este
+         orden claro no es un detalle — con la comparación al revés, la cámara
+         devuelve siempre el primer encuadre y el zoom no aparece nunca. */
+      if (centroPantalla <= marcas[0].y) return encuadrar(FOCOS[marcas[0].zona] ?? FOCOS.todo);
       const ultima = marcas[marcas.length - 1];
-      if (centro <= ultima.y) return { ...encuadrar(FOCOS[ultima.piso] ?? FOCOS.todo) };
+      if (centroPantalla >= ultima.y) return encuadrar(FOCOS[ultima.zona] ?? FOCOS.todo);
 
-      const i = marcas.findIndex((m, k) => k < marcas.length - 1 && m.y > centro && marcas[k + 1].y <= centro);
-      const a = encuadrar(FOCOS[marcas[i].piso] ?? FOCOS.todo);
-      const b = encuadrar(FOCOS[marcas[i + 1].piso] ?? FOCOS.todo);
-      const t = suave((marcas[i].y - centro) / Math.max(1, marcas[i].y - marcas[i + 1].y));
-
-      const salto = Math.hypot(b.x - a.x, b.y - a.y);
-      const apertura = Math.min(0.32, salto / 820);
+      const i = marcas.findIndex(
+        (m, k) => k < marcas.length - 1 && m.y <= centroPantalla && marcas[k + 1].y > centroPantalla
+      );
+      const a = encuadrar(FOCOS[marcas[i].zona] ?? FOCOS.todo);
+      const b = encuadrar(FOCOS[marcas[i + 1].zona] ?? FOCOS.todo);
+      const t = suave((centroPantalla - marcas[i].y) / Math.max(1, marcas[i + 1].y - marcas[i].y));
 
       return {
         x: a.x + (b.x - a.x) * t,
         y: a.y + (b.y - a.y) * t,
-        s: (a.s + (b.s - a.s) * t) * (1 - apertura * Math.sin(Math.PI * t)),
+        /* La escala se interpola en escala logarítmica: pasar de 1 a 2 y de 2 a
+           4 se tienen que sentir igual de largos, porque el ojo lee el zoom en
+           proporciones y no en diferencias. Interpolado lineal, el arranque de
+           un acercamiento fuerte se siente de golpe y el final, dormido. */
+        s: Math.exp(Math.log(a.s) + (Math.log(b.s) - Math.log(a.s)) * t),
       };
     };
 
-    /* Si el sistema pide menos movimiento, la cámara se queda mostrando la casa
-       entera y no se mueve nunca. */
     if (quiereQuietud()) {
       aplicar(encuadrar(FOCOS.todo));
       return undefined;
     }
 
-    let pedido = null;
-    const actualizar = () => {
-      pedido = null;
-      const pose = encuadreDelScroll();
-      poseRef.current = pose;
+    /* Resorte crítico: sin rebote, pero con inercia. `k` es cuánto empuja lo
+       que falta y `roce` cuánto se frena; estos dos números son toda la
+       personalidad del movimiento. */
+    const k = 0.14;
+    const roce = 0.76;
+    const vel = { x: 0, y: 0, s: 0 };
+    let corriendo = false;
+
+    const paso = () => {
+      const pose = poseRef.current;
+      const meta = objetivo();
+
+      vel.x = (vel.x + (meta.x - pose.x) * k) * roce;
+      vel.y = (vel.y + (meta.y - pose.y) * k) * roce;
+      vel.s = (vel.s + (meta.s - pose.s) * k) * roce;
+      pose.x += vel.x;
+      pose.y += vel.y;
+      pose.s += vel.s;
       aplicar(pose);
-    };
-    const alScrollear = () => {
-      if (pedido == null) pedido = requestAnimationFrame(actualizar);
+
+      const quieto =
+        Math.abs(meta.x - pose.x) + Math.abs(meta.y - pose.y) + Math.abs(meta.s - pose.s) * 120 < 0.35 &&
+        Math.abs(vel.x) + Math.abs(vel.y) < 0.05;
+
+      if (quieto) {
+        corriendo = false;
+        return;
+      }
+      requestAnimationFrame(paso);
     };
 
-    actualizar();
-    window.addEventListener('scroll', alScrollear, { passive: true });
-    window.addEventListener('resize', alScrollear);
+    const despertar = () => {
+      if (corriendo) return;
+      corriendo = true;
+      requestAnimationFrame(paso);
+    };
+
+    poseRef.current = { ...objetivo() };
+    aplicar(poseRef.current);
+    window.addEventListener('scroll', despertar, { passive: true });
+    window.addEventListener('resize', despertar);
     return () => {
-      if (pedido != null) cancelAnimationFrame(pedido);
-      window.removeEventListener('scroll', alScrollear);
-      window.removeEventListener('resize', alScrollear);
+      window.removeEventListener('scroll', despertar);
+      window.removeEventListener('resize', despertar);
+      corriendo = true;
     };
   }, []);
 
   const enFoco = (id) => activo === 'todo' || activo === id;
 
   const grupo = (id) =>
-    `transition-opacity duration-cinematic ease-standard ${enFoco(id) ? 'opacity-100' : 'opacity-45'}`;
+    `transition-opacity duration-cinematic ease-standard ${enFoco(id) ? 'opacity-100' : 'opacity-55'}`;
 
   /* El filtro va como atributo y no como clase de Tailwind: es un filtro de
      SVG, no de CSS. Bajarles la opacidad a los pisos que no estás leyendo no
@@ -310,7 +343,7 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
             desenfoque el ojo entiende cuál es el plano de foco, que es
             exactamente lo que hace una cámara. */}
         <filter id="casa-fuera-de-foco" x="-10%" y="-10%" width="120%" height="120%">
-          <feGaussianBlur stdDeviation="2.4" />
+          <feGaussianBlur stdDeviation="1.5" />
         </filter>
         <linearGradient id="casa-rincon" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#2c3d34" stopOpacity="0.14" />
@@ -374,7 +407,11 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
         </g>
 
         {/* ================= PRIMER PISO: cowork, charlas y el baño ======= */}
-        <g className={grupo('primero')} filter={foco('primero')}>
+        <g
+          className={`${grupo('primero')} animate-armar motion-reduce:animate-none`}
+          style={{ animationDelay: '280ms' }}
+          filter={foco('primero')}
+        >
           <Volumen
             {...PISOS.primero}
             ventanas={[
@@ -443,7 +480,11 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
         </g>
 
         {/* ================= PLANTA BAJA: salón, cocina y parrilla ========= */}
-        <g className={grupo('planta')} filter={foco('planta')}>
+        <g
+          className={`${grupo('planta')} animate-armar motion-reduce:animate-none`}
+          style={{ animationDelay: '140ms' }}
+          filter={foco('planta')}
+        >
           <Volumen
             {...PISOS.planta}
             ventanas={[{ x: 250, y: P0 - 120, ancho: 56, alto: 44 }]}
@@ -547,7 +588,11 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
         </g>
 
         {/* ================= SUBSUELO: cochera y sala de movimiento ======== */}
-        <g className={grupo('subsuelo')} filter={foco('subsuelo')}>
+        <g
+          className={`${grupo('subsuelo')} animate-armar motion-reduce:animate-none`}
+          style={{ animationDelay: '0ms' }}
+          filter={foco('subsuelo')}
+        >
           <Volumen
             {...PISOS.subsuelo}
             material="cemento"
@@ -603,7 +648,11 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
         </g>
 
         {/* ================= TERRAZA: la huerta y el unplugged ============= */}
-        <g className={grupo('terraza')} filter={foco('terraza')}>
+        <g
+          className={`${grupo('terraza')} animate-armar motion-reduce:animate-none`}
+          style={{ animationDelay: '420ms' }}
+          filter={foco('terraza')}
+        >
           <path d={planoPiso(PISOS.terraza.piso)} className="fill-casa-piso stroke-ink/15" strokeWidth="1" />
           <g transform={fuga(0.86)}>
             <Tanque x={CASA.x2 - 16} y={PISOS.terraza.piso - 4} ancho={22} alto={20} />
@@ -614,16 +663,6 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
             <Suca x={CASA.x2 - 100} y={PISOS.terraza.piso} ancho={78} alto={62} />
           </g>
           <Guirnalda x1={CASA.x1 + 12} x2={CASA.x2 + FONDO.x - 12} y={44} caida={13} />
-
-          {/* La pileta, del lado del sol. Estaba en el texto de Malka desde
-              siempre —"una pileta para disfrutar el verano"— y no estaba
-              dibujada en ningún lado. */}
-          <g transform={fuga(0.34)}>
-            <Pileta x={CASA.x1 + 12} y={PISOS.terraza.piso - 6} ancho={104} fondo={0.42} />
-          </g>
-          <g transform={fuga(0.12)}>
-            <PersonaSentada x={CASA.x1 + 128} y={PISOS.terraza.piso - 2} alto={44} pelo delay={800} />
-          </g>
 
           {/* El unplugged: teclado y voz al fondo, cuerdas en el medio,
               percusión adelante. Es el orden real de una banda chica y, de
@@ -674,10 +713,25 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
 
         {/* ---- las líneas del corte, siempre encima ---- */}
         <g className="fill-none stroke-ink" strokeWidth={TRAZO * 1.25} strokeLinejoin="round">
-          <path d={`M ${CASA.x1} ${PISOS.subsuelo.piso} L ${CASA.x1} ${PISOS.terraza.piso}`} />
-          <path d={`M ${CASA.x2} ${PISOS.subsuelo.piso} L ${CASA.x2} ${PISOS.terraza.piso}`} />
-          {Object.values(PISOS).map((p) => (
-            <path key={p.piso} d={`M ${CASA.x1} ${p.piso} L ${CASA.x2} ${p.piso}`} />
+          {[CASA.x1, CASA.x2].map((x, i) => (
+            <path
+              key={x}
+              d={`M ${x} ${PISOS.subsuelo.piso} L ${x} ${PISOS.terraza.piso}`}
+              pathLength="1"
+              strokeDasharray="1"
+              className="animate-dibujar motion-reduce:animate-none"
+              style={{ animationDelay: `${i * 120}ms` }}
+            />
+          ))}
+          {Object.values(PISOS).map((p, i) => (
+            <path
+              key={p.piso}
+              d={`M ${CASA.x1} ${p.piso} L ${CASA.x2} ${p.piso}`}
+              pathLength="1"
+              strokeDasharray="1"
+              className="animate-dibujar motion-reduce:animate-none"
+              style={{ animationDelay: `${120 + i * 90}ms` }}
+            />
           ))}
           <path
             d={`M ${CASA.x1} ${PISOS.terraza.piso} L ${CASA.x1 + FONDO.x} ${PISOS.terraza.piso + FONDO.y} L ${CASA.x2 + FONDO.x} ${PISOS.terraza.piso + FONDO.y} L ${CASA.x2} ${PISOS.terraza.piso}`}

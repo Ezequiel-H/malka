@@ -403,6 +403,20 @@ export default {
           '0%, 100%': { transform: 'rotate(-52deg)' },
           '50%': { transform: 'rotate(-88deg)' },
         },
+        /* La casa se arma al entrar: cada nivel llega desde abajo, uno detrás
+           del otro, empezando por el subsuelo. `backwards` y no `both` a
+           propósito: cuando la animación termina, el control de la opacidad
+           vuelve a las clases que manejan el foco de cada piso. */
+        armar: {
+          from: { opacity: '0', transform: 'translateY(22px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        /* Las líneas del corte se dibujan solas. Con `pathLength=1` el trazo se
+           normaliza y todas las líneas tardan lo mismo sin importar su largo. */
+        dibujar: {
+          from: { strokeDashoffset: '1' },
+          to: { strokeDashoffset: '0' },
+        },
         shimmer: {
           from: { backgroundPosition: '200% 0' },
           to: { backgroundPosition: '-200% 0' },
@@ -449,6 +463,8 @@ export default {
         chispa: 'chispa 2.4s ease-out infinite',
         saludar: 'saludar 8.4s ease-in-out infinite',
         palmas: 'palmas 1.2s ease-in-out infinite',
+        armar: 'armar 900ms cubic-bezier(0.22, 1, 0.36, 1) backwards',
+        dibujar: 'dibujar 1100ms cubic-bezier(0.4, 0, 0.2, 1) backwards',
         shimmer: 'shimmer 1.4s linear infinite',
       },
     },

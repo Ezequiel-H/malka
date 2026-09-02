@@ -26,10 +26,18 @@ import { quiereQuietud } from '../components/landing/scrollFx';
  * "menos movimiento" ve la casa entera quieta y no se pierde nada.
  */
 
-const PISOS = [
+/**
+ * Las secciones de la página.
+ *
+ * `piso` decide qué nivel queda en foco y `zona` a qué **espacio** se acerca la
+ * cámara: una planta baja son dos escenas distintas —la mesa puesta y la
+ * cocina— y mirarlas juntas es no mirar ninguna.
+ */
+const SECCIONES = [
   {
     id: 'entrada',
     piso: 'todo',
+    zona: 'todo',
     kicker: 'Casa Malka · Comunidad Amijai',
     titulo: 'Es una casa.',
     entrada: 'Con subsuelo, dos plantas, terraza y la puerta abierta.',
@@ -37,43 +45,86 @@ const PISOS = [
       'Un lugar para jóvenes judíos de 18 a 35 en 3 de Febrero 1325. Abre de lunes a viernes de 14 a 21, no hace falta ser socio y no hay que anotarse para venir.',
   },
   {
-    id: 'planta',
+    id: 'puerta',
     piso: 'planta',
-    kicker: 'Planta baja',
-    titulo: 'El salón',
-    entrada: 'Acá se pone la mesa larga y se hace Shabat.',
+    zona: 'puerta',
+    kicker: 'La puerta',
+    titulo: 'Se entra sin avisar',
+    entrada: 'De lunes a viernes, de 14 a 21.',
     texto:
-      'Es el primer lugar en el que entrás y donde pasan las ceremonias de la casa. Al fondo están la cocina y la parrilla: se come, se discute de todo un poco y se sigue hasta que alguien apaga la luz.',
+      'No hay que ser socio, no hay que anotarse y no hace falta saber nada. Alguien del staff te va a estar esperando con una sonrisa: son cuatro y están siempre.',
   },
   {
-    id: 'primero',
-    piso: 'primero',
-    kicker: 'Primer piso',
-    titulo: 'El cowork',
-    entrada: 'Un martes cualquiera, traés la compu y te sentás.',
+    id: 'salon',
+    piso: 'planta',
+    zona: 'mesa',
+    kicker: 'El salón',
+    titulo: 'La mesa larga',
+    entrada: 'Acá se hace Shabat y pasan las ceremonias de la casa.',
     texto:
-      'Una mesa larga para trabajar, wifi y el rincón del café con cakes. Es el piso mínimo de Malka: no hace falta que haya una actividad para que vengas, y de hecho así es como la mayoría empieza a venir. En el mismo piso se dan las charlas y los cursos.',
+      'Se pone la mesa, se encienden las velas y se canta. Venís sin traer nada; cuándo cae la próxima lo vas a ver en la agenda, adentro.',
+  },
+  {
+    id: 'cocina',
+    piso: 'planta',
+    zona: 'cocina',
+    kicker: 'La cocina y la parrilla',
+    titulo: 'Se come y se discute',
+    entrada: 'Asaditos, experiencias culinarias y sobremesas largas.',
+    texto:
+      'Los temas van de judaísmo moderno a economía y emprendedurismo, y siguen hasta que alguien apaga la luz. Acá hay lugar para todo lo que sea aprender y compartir.',
+  },
+  {
+    id: 'cowork',
+    piso: 'primero',
+    zona: 'cowork',
+    kicker: 'El cowork',
+    titulo: 'Un martes cualquiera',
+    entrada: 'Traés la compu y te sentás.',
+    texto:
+      'Wifi, escritorio y café con cakes. Es el piso mínimo de Malka: no hace falta que haya una actividad para que vengas, y de hecho así es como la mayoría empieza a venir.',
+  },
+  {
+    id: 'bano',
+    piso: 'primero',
+    zona: 'bano',
+    kicker: 'Sauna Sessions',
+    titulo: 'El sauna y el jacuzzi',
+    entrada: 'Sí, la casa también tiene eso.',
+    texto:
+      'Un rato de calor y de charla lenta, que es otra forma de encontrarse. Las sessions se anuncian en la agenda.',
   },
   {
     id: 'terraza',
     piso: 'terraza',
-    kicker: 'Arriba de todo',
-    titulo: 'La terraza y la huerta',
+    zona: 'banda',
+    kicker: 'La terraza',
+    titulo: 'La música arriba',
     entrada: 'Unplugged, algún fueguito y la ciudad abajo.',
     texto:
-      'Una huerta que conecta con la tierra y, pegadita, la terraza: el lugar premium para frenar el tiempo, tocar hasta cualquier hora y mirar un rato las estrellas.',
+      'El lugar premium para frenar el tiempo, tocar hasta cualquier hora y mirar un rato las estrellas.',
+  },
+  {
+    id: 'suca',
+    piso: 'terraza',
+    zona: 'suca',
+    kicker: 'Las festividades',
+    titulo: 'La sucá',
+    entrada: 'En Sucot se arma arriba y no se baja por una semana.',
+    texto:
+      'Cada festividad tiene su forma en la casa: las velas del viernes, la sucá de octubre, la januquiá en la ventana. Se vive el calendario, no se lo explica.',
   },
   {
     id: 'subsuelo',
     piso: 'subsuelo',
-    kicker: 'Y abajo de todo',
-    titulo: 'El subsuelo',
-    entrada: 'Yoga, movimiento y la cochera.',
+    zona: 'clase',
+    kicker: 'La sala de abajo',
+    titulo: 'Yoga y movimiento',
+    entrada: 'Las clases que piden piso y silencio.',
     texto:
-      'El nivel de abajo es la sala de movimiento: espejo, colchonetas y las clases que piden piso y silencio. Del otro lado, la cochera, que es por donde entran los autos.',
+      'Yoga, escritura, cine y talleres que cambian todos los meses. El nivel más callado de la casa, y el que más se usa a la tarde.',
   },
 ];
-
 
 const Casa = () => {
   const [activo, setActivo] = useState('todo');
@@ -109,8 +160,11 @@ const Casa = () => {
       /* Además de correrse, en la portada la casa sube un poco: es lo que deja
          el hueco para el wordmark y la frase sin achicar el dibujo del resto de
          la página. */
+      /* En la portada la casa se corre al centro, sube y se achica un poco: el
+         hueco que deja abajo es donde entran el wordmark y la frase. Al bajar,
+         los tres valores vuelven a cero y la casa queda en su columna. */
       columna.style.transform = ancho
-        ? `translate(${(1 - e) * 50}%, ${(1 - e) * -7}%) scale(${1 + (1 - e) * 0.04})`
+        ? `translate(${(1 - e) * 50}%, ${(1 - e) * -13}%) scale(${1 - (1 - e) * 0.08})`
         : '';
       hero.style.opacity = `${Math.max(0, 1 - p * 1.7)}`;
       hero.style.pointerEvents = p > 0.4 ? 'none' : 'auto';
@@ -183,31 +237,40 @@ const Casa = () => {
           >
             <CasaDibujada
               activo={activo}
-              className="mx-auto h-[36vh] w-auto max-w-full py-2 lg:h-auto lg:max-h-[calc(100vh-9rem)] lg:w-full lg:py-0"
+              className="mx-auto h-[36vh] w-auto max-w-full py-2 lg:h-auto lg:max-h-[calc(100vh-12rem)] lg:w-full lg:py-0"
             />
 
             {/* La portada, encima de la casa centrada. Se va cuando la casa se
                 corre: a partir de ahí manda el texto de cada piso. */}
             <div
               ref={heroRef}
-              className="pointer-events-none absolute inset-x-0 bottom-2 hidden flex-col items-center gap-4 text-center lg:flex"
+              className="pointer-events-none absolute inset-x-0 bottom-0 hidden flex-col items-center gap-5 text-center lg:flex"
             >
-              <img src={logoMalka} alt="Malka" className="h-9 w-auto" />
-              <p className="max-w-md font-grotesk text-lg leading-snug text-ink">
+              {/* El wordmark y la frase entran cuando la casa terminó de
+                  armarse, no antes: si aparecen mientras el edificio todavía se
+                  está montando, compiten con él y no se ve ninguno de los dos. */}
+              <img
+                src={logoMalka}
+                alt="Malka"
+                className="h-11 w-auto animate-fade-in-up [animation-delay:1250ms] [animation-duration:700ms] [animation-fill-mode:backwards]"
+              />
+              <p className="max-w-lg animate-fade-in-up font-grotesk text-[1.6rem] font-semibold leading-tight tracking-tight text-ink [animation-delay:1420ms] [animation-duration:700ms] [animation-fill-mode:backwards]">
                 El punto de encuentro para tu identidad judía.
               </p>
-              <span className="text-[0.68rem] font-semibold uppercase tracking-label text-ink-muted">
-                Bajá y conocé la casa
+              <span className="flex animate-fade-in-up items-center gap-3 text-[0.66rem] font-semibold uppercase tracking-label text-ink-muted [animation-delay:1620ms] [animation-fill-mode:backwards]">
+                Bajá y entrá a la casa
+                <span className="h-px w-10 origin-left animate-rule-draw bg-ink-faint [animation-delay:1800ms]" />
               </span>
             </div>
           </div>
 
           <div ref={textoRef} className="lg:col-span-6">
-            {PISOS.map((p, i) => (
+            {SECCIONES.map((p, i) => (
               <section
                 key={p.id}
                 id={p.id}
                 data-piso={p.piso}
+                data-zona={p.zona}
                 /* En mobile el dibujo está pegado arriba, así que el texto arranca
                    debajo de él: sin este colchón, el título de cada sección
                    nace tapado. En escritorio el dibujo está al costado y el
@@ -241,6 +304,7 @@ const Casa = () => {
 
             <section
               data-piso="todo"
+              data-zona="casa"
               className="flex min-h-screen flex-col justify-center border-t border-ink/10 pb-16 pt-[44vh] lg:min-h-[70vh] lg:py-24"
             >
               <h2 className="text-[clamp(2rem,5vw,3.2rem)] font-bold uppercase leading-[0.9] tracking-display">
