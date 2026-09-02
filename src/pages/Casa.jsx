@@ -293,27 +293,28 @@ const Casa = () => {
         </nav>
       </header>
 
-      <main className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
-        <div className="lg:grid lg:grid-cols-12 lg:gap-x-12">
-          {/* El dibujo: fijo al costado en escritorio, fijo arriba en mobile. */}
-          <div className="sticky top-16 z-30 -mx-5 bg-surface-page/95 px-5 backdrop-blur sm:-mx-8 sm:px-8 lg:top-16 lg:z-auto lg:col-span-6 lg:mx-0 lg:flex lg:h-[calc(100vh-4rem)] lg:items-center lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
-            {/* La casa no se mueve nunca de su columna. Antes se corría al
-                centro en la portada y volvía al scrollear: ese viaje lateral, con
-                el texto cortándose al mismo tiempo, era el momento más brusco de
-                la página. Ahora lo único que cambia es el encuadre de la cámara,
-                que ya sabe moverse suave. */}
-            <div className="relative w-full">
-            <CasaDibujada
-              activo={activo}
-              zona={zona}
-              className="mx-auto h-[36vh] w-auto max-w-full py-2 lg:h-auto lg:max-h-[calc(100vh-7rem)] lg:w-full lg:py-0"
-            />
+      <main className="relative">
+        {/* La casa va de fondo y a sangre: sale de cuadro por arriba, por abajo
+            y por los costados. Antes vivía adentro de una columna y se veía el
+            recuadro del dibujo, que la convertía en una lámina pegada al
+            costado del texto en vez de en el lugar donde pasa todo. */}
+        <div className="pointer-events-none sticky top-0 h-screen overflow-hidden">
+          <CasaDibujada
+            activo={activo}
+            zona={zona}
+            anclaX={0.62}
+            ajuste="xMidYMid slice"
+            className="h-full w-full"
+          />
+          {/* El velo que hace legible el texto sin tapar la casa: opaco del lado
+              de la lectura y transparente del otro. */}
+          <div className="absolute inset-0 bg-gradient-to-b from-surface-page via-surface-page/90 to-surface-page/96 lg:bg-gradient-to-r lg:from-surface-page lg:from-30% lg:via-surface-page/92 lg:via-58% lg:to-transparent" />
+        </div>
 
-            </div>
-
-                      </div>
-
-          <div className="lg:col-span-6">
+        {/* El texto va encima del fondo pegado, no al lado. */}
+        <div className="relative -mt-[100vh]">
+          <div className="mx-auto max-w-6xl px-5 sm:px-8">
+            <div className="lg:w-[46%]">
             {SECCIONES.map((p, i) =>
               p.portada ? (
                 /* La portada es la primera sección de la columna, no una capa
@@ -426,7 +427,6 @@ const Casa = () => {
               </section>
               )
             )}
-
             {/* ---- Quiénes te reciben ---- */}
             <section
               id="staff"
@@ -508,6 +508,8 @@ const Casa = () => {
                 ))}
               </dl>
             </section>
+
+            </div>
           </div>
         </div>
       </main>
