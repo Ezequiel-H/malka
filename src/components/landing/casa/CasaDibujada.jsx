@@ -667,47 +667,45 @@ const CasaDibujada = ({ activo = 'todo', zona = 'todo', className = '' }) => {
           </g>
           <Guirnalda x1={CASA.x1 + 12} x2={CASA.x2 + FONDO.x - 12} y={44} caida={13} />
 
-          {/* El unplugged, repartido a lo ancho de la terraza. Antes estaba
-              todo apretado en un tercio y los instrumentos se pisaban entre
-              ellos: con la huerta afuera hay lugar para que cada uno se lea.
-              El orden es el real de una banda chica —teclado y voz al fondo,
-              cuerdas en el medio, percusión adelante— y de paso es el que deja
-              ver a todos. */}
+          {/* El unplugged, en semicírculo. Una banda no toca en fila: se
+              cierra en arco para escucharse entre ellos, y el arco abre hacia
+              donde está el público. Acá eso se dibuja con la profundidad: los
+              del medio van al fondo y los de las puntas vienen hacia adelante,
+              así que el mismo gesto que ordena el sonido ordena el dibujo. */}
+          <g transform={fuga(0.86)}>
+            <Persona x={CASA.x1 + 138} y={PISOS.terraza.piso} alto={52} kipa delay={400} brazo="teclear" ritmo />
+            <Teclado x={CASA.x1 + 112} y={PISOS.terraza.piso} ancho={54} />
+          </g>
+
           <g transform={fuga(0.78)}>
-            <Teclado x={CASA.x1 + 26} y={PISOS.terraza.piso} ancho={56} />
-            <Persona x={CASA.x1 + 56} y={PISOS.terraza.piso} alto={52} kipa delay={400} brazo="teclear" ritmo />
+            <Microfono x={CASA.x1 + 186} y={PISOS.terraza.piso} alto={48} ondas />
+            <Persona x={CASA.x1 + 202} y={PISOS.terraza.piso} alto={56} pelo delay={1200} ritmo />
           </g>
 
           <g transform={fuga(0.6)}>
-            <Microfono x={CASA.x1 + 96} y={PISOS.terraza.piso} alto={48} ondas />
-            <Persona x={CASA.x1 + 114} y={PISOS.terraza.piso} alto={56} pelo delay={1200} ritmo />
+            <Persona x={CASA.x1 + 250} y={PISOS.terraza.piso} alto={54} delay={1800} brazo="arco-brazo" ritmo />
+            <Cuerdas x={CASA.x1 + 238} y={PISOS.terraza.piso - 28} tipo="violin" mirando={-1} />
+            <Arco x={CASA.x1 + 228} y={PISOS.terraza.piso - 31} largo={20} />
           </g>
 
-          <g transform={fuga(0.44)}>
-            <Persona x={CASA.x1 + 162} y={PISOS.terraza.piso} alto={54} delay={1800} brazo="arco-brazo" ritmo />
-            <Cuerdas x={CASA.x1 + 150} y={PISOS.terraza.piso - 28} tipo="violin" mirando={-1} />
-            <Arco x={CASA.x1 + 140} y={PISOS.terraza.piso - 31} largo={20} />
+          <g transform={fuga(0.38)}>
+            <Persona x={CASA.x1 + 282} y={PISOS.terraza.piso} alto={56} kipa delay={2000} brazo="rasgueo" ritmo />
+            <Cuerdas x={CASA.x1 + 292} y={PISOS.terraza.piso - 26} tipo="guitarra" />
           </g>
 
-          <g transform={fuga(0.3)}>
-            <Microfono x={CASA.x1 + 196} y={PISOS.terraza.piso} alto={44} mirando={-1} />
-            <Persona x={CASA.x1 + 212} y={PISOS.terraza.piso} alto={56} kipa delay={2000} brazo="rasgueo" ritmo />
-            <Cuerdas x={CASA.x1 + 222} y={PISOS.terraza.piso - 26} tipo="guitarra" />
-          </g>
-
-          <g transform={fuga(0.22)}>
-            <Persona x={CASA.x1 + 258} y={PISOS.terraza.piso} alto={54} color="fill-primary-700" delay={800} brazo="rasgueo" brazoDelay={300} ritmo />
-            <Cuerdas x={CASA.x1 + 267} y={PISOS.terraza.piso - 25} tipo="bajo" />
+          <g transform={fuga(0.2)}>
+            <Persona x={CASA.x1 + 78} y={PISOS.terraza.piso} alto={54} color="fill-primary-700" delay={800} brazo="rasgueo" brazoDelay={300} ritmo />
+            <Cuerdas x={CASA.x1 + 87} y={PISOS.terraza.piso - 25} tipo="bajo" />
           </g>
 
           <g transform={fuga(0.08)}>
-            <Cajon x={CASA.x1 + 44} y={PISOS.terraza.piso} />
-            <PersonaSilla x={CASA.x1 + 54} y={PISOS.terraza.piso} alto={52} color="fill-primary-700" pelo delay={1600} brazo="golpear" ritmo />
-            <Platillo x={CASA.x1 + 80} y={PISOS.terraza.piso} alto={34} />
+            <Cajon x={CASA.x1 + 268} y={PISOS.terraza.piso} />
+            <PersonaSilla x={CASA.x1 + 278} y={PISOS.terraza.piso} alto={52} color="fill-primary-700" pelo delay={1600} brazo="golpear" ritmo />
+            <Platillo x={CASA.x1 + 302} y={PISOS.terraza.piso} alto={34} />
           </g>
 
-          <Notas x={CASA.x1 + 84} y={PISOS.terraza.piso - 64} cantidad={4} />
-          <Notas x={CASA.x1 + 206} y={PISOS.terraza.piso - 60} cantidad={3} escala={0.9} />
+          <Notas x={CASA.x1 + 168} y={PISOS.terraza.piso - 64} cantidad={4} />
+          <Notas x={CASA.x1 + 262} y={PISOS.terraza.piso - 60} cantidad={3} escala={0.9} />
 
           {/* La baranda va al final: pasa por delante de todos y por eso el
               conjunto se lee arriba de una terraza y no flotando. */}

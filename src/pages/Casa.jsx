@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Icon } from '../components/ui';
+import { useEffect, useRef, useState } from 'react';
+import IconoPropuesta from '../components/landing/IconosPropuestas';
 import Grano from '../components/landing/Grano';
 import { useAuth } from '../contexts/AuthContext';
 import CasaDibujada from '../components/landing/casa/CasaDibujada';
@@ -48,13 +48,16 @@ const SECCIONES = [
     entrada: 'Una casa abierta donde siempre hay un mate esperándote.',
     texto:
       'Un espacio de reunión, intercambio y actividades para jóvenes judíos de 18 a 35 que buscan un lugar de pertenencia que los identifique. Podés caer de lunes a viernes, entre las 14 y las 21: no hace falta asociarse ni anotarse.',
+    /* Cada espacio lleva su encuadre: tocarlo lleva la cámara ahí. Es la forma
+       más directa de mostrar una casa —dejar que el otro elija por dónde
+       empieza— y de paso convierte la lista en el índice del dibujo. */
     espacios: [
-      ['El salón', 'La mesa larga y las mejores ceremonias de Shabat.'],
-      ['La cocina', 'Experiencias culinarias de la mano de referentes.'],
-      ['El cowork', 'Wifi, escritorio y café con cakes toda la semana.'],
-      ['La sala de abajo', 'Yoga, escritura, cine y lo que se te ocurra.'],
-      ['La terraza', 'Unplugged, algún fueguito y la ciudad abajo.'],
-      ['El fondo', 'Los árboles, la pileta y el sueño del quincho con parrilla.'],
+      { nombre: 'El salón', que: 'La mesa larga y las mejores ceremonias de Shabat.', zona: 'mesa', piso: 'planta' },
+      { nombre: 'La cocina', que: 'Experiencias culinarias de la mano de referentes.', zona: 'cocina', piso: 'planta' },
+      { nombre: 'El cowork', que: 'Wifi, escritorio y café con cakes toda la semana.', zona: 'cowork', piso: 'primero' },
+      { nombre: 'La sala de abajo', que: 'Yoga, escritura, cine y lo que se te ocurra.', zona: 'clase', piso: 'subsuelo' },
+      { nombre: 'La terraza', que: 'Unplugged, algún fueguito y la ciudad abajo.', zona: 'banda', piso: 'terraza' },
+      { nombre: 'El fondo', que: 'Los árboles, la pileta y el sueño del quincho.', zona: 'parrilla', piso: 'todo' },
     ],
   },
   {
@@ -74,8 +77,7 @@ const SECCIONES = [
     kicker: 'Sauna Sessions',
     titulo: 'Sí, también hay sauna',
     entrada: 'Y jacuzzi. La casa tiene esas cosas.',
-    texto:
-      'Un rato de calor y de charla lenta, que resultó ser otra forma de encontrarse. Cuándo cae la próxima session lo vas a ver en la agenda.',
+    texto: 'Cuándo cae la próxima session, en la agenda.',
   },
 ];
 
@@ -83,12 +85,12 @@ const SECCIONES = [
    siempre y son la mejor manera de decir qué se puede hacer acá sin escribir
    una lista de actividades que vence en una semana. */
 const PROPUESTAS = [
-  { icono: 'book', label: 'Judaísmo' },
-  { icono: 'sparkles', label: 'Actividades' },
-  { icono: 'coffee', label: 'Coworking' },
-  { icono: 'chef', label: 'Asaditos' },
-  { icono: 'leaf', label: 'Huerta' },
-  { icono: 'music', label: 'Música' },
+  { icono: 'judaismo', label: 'Judaísmo' },
+  { icono: 'actividades', label: 'Actividades' },
+  { icono: 'coworking', label: 'Coworking' },
+  { icono: 'asaditos', label: 'Asaditos' },
+  { icono: 'huerta', label: 'Huerta' },
+  { icono: 'musica', label: 'Música' },
 ];
 
 /**
@@ -144,9 +146,9 @@ const PREGUNTAS = [
    banco de imágenes. */
 const STAFF = [
   { nombre: 'Wally Liebhaber', rol: 'Dirección' },
-  { nombre: 'Sem. Mati Bomse', rol: 'Dirección' },
+  { nombre: 'Rab Mati Bomse', rol: 'Dirección' },
   { nombre: 'Sem. Brian Bruh', rol: 'Dirección' },
-  { nombre: 'Tami Saban', rol: 'Asistente de Dirección' },
+  { nombre: 'Caro Weber', rol: 'Asistente de Dirección' },
 ];
 
 const iniciales = (nombre) =>
@@ -156,6 +158,20 @@ const iniciales = (nombre) =>
     .slice(0, 2)
     .map((p) => p[0])
     .join('');
+
+/* Los datos de la casa. Los que se pueden abrir, se abren. */
+const CONTACTO = [
+  {
+    que: 'Dónde',
+    dato: '3 de Febrero 1325, CABA',
+    href: 'https://maps.google.com/?q=3+de+Febrero+1325,+CABA',
+  },
+  { que: 'Cuándo', dato: 'Lunes a viernes, de 14 a 21' },
+  { que: 'WhatsApp', dato: '+54 9 11 3440-5730', href: 'https://wa.me/5491134405730' },
+  { que: 'Instagram', dato: '@somosmalka', href: 'https://www.instagram.com/somosmalka/' },
+  { que: 'Mail', dato: 'malka@casamalka.org', href: 'mailto:malka@casamalka.org' },
+  { que: 'Creada por', dato: 'Comunidad Amijai', href: 'https://amijai.org/' },
+];
 
 const INDICE = [
   { id: 'quienes', label: 'Quiénes somos' },
@@ -170,6 +186,22 @@ const Casa = () => {
   const [activo, setActivo] = useState('todo');
   const [zona, setZona] = useState('todo');
   const [seccion, setSeccion] = useState('entrada');
+
+  /**
+   * El espacio que el visitante eligió a mano.
+   *
+   * Manda por encima del scroll mientras siga en la misma sección; al salir de
+   * ella, la casa vuelve a seguir la lectura. Sin esa regla, o el clic no dura
+   * nada —el primer scroll lo pisa— o queda pegado y el resto de la página
+   * muestra el ambiente equivocado.
+   */
+  const [manual, setManual] = useState(null);
+  const manualRef = useRef(null);
+  const mirar = (seccionId, espacio) => {
+    const elegido = { seccion: seccionId, zona: espacio.zona, piso: espacio.piso };
+    manualRef.current = elegido;
+    setManual(elegido);
+  };
 
   /**
    * La portada: la casa arranca centrada y se corre a su columna al bajar.
@@ -220,6 +252,10 @@ const Casa = () => {
           menor = d;
           mejor = n;
         }
+      }
+      if (manualRef.current && manualRef.current.seccion !== mejor.id) {
+        manualRef.current = null;
+        setManual(null);
       }
       setActivo(mejor.dataset.piso);
       setZona(mejor.dataset.zona);
@@ -359,8 +395,8 @@ const Casa = () => {
                 desvanecen con una máscara, así el dibujo termina en el aire y
                 no en un rectángulo. */}
             <CasaDibujada
-              activo={activo}
-              zona={zona}
+              activo={manual?.piso ?? activo}
+              zona={manual?.zona ?? zona}
               className="mx-auto h-[38vh] w-auto max-w-none py-2 lg:h-auto lg:max-h-[calc(100vh-5rem)] lg:w-[118%] lg:-ml-[18%] lg:py-0 [mask-image:radial-gradient(125%_105%_at_54%_46%,#000_62%,transparent_100%)]"
             />
 
@@ -379,7 +415,7 @@ const Casa = () => {
                   id={p.id}
                   data-piso={p.piso}
                   data-zona={p.zona}
-                  className="flex min-h-[92vh] flex-col justify-center pb-14 pt-[42vh] lg:min-h-[88vh] lg:py-20"
+                  className="flex min-h-[92vh] flex-col justify-center pb-16 pt-[42vh] lg:min-h-screen lg:py-32"
                 >
                   <img
                     src={logoMalka}
@@ -416,7 +452,7 @@ const Casa = () => {
                    debajo de él: sin este colchón, el título de cada sección
                    nace tapado. En escritorio el dibujo está al costado y el
                    colchón sobra. */
-                className="flex min-h-[92vh] flex-col justify-center pb-14 pt-[42vh] lg:min-h-[88vh] lg:py-20"
+                className="flex min-h-[92vh] flex-col justify-center pb-16 pt-[42vh] lg:min-h-screen lg:py-32"
               >
                 {/* El nombre del espacio, con su filete: es lo que ata el
                     texto con lo que la cámara está mirando. Sin esa etiqueta,
@@ -442,14 +478,45 @@ const Casa = () => {
                     tenía su sección y la página se hacía interminable: nombrarlos
                     acá cuenta lo mismo y deja que el dibujo haga el resto. */}
                 {p.espacios && (
-                  <ul className="mt-9 grid gap-x-8 gap-y-4 sm:grid-cols-2">
-                    {p.espacios.map(([donde, que]) => (
-                      <li key={donde} className="border-t border-ink/10 pt-3">
-                        <p className="font-semibold leading-tight text-ink">{donde}</p>
-                        <p className="mt-1 text-sm leading-relaxed text-ink-soft">{que}</p>
-                      </li>
-                    ))}
-                  </ul>
+                  <>
+                    <p className="mt-10 text-[0.66rem] font-semibold uppercase tracking-label text-ink-faint">
+                      Tocá un espacio y la casa te lo muestra
+                    </p>
+                    <ul className="mt-3 grid gap-x-8 sm:grid-cols-2">
+                      {p.espacios.map((e) => {
+                        const elegido = manual?.zona === e.zona;
+                        return (
+                          <li key={e.nombre}>
+                            <button
+                              type="button"
+                              onClick={() => mirar(p.id, e)}
+                              className={`group w-full border-t py-4 text-left transition-colors duration-base ${
+                                elegido ? 'border-primary/60' : 'border-ink/10 hover:border-primary/40'
+                              }`}
+                            >
+                              <span className="flex items-center gap-2">
+                                <span
+                                  className={`font-semibold leading-tight transition-colors duration-base ${
+                                    elegido ? 'text-primary-700' : 'text-ink'
+                                  }`}
+                                >
+                                  {e.nombre}
+                                </span>
+                                <span
+                                  className={`h-1.5 w-1.5 rounded-pill transition-all duration-base ${
+                                    elegido ? 'bg-primary' : 'bg-transparent group-hover:bg-primary/40'
+                                  }`}
+                                />
+                              </span>
+                              <span className="mt-1 block text-sm leading-relaxed text-ink-soft">
+                                {e.que}
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </>
                 )}
 
                 {p.id === 'propuestas' && (
@@ -457,25 +524,37 @@ const Casa = () => {
                     <ul className="mt-9 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3">
                       {PROPUESTAS.map((c) => (
                         <li key={c.label} className="flex items-center gap-3">
-                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill border border-primary/25 text-primary-700">
-                            <Icon name={c.icono} size="sm" />
+                          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill border border-primary/25 text-primary-700">
+                            <IconoPropuesta nombre={c.icono} className="h-6 w-6" />
                           </span>
                           <span className="font-semibold text-ink">{c.label}</span>
                         </li>
                       ))}
                     </ul>
 
-                    <p className="mt-12 text-[0.7rem] font-semibold uppercase tracking-label text-ink-soft">
-                      ¿Tenés más preguntas? Es por acá
+                    {/* Las preguntas, como una lista de filas y no como una
+                        grilla de bloques sueltos: la pregunta a la izquierda y
+                        la respuesta a la derecha, separadas por un filete. Es la
+                        forma en la que uno lee una lista de dudas —de arriba
+                        hacia abajo, saltando a la que le importa— y no seis
+                        párrafos en dos columnas. */}
+                    <p className="mt-14 flex items-center gap-3 text-[0.7rem] font-semibold uppercase tracking-label text-ink-soft">
+                      <span className="h-px w-8 bg-primary/50" />
+                      Preguntas frecuentes
                     </p>
-                    <ul className="mt-6 grid gap-x-8 gap-y-6 sm:grid-cols-2">
+                    <ul className="mt-4">
                       {PREGUNTAS.map((q) => (
-                        <li key={q.pregunta}>
-                          <p className="font-grotesk font-bold leading-tight tracking-tight text-primary-700">
-                            {q.veredicto}
-                          </p>
-                          <p className="mt-1 font-semibold leading-snug text-ink">{q.pregunta}</p>
-                          <p className="mt-1 text-sm leading-relaxed text-ink-soft">{q.detalle}</p>
+                        <li
+                          key={q.pregunta}
+                          className="grid gap-x-8 gap-y-1 border-b border-ink/10 py-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]"
+                        >
+                          <p className="font-semibold leading-snug text-ink">{q.pregunta}</p>
+                          <div>
+                            <p className="font-grotesk font-bold leading-tight tracking-tight text-primary-700">
+                              {q.veredicto}
+                            </p>
+                            <p className="mt-1 text-sm leading-relaxed text-ink-soft">{q.detalle}</p>
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -492,7 +571,7 @@ const Casa = () => {
               id="staff"
               data-piso="terraza"
               data-zona="equipo"
-              className="flex min-h-[86vh] flex-col justify-center py-20"
+              className="flex min-h-[86vh] flex-col justify-center py-24 lg:min-h-screen lg:py-32"
             >
               <p className="text-[0.7rem] font-semibold uppercase tracking-label text-ink-soft">
                 Quiénes te reciben
@@ -529,7 +608,7 @@ const Casa = () => {
               id="sumate"
               data-piso="todo"
               data-zona="ciudad"
-              className="flex min-h-[86vh] flex-col justify-center py-20"
+              className="flex min-h-[86vh] flex-col justify-center py-24 lg:min-h-screen lg:py-32"
             >
               <h2 className="text-[clamp(2rem,4.4vw,3rem)] font-bold uppercase leading-[0.95] tracking-display">
                 {user ? 'Ya sos de la casa' : 'Vení a conocer Malka'}
@@ -553,18 +632,35 @@ const Casa = () => {
 
               {/* Los datos de la casa, que es lo último que alguien busca antes
                   de venir. Sin formulario: el canal real es WhatsApp. */}
+              {/* Cada dato es un link que abre afuera: el mapa, el WhatsApp, el
+                  Instagram y el mail. En una pestaña nueva a propósito — quien
+                  está por escribirnos no tiene por qué perder la página. */}
               <dl className="mt-14 grid gap-x-8 gap-y-6 border-t border-ink/10 pt-10 sm:grid-cols-2">
-                {[
-                  ['Dónde', '3 de Febrero 1325, CABA'],
-                  ['Cuándo', 'Lunes a viernes, de 14 a 21'],
-                  ['WhatsApp', '+54 9 11 3440-5730'],
-                  ['Instagram', '@somosmalka'],
-                ].map(([que, dato]) => (
-                  <div key={que}>
+                {CONTACTO.map((c) => (
+                  <div key={c.que}>
                     <dt className="text-[0.66rem] font-semibold uppercase tracking-label text-ink-faint">
-                      {que}
+                      {c.que}
                     </dt>
-                    <dd className="mt-1 text-ink">{dato}</dd>
+                    <dd className="mt-1">
+                      {c.href ? (
+                        <a
+                          href={c.href}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          className="group inline-flex items-center gap-2 text-ink transition-colors duration-base hover:text-primary-700"
+                        >
+                          {c.dato}
+                          <span
+                            aria-hidden
+                            className="text-ink-faint transition-transform duration-base group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary-700"
+                          >
+                            ↗
+                          </span>
+                        </a>
+                      ) : (
+                        <span className="text-ink">{c.dato}</span>
+                      )}
+                    </dd>
                   </div>
                 ))}
               </dl>
