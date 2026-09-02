@@ -173,10 +173,11 @@ const CasaDibujada = ({
   activo = 'todo',
   zona = 'todo',
   className = '',
-  /* En un teléfono el dibujo entra en un tercio del alto de la pantalla, así
-     que todo se ve un 40% más chico que en escritorio. Los encuadres son los
-     mismos; lo que cambia es cuánto se acercan. */
-  compacto = false,
+  /* Cuánto se acerca la cámara de más. El dibujo no ocupa lo mismo en una
+     pantalla ancha que en la franja de un teléfono o en la columna angosta de
+     una tablet: los encuadres son los mismos, lo que cambia es el acercamiento
+     que compensa el tamaño de la caja. */
+  acercar = 1,
 }) => {
   /**
    * La cámara: un estado, un `transform`, una transición de CSS.
@@ -195,7 +196,7 @@ const CasaDibujada = ({
    * tiembla y un bucle de `requestAnimationFrame` sí puede.
    */
   const base = FOCOS[zona] ?? FOCOS.todo;
-  const pose = encuadrar(compacto ? { ...base, s: base.s * 1.62 } : base);
+  const pose = encuadrar(acercar === 1 ? base : { ...base, s: base.s * acercar });
   const camara = {
     transform: `translate(${VISTA.x + VISTA.ancho / 2 - pose.s * pose.x}px, ${
       VISTA.y + VISTA.alto / 2 - pose.s * pose.y

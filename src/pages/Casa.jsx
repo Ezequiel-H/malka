@@ -39,6 +39,18 @@ import fotoCaro from '../assets/landing/staff/caro.jpg';
  * cámara: una planta baja son dos escenas distintas —la mesa puesta y la
  * cocina— y mirarlas juntas es no mirar ninguna.
  */
+/* Las seis puertas de la casa, con el encuadre al que lleva cada una. Viven
+   afuera de las secciones porque las usan dos lugares: la lista de "quiénes
+   somos" y la barra que en el teléfono va pegada abajo del dibujo. */
+const ESPACIOS = [
+  { nombre: 'El salón', que: 'La mesa larga y el Shabat.', icono: 'salon', zona: 'mesa', piso: 'planta' },
+  { nombre: 'La cocina', que: 'Lo que termina en la mesa.', icono: 'cocinita', zona: 'cocina', piso: 'planta' },
+  { nombre: 'El cowork', que: 'Wifi, escritorio y café.', icono: 'cowork', zona: 'cowork', piso: 'primero' },
+  { nombre: 'El garage', que: 'Los autos, y también yoga.', icono: 'garage', zona: 'clase', piso: 'subsuelo' },
+  { nombre: 'La terraza', que: 'Música y la ciudad abajo.', icono: 'terraza', zona: 'banda', piso: 'terraza' },
+  { nombre: 'El fondo', que: 'La pileta y el quincho.', icono: 'fondo', zona: 'parrilla', piso: 'todo' },
+];
+
 const SECCIONES = [
   /* La portada no lleva texto en la columna: el texto de la portada es el
      wordmark y la frase. Dos titulares en la misma pantalla era el problema. */
@@ -55,14 +67,7 @@ const SECCIONES = [
     /* Cada espacio lleva su encuadre: tocarlo lleva la cámara ahí. Es la forma
        más directa de mostrar una casa —dejar que el otro elija por dónde
        empieza— y de paso convierte la lista en el índice del dibujo. */
-    espacios: [
-      { nombre: 'El salón', que: 'La mesa larga y el Shabat.', icono: 'salon', zona: 'mesa', piso: 'planta' },
-      { nombre: 'La cocina', que: 'Lo que termina en la mesa.', icono: 'cocinita', zona: 'cocina', piso: 'planta' },
-      { nombre: 'El cowork', que: 'Wifi, escritorio y café.', icono: 'cowork', zona: 'cowork', piso: 'primero' },
-      { nombre: 'El garage', que: 'Los autos, y también yoga.', icono: 'garage', zona: 'clase', piso: 'subsuelo' },
-      { nombre: 'La terraza', que: 'Música y la ciudad abajo.', icono: 'terraza', zona: 'banda', piso: 'terraza' },
-      { nombre: 'El fondo', que: 'La pileta y el quincho.', icono: 'fondo', zona: 'parrilla', piso: 'todo' },
-    ],
+    espacios: ESPACIOS,
   },
   {
     id: 'propuestas',
@@ -179,6 +184,37 @@ const INDICE = [
   { id: 'sumate', label: 'Sumate' },
 ];
 
+/**
+ * Una puerta de la casa, en forma de píldora.
+ *
+ * Es el mismo control en los dos lugares donde aparece —la lista de la sección
+ * y la barra pegada abajo del dibujo en el teléfono—, así que elegir un espacio
+ * se ve y se siente igual en cualquier pantalla.
+ */
+const PildoraEspacio = ({ espacio, elegido, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-pressed={elegido}
+    className={`group inline-flex shrink-0 items-center gap-2 rounded-pill border py-1.5 pl-1.5 pr-3.5 transition-all duration-base ease-standard focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary/25 ${
+      elegido
+        ? 'border-primary bg-primary text-surface shadow-subtle'
+        : 'border-ink/10 bg-surface/70 text-ink-soft hover:border-ink/25 hover:text-ink'
+    }`}
+  >
+    <span
+      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-pill transition-colors duration-base ${
+        elegido ? 'bg-surface/20 text-surface' : 'bg-ink/5 text-ink-soft group-hover:text-ink'
+      }`}
+    >
+      <IconoPropuesta nombre={espacio.icono} className="h-3.5 w-3.5" />
+    </span>
+    <span className="whitespace-nowrap font-grotesk text-[0.72rem] font-semibold uppercase leading-none tracking-label">
+      {espacio.nombre}
+    </span>
+  </button>
+);
+
 const Casa = () => {
   const { user } = useAuth();
   const [activo, setActivo] = useState('todo');
@@ -196,13 +232,16 @@ const Casa = () => {
   const [manual, setManual] = useState(null);
   const [pregunta, setPregunta] = useState(0);
 
-  /* Si la pantalla es angosta, el dibujo va arriba y en chico: la cámara se
-     acerca más para compensar. */
-  const [compacto, setCompacto] = useState(
-    typeof window !== 'undefined' ? window.innerWidth < 1280 : false
+  /* Cuánto tiene que acercarse la cámara para compensar el tamaño de la caja
+     donde vive el dibujo: en el teléfono es una franja de un tercio de
+     pantalla, en tablet una columna angosta, y recién en escritorio grande la
+     casa tiene todo el ancho que pide. */
+  const cuantoAcercar = (ancho) => (ancho < 768 ? 1.62 : ancho < 1280 ? 1.08 : 1);
+  const [acercar, setAcercar] = useState(
+    typeof window !== 'undefined' ? cuantoAcercar(window.innerWidth) : 1
   );
   useEffect(() => {
-    const medir = () => setCompacto(window.innerWidth < 1280);
+    const medir = () => setAcercar(cuantoAcercar(window.innerWidth));
     window.addEventListener('resize', medir);
     return () => window.removeEventListener('resize', medir);
   }, []);
@@ -390,13 +429,13 @@ const Casa = () => {
       </nav>
 
       <main className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
-        <div className="xl:grid xl:grid-cols-12 xl:gap-x-12">
+        <div className="md:grid md:grid-cols-12 md:gap-x-8 xl:gap-x-12">
           {/* El dibujo: fijo al costado en escritorio, fijo arriba en mobile. */}
           {/* En mobile la casa vive en una franja pegada arriba y **opaca**: el
               texto pasa por detrás, y si la franja deja ver a través se
               superponen los dos y no se lee ninguno. El borde de abajo se
               desvanece para que el texto no aparezca cortado por una línea. */}
-          <div className="sticky top-16 z-30 -mx-5 bg-surface-page px-5 pb-3 shadow-[0_18px_18px_-18px_rgba(44,61,52,0.25)] sm:-mx-8 sm:px-8 xl:top-16 xl:z-auto xl:col-span-6 xl:mx-0 xl:flex xl:h-[calc(100vh-4rem)] xl:items-center xl:bg-transparent xl:px-0 xl:pb-0 xl:shadow-none">
+          <div className="sticky top-16 z-30 -mx-5 bg-surface-page px-5 pb-3 shadow-[0_18px_18px_-18px_rgba(44,61,52,0.25)] sm:-mx-8 sm:px-8 md:top-16 md:z-auto md:col-span-6 md:mx-0 md:flex md:h-[calc(100vh-4rem)] md:items-center md:bg-transparent md:px-0 md:pb-0 md:shadow-none lg:col-span-5 xl:col-span-6">
             {/* La casa no se mueve nunca de su columna. Antes se corría al
                 centro en la portada y volvía al scrollear: ese viaje lateral, con
                 el texto cortándose al mismo tiempo, era el momento más brusco de
@@ -411,15 +450,30 @@ const Casa = () => {
             <CasaDibujada
               activo={manual?.piso ?? activo}
               zona={manual?.zona ?? zona}
-              compacto={compacto}
-              className="mx-auto h-[34vh] w-auto max-w-none py-1 sm:h-[38vh] xl:h-auto xl:max-h-[calc(100vh-5rem)] xl:w-[108%] xl:-ml-[8%] 2xl:w-[116%] 2xl:-ml-[16%] xl:py-0 [mask-image:radial-gradient(100%_86%_at_50%_46%,#000_30%,transparent_84%)] xl:[mask-image:radial-gradient(106%_94%_at_53%_45%,#000_50%,transparent_90%)]"
+              acercar={acercar}
+              className="mx-auto h-[34vh] w-auto max-w-none py-1 sm:h-[38vh] md:h-auto md:max-h-[calc(100vh-5rem)] md:w-[112%] md:-ml-[9%] md:py-0 lg:w-[112%] lg:-ml-[12%] 2xl:w-[116%] 2xl:-ml-[16%] [mask-image:radial-gradient(farthest-side_at_50%_46%,#000_46%,transparent_100%)] md:[mask-image:radial-gradient(farthest-side_at_52%_46%,#000_54%,transparent_100%)]"
             />
 
+              {/* En el teléfono el recorrido vive pegado abajo del dibujo: se
+                  arrastra con el pulgar y la casa reacciona ahí nomás, sin que
+                  haya que ir a buscar los botones adentro del texto. */}
+              <div data-barra className="-mx-5 mt-1 sm:-mx-8 md:hidden">
+                <ul className="flex snap-x snap-mandatory gap-2 overflow-x-auto px-5 pb-1 sm:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {ESPACIOS.map((e) => (
+                    <li key={e.nombre} className="snap-start">
+                      <PildoraEspacio
+                        espacio={e}
+                        elegido={(manual?.zona ?? zona) === e.zona}
+                        onClick={() => mirar('barra', e)}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
+          </div>
 
-                      </div>
-
-          <div className="xl:col-span-6">
+          <div className="md:col-span-6 lg:col-span-7 xl:col-span-6">
             {SECCIONES.map((p, i) =>
               p.portada ? (
                 /* La portada es la primera sección de la columna, no una capa
@@ -434,7 +488,7 @@ const Casa = () => {
                      después de la franja del dibujo, que en mobile ya ocupa su
                      lugar en el flujo. Con el colchón, el wordmark caía fuera
                      de la primera pantalla. */
-                  className="flex min-h-[46vh] flex-col justify-start pb-12 pt-7 xl:min-h-screen xl:justify-center xl:py-32"
+                  className="flex min-h-[42vh] flex-col justify-start pb-12 pt-7 md:min-h-screen md:justify-center md:py-24 xl:py-32"
                 >
                   <img
                     src={logoMalka}
@@ -471,7 +525,7 @@ const Casa = () => {
                    debajo de él: sin este colchón, el título de cada sección
                    nace tapado. En escritorio el dibujo está al costado y el
                    colchón sobra. */
-                className="flex min-h-[86vh] flex-col justify-start pb-14 pt-[calc(34vh+5rem)] sm:pt-[calc(38vh+5rem)] xl:min-h-screen xl:justify-center xl:py-0 xl:pt-32 xl:pb-32"
+                className="flex min-h-[86vh] flex-col justify-start pb-14 pt-[calc(34vh+6rem)] md:min-h-screen md:justify-center md:py-0 md:pt-24 md:pb-24 xl:pt-32 xl:pb-32"
               >
                 {/* El nombre del espacio, con su filete: es lo que ata el
                     texto con lo que la cámara está mirando. Sin esa etiqueta,
@@ -497,60 +551,27 @@ const Casa = () => {
                     tenía su sección y la página se hacía interminable: nombrarlos
                     acá cuenta lo mismo y deja que el dibujo haga el resto. */}
                 {p.espacios && (
-                  <>
+                  <div className="hidden md:block">
                     <p className="mt-10 text-[0.66rem] font-semibold uppercase tracking-label text-ink-faint">
                       Tocá un espacio y la casa te lo muestra
                     </p>
-                    {/* Tarjetas y no renglones: son botones, y un botón tiene
-                        que verse tocable antes de que lo toques. El elegido se
-                        queda en verde y con el filete a la izquierda, así se
-                        sabe qué está mostrando la casa en este momento. */}
-                    <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-                      {p.espacios.map((e) => {
-                        const elegido = manual?.zona === e.zona;
-                        return (
-                          <li key={e.nombre}>
-                            <button
-                              type="button"
-                              onClick={() => mirar(p.id, e)}
-                              aria-pressed={elegido}
-                              className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-card border px-3.5 py-2.5 text-left transition-all duration-base ease-standard sm:px-4 sm:py-3.5 ${
-                                elegido
-                                  ? 'border-primary/40 bg-primary-50 shadow-subtle'
-                                  : 'border-ink/10 bg-surface/50 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-surface hover:shadow-subtle'
-                              }`}
-                            >
-                              <span
-                                aria-hidden
-                                className={`absolute inset-y-0 left-0 w-0.5 transition-all duration-base ${
-                                  elegido ? 'bg-primary' : 'bg-transparent'
-                                }`}
-                              />
-                              <span
-                                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-pill transition-colors duration-base sm:h-10 sm:w-10 ${
-                                  elegido
-                                    ? 'bg-primary/15 text-primary-700'
-                                    : 'bg-ink/5 text-ink-soft group-hover:bg-primary/10 group-hover:text-primary-700'
-                                }`}
-                              >
-                                <IconoPropuesta nombre={e.icono} className="h-5 w-5" />
-                              </span>
-                              <span className="min-w-0">
-                                <span
-                                  className={`block font-semibold leading-tight transition-colors duration-base ${
-                                    elegido ? 'text-primary-700' : 'text-ink'
-                                  }`}
-                                >
-                                  {e.nombre}
-                                </span>
-                                <span className="mt-0.5 block truncate text-sm text-ink-soft">{e.que}</span>
-                              </span>
-                            </button>
-                          </li>
-                        );
-                      })}
+                    {/* Píldoras y no tarjetas: seis fichas con título y bajada
+                        ocupaban media pantalla y pesaban más que el texto que
+                        acompañan. Una fila de píldoras se lee de un vistazo,
+                        deja claro cuál está elegida y es el mismo control que
+                        va pegado abajo del dibujo en el teléfono. */}
+                    <ul className="mt-4 flex flex-wrap gap-2">
+                      {p.espacios.map((e) => (
+                        <li key={e.nombre}>
+                          <PildoraEspacio
+                            espacio={e}
+                            elegido={manual?.zona === e.zona}
+                            onClick={() => mirar(p.id, e)}
+                          />
+                        </li>
+                      ))}
                     </ul>
-                  </>
+                  </div>
                 )}
 
                 {p.id === 'propuestas' && (
@@ -647,7 +668,7 @@ const Casa = () => {
               id="staff"
               data-piso="terraza"
               data-zona="equipo"
-              className="flex min-h-[86vh] flex-col justify-start pb-14 pt-[calc(34vh+5rem)] sm:pt-[calc(38vh+5rem)] xl:min-h-screen xl:justify-center xl:py-0 xl:pt-32 xl:pb-32"
+              className="flex min-h-[86vh] flex-col justify-start pb-14 pt-[calc(34vh+6rem)] md:min-h-screen md:justify-center md:py-0 md:pt-24 md:pb-24 xl:pt-32 xl:pb-32"
             >
               <p className="text-[0.7rem] font-semibold uppercase tracking-label text-ink-soft">
                 Quiénes te reciben
@@ -699,7 +720,7 @@ const Casa = () => {
               id="sumate"
               data-piso="todo"
               data-zona="ciudad"
-              className="flex min-h-[86vh] flex-col justify-start pb-14 pt-[calc(34vh+5rem)] sm:pt-[calc(38vh+5rem)] xl:min-h-screen xl:justify-center xl:py-0 xl:pt-32 xl:pb-32"
+              className="flex min-h-[86vh] flex-col justify-start pb-14 pt-[calc(34vh+6rem)] md:min-h-screen md:justify-center md:py-0 md:pt-24 md:pb-24 xl:pt-32 xl:pb-32"
             >
               <h2 className="text-[clamp(2rem,4.4vw,3rem)] font-bold uppercase leading-[0.95] tracking-display">
                 {user ? 'Ya sos de la casa' : 'Vení a conocer Malka'}
