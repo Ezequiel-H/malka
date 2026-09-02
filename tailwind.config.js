@@ -389,6 +389,20 @@ export default {
           '20%': { opacity: '0.9' },
           '100%': { opacity: '0', transform: 'translate(6px, -22px) scale(0.4)' },
         },
+        /* Saludar desde la puerta: el brazo sube, se queda arriba un momento
+           y baja. Pasa cada tanto, no todo el tiempo. */
+        saludar: {
+          '0%, 58%, 100%': { transform: 'rotate(0deg)' },
+          '66%': { transform: 'rotate(-150deg)' },
+          '72%': { transform: 'rotate(-128deg)' },
+          '78%': { transform: 'rotate(-150deg)' },
+          '86%': { transform: 'rotate(-130deg)' },
+        },
+        /* Palmas en la mesa: dos tiempos, como se acompaña una zmirá. */
+        palmas: {
+          '0%, 100%': { transform: 'rotate(-52deg)' },
+          '50%': { transform: 'rotate(-88deg)' },
+        },
         shimmer: {
           from: { backgroundPosition: '200% 0' },
           to: { backgroundPosition: '-200% 0' },
@@ -433,6 +447,8 @@ export default {
         servir: 'servir 7.2s ease-in-out infinite',
         tomar: 'tomar 8.4s ease-in-out infinite',
         chispa: 'chispa 2.4s ease-out infinite',
+        saludar: 'saludar 8.4s ease-in-out infinite',
+        palmas: 'palmas 1.2s ease-in-out infinite',
         shimmer: 'shimmer 1.4s linear infinite',
       },
     },

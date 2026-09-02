@@ -18,8 +18,11 @@ import {
   Estante,
   Jalot,
   Laptop,
+  Maguen,
+  Menora,
   Mesa,
   Mesada,
+  Mezuza,
   Campana,
   Espejo,
   Farol,
@@ -31,11 +34,14 @@ import {
   Platillo,
   Parlante,
   Piso,
+  Jacuzzi,
   Porton,
   PuertaEntrada,
   RinconCafe,
   Silla,
+  Sauna,
   Sillon,
+  Suca,
   Tanque,
   Taza,
   Teclado,
@@ -85,7 +91,7 @@ const centro = (id) => {
     /* La planta baja se mira más de lejos que el resto: es la escena más ancha
        de la casa —la vereda por donde llega alguien de un lado, el quincho del
        otro— y con el zoom de los demás pisos se recortaba justo la puerta. */
-    s: id === 'planta' ? 1.16 : 1.45,
+    s: id === 'planta' ? 1.42 : 1.66,
   };
 };
 
@@ -251,11 +257,20 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
    */
   const Volumen = ({ techo, piso, x1 = CASA.x1, x2 = CASA.x2, material = 'madera', ventanas = [] }) => (
     <g>
+      {/* El cielorraso, visto desde abajo. Es el plano que faltaba: sin él, cada
+          piso es una caja abierta arriba y el edificio no se lee como un
+          edificio sino como tres bandejas apiladas. */}
+      <path d={planoPiso(techo, x1, x2)} className="fill-casa-costado" />
       <path d={paredFondo(techo, piso, x1, x2)} className="fill-casa-fondo" />
       {/* Oscurecimiento en el encuentro de la pared con el techo. Es el truco
           más barato que hay para que un plano se lea cóncavo. */}
       <path d={paredFondo(techo, techo + 46, x1, x2)} fill="url(#casa-rincon)" />
       <path d={costado(techo, piso, x2)} className="fill-casa-costado" />
+      {/* El espesor del muro medianero izquierdo, en el plano del corte. */}
+      <path
+        d={`M ${x1 - 6} ${piso} L ${x1 - 6} ${techo} L ${x1} ${techo} L ${x1} ${piso} Z`}
+        className="fill-casa-sombra/50"
+      />
       <path d={planoPiso(piso, x1, x2)} className="fill-casa-piso" />
       <Piso x1={x1} x2={x2} y={piso} material={material} />
       <Zocalo x1={x1} x2={x2} y={piso} />
@@ -264,6 +279,14 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
           <Ventana key={v.x} x={v.x} y={v.y} ancho={v.ancho} alto={v.alto} />
         ))}
       </g>
+      {/* El canto de la losa, en el plano del corte: la franja de hormigón que
+          se ve cuando cortás un edificio. Es lo que separa un piso del
+          siguiente y lo que faltaba para entender el corte. */}
+      <path
+        d={`M ${x1 - 6} ${piso} L ${x2} ${piso} L ${x2} ${piso + 8} L ${x1 - 6} ${piso + 8} Z`}
+        className="fill-casa-costado stroke-ink/40"
+        strokeWidth="1"
+      />
     </g>
   );
 
@@ -302,8 +325,16 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
 
         {/* ---- la vereda ---- */}
         <g>
+          {/* La vereda es un plano en fuga como todos los demás, no una raya.
+              Con una línea sola el edificio flotaba: no se entendía sobre qué
+              está apoyado ni hacia dónde sigue el suelo. */}
           <path
-            d={`M ${VISTA.x + 8} ${SUELO} L ${CASA.x2 + FONDO.x + 14} ${SUELO}`}
+            d={planoPiso(SUELO, VISTA.x + 8, CASA.x2 + 24)}
+            className="fill-casa-piso stroke-ink/25"
+            strokeWidth="1"
+          />
+          <path
+            d={`M ${VISTA.x + 8} ${SUELO} L ${CASA.x2 + 24} ${SUELO}`}
             className="stroke-ink/70"
             strokeWidth={TRAZO * 1.2}
             strokeLinecap="round"
@@ -315,67 +346,85 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
             className="stroke-ink/25"
             strokeWidth="2"
           />
-          {/* Las juntas de las baldosas de la vereda */}
-          {Array.from({ length: 6 }, (_, i) => VISTA.x + 20 + i * 20).map((x) => (
-            <path key={x} d={`M ${x} ${SUELO} L ${x} ${SUELO + 7}`} className="stroke-ink/15" strokeWidth="1" />
+          {/* Las juntas de la vereda, también en fuga */}
+          {Array.from({ length: 7 }, (_, i) => VISTA.x + 20 + i * 22).map((x) => (
+            <path
+              key={x}
+              d={`M ${x} ${SUELO} L ${x + FONDO.x * 0.5} ${SUELO + FONDO.y * 0.5}`}
+              className="stroke-ink/15"
+              strokeWidth="1"
+            />
           ))}
           <Arbol x={VISTA.x + 26} y={SUELO} alto={132} />
           <Farol x={CASA.x1 - 40} y={SUELO} alto={100} />
         </g>
 
-        {/* ================= PRIMER PISO: cowork y charlas ================ */}
+        {/* ================= PRIMER PISO: cowork, charlas y el baño ======= */}
         <g className={grupo('primero')}>
           <Volumen
             {...PISOS.primero}
             ventanas={[
-              { x: 268, y: P1 - 116, ancho: 54, alto: 42 },
-              { x: 340, y: P1 - 116, ancho: 44, alto: 42 },
+              { x: 214, y: P1 - 116, ancho: 54, alto: 42 },
+              { x: 118, y: P1 - 116, ancho: 44, alto: 42 },
             ]}
           />
 
           <g transform={fuga(0.86)}>
-            <Pizarra x={168} y={P1 - 126} ancho={74} alto={46} />
-            <Estante x={70} y={P1 - 96} ancho={86} />
+            <Pizarra x={176} y={P1 - 128} ancho={72} alto={44} />
           </g>
 
-          {/* El sillón, que en la casa real existe y es donde la gente termina
-              sentada */}
-          <g transform={fuga(0.68)}>
-            <Sillon x={66} y={P1} ancho={68} />
-            <PersonaSilla x={100} y={P1} alto={58} color="fill-primary-700" pelo delay={900} brazo="estirar" brazoDelay={2400} />
+          {/* El rincón del café, contra la pared de la izquierda */}
+          <g transform={fuga(0.74)}>
+            <RinconCafe x={CASA.x1 + 10} y={P1} />
+            <Estante x={CASA.x1 + 8} y={P1 - 92} ancho={62} />
+          </g>
+
+          {/* El sillón */}
+          <g transform={fuga(0.6)}>
+            <Sillon x={CASA.x1 + 76} y={P1} ancho={64} />
+            <PersonaSilla x={CASA.x1 + 108} y={P1} alto={58} color="fill-primary-700" pelo delay={900} brazo="estirar" brazoDelay={2400} />
           </g>
 
           {/* La mesa larga compartida: cuatro puestos, dos de cada lado. Un
               cowork son personas de los dos lados de una misma mesa, no
               escritorios sueltos. */}
           <g transform={fuga(0.56)}>
-            <Mesa x={150} y={P1 - 48} ancho={110} piso={P1} prof={0.34} />
-            <Laptop x={168} y={P1 - 48} />
-            <Laptop x={222} y={P1 - 48} mirando={-1} />
-            <Taza x={198} y={P1 - 48} />
-            <Humo x={203} y={P1 - 60} escala={0.6} />
+            <Mesa x={172} y={P1 - 48} ancho={104} piso={P1} prof={0.34} />
+            <Laptop x={182} y={P1 - 48} />
+            <Laptop x={240} y={P1 - 48} mirando={-1} />
+            <Taza x={218} y={P1 - 48} />
+            <Humo x={223} y={P1 - 60} escala={0.6} />
           </g>
           <g transform={fuga(0.76)}>
-            <Silla x={172} y={P1} alto={42} mirando={-1} />
-            <Silla x={226} y={P1} alto={42} mirando={-1} />
-            <PersonaSilla x={172} y={P1} alto={62} mirando={-1} kipa delay={700} brazo="teclear" brazoDelay={220} />
-            <PersonaSilla x={226} y={P1} alto={60} mirando={-1} color="fill-primary-700" pelo delay={2100} />
+            <Silla x={194} y={P1} alto={42} mirando={-1} />
+            <Silla x={244} y={P1} alto={42} mirando={-1} />
+            <PersonaSilla x={194} y={P1} alto={62} mirando={-1} kipa delay={700} brazo="teclear" brazoDelay={220} />
+            <PersonaSilla x={244} y={P1} alto={60} mirando={-1} color="fill-primary-700" pelo delay={2100} brazo="tomar" brazoDelay={3400} />
           </g>
           <g transform={fuga(0.16)}>
-            <Silla x={186} y={P1} alto={42} />
-            <Silla x={238} y={P1} alto={42} />
-            <PersonaSilla x={186} y={P1} alto={66} kipa delay={300} brazo="tomar" brazoDelay={900} />
-            <PersonaSilla x={238} y={P1} alto={64} color="fill-primary-700" pelo delay={1600} brazo="teclear" brazoDelay={480} />
+            <Silla x={206} y={P1} alto={42} />
+            <Silla x={256} y={P1} alto={42} />
+            <PersonaSilla x={206} y={P1} alto={66} kipa delay={300} brazo="tomar" brazoDelay={900} />
+            <PersonaSilla x={256} y={P1} alto={64} color="fill-primary-700" pelo delay={1600} brazo="teclear" brazoDelay={480} />
           </g>
 
-          {/* El rincón de café, en la franja de servicio */}
+          {/* El baño con sauna y jacuzzi, detrás de su tabique. La mezuzá va en
+              todas las puertas de la casa menos en esta: un baño está exento, y
+              ponerle una sería el tipo de detalle que delata que el dibujo no
+              sabe de qué está hablando. */}
+          <path
+            d={`M ${SERVICIO.x1 - 8} ${P1} L ${SERVICIO.x1 - 8} ${PISOS.primero.techo + 6}`}
+            className="stroke-ink/25"
+            strokeWidth={TRAZO * 1.5}
+          />
           <g transform={fuga(0.72)}>
-            <RinconCafe x={SERVICIO.x1 + 34} y={P1} />
-            <Estante x={SERVICIO.x1 + 30} y={P1 - 84} ancho={62} />
+            <Sauna x={SERVICIO.x1 + 30} y={P1} ancho={76} alto={88} />
+            <Humo x={SERVICIO.x1 + 74} y={P1 - 92} delay={0} escala={0.9} />
+            <Humo x={SERVICIO.x1 + 88} y={P1 - 88} delay={1500} escala={0.7} />
           </g>
-          <g transform={fuga(0.2)}>
-            <Persona x={SERVICIO.x1 + 22} y={P1} alto={68} mirando={-1} pelo delay={1900} brazo="tomar" brazoDelay={4200} />
-            <Planta x={SERVICIO.x2 - 8} y={P1 - 2} alto={34} delay={1100} />
+          <g transform={fuga(0.24)}>
+            <Jacuzzi x={SERVICIO.x1 - 2} y={P1} ancho={62} />
+            <PersonaSentada x={SERVICIO.x1 + 28} y={P1 - 26} alto={40} pelo delay={1200} />
           </g>
         </g>
 
@@ -398,18 +447,33 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
             className="fill-casa-costado"
           />
           <PuertaEntrada x={CASA.x1 - 2} y={P0} ancho={30} alto={84} />
-          <Cartel x={CASA.x1 - 2} y={P0 - 118} ancho={30} />
+          {/* La mezuzá de la puerta de calle, en la jamba derecha y a la
+              altura que va: el tercio de arriba del vano. */}
+          <Mezuza x={CASA.x1 + 32} y={P0 - 56} alto={13} />
+          <Cartel x={CASA.x1 - 4} y={P0 - 120} ancho={34} />
 
-          <g className="animate-caminar motion-reduce:animate-none">
-            <g
-              className="animate-andar motion-reduce:animate-none"
-              style={{ transformBox: 'fill-box', transformOrigin: 'bottom center' }}
-            >
-              <Persona x={38} y={P0} alto={66} color="fill-primary-700" pelo delay={600} />
-            </g>
+          {/* Quien llega y quien recibe. Antes había alguien cruzando la
+              vereda en loop: una silueta sin pies que apoyar no camina por más
+              que se le saque el rebote, y encima obligaba a mirar el mismo
+              gesto cada veinte segundos. Un saludo desde la puerta cuenta lo
+              mismo —la casa recibe— y no depende de fingir un paso. */}
+          <Persona x={30} y={P0} alto={66} color="fill-primary-700" pelo delay={600} />
+          <g transform={fuga(0.3)}>
+            <Persona x={CASA.x1 + 44} y={P0} alto={70} kipa delay={200} brazo="saludar" brazoDelay={1400} />
           </g>
 
           <Alfombra x={84} y={P0 - 3} ancho={170} prof={0.6} color="fill-barro-claro/60" />
+
+          {/* La menorá de siete brazos sobre el aparador, y un maguen david en
+              el vidrio de la ventana del salón. Los dos son de la casa, no
+              decoración: una menorá no es una januquiá y va todo el año. */}
+          <g transform={fuga(0.84)}>
+            <Caja x={96} y={P0 - 40} ancho={54} alto={36} prof={0.24} claro="fill-barro-claro" base="fill-barro" oscuro="fill-barro-oscuro" />
+            <Menora x={123} y={P0 - 40} alto={22} />
+          </g>
+          <g transform={fuga(1)}>
+            <Maguen x={278} y={P0 - 98} r={9} className="stroke-primary-600/70" />
+          </g>
 
           {/* La mesa puesta: velas, kidush, vino, las dos jalot bajo el paño */}
           <g transform={fuga(0.5)}>
@@ -432,14 +496,14 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
             <Silla x={116} y={P0} alto={44} mirando={-1} />
             <Silla x={170} y={P0} alto={44} mirando={-1} />
             <Silla x={212} y={P0} alto={44} mirando={-1} />
-            <PersonaSilla x={116} y={P0} alto={74} mirando={-1} kipa delay={0} />
+            <PersonaSilla x={116} y={P0} alto={74} mirando={-1} kipa delay={0} brazo="palmas" ritmo />
             <PersonaSilla x={170} y={P0} alto={72} mirando={-1} color="fill-primary-700" pelo delay={900} ritmo />
             <PersonaSilla x={212} y={P0} alto={76} mirando={-1} kipa delay={1800} brazo="brindar" brazoDelay={3200} />
           </g>
           <g transform={fuga(0.06)}>
             <Silla x={134} y={P0} alto={44} />
             <Silla x={192} y={P0} alto={44} />
-            <PersonaSilla x={134} y={P0} alto={78} pelo delay={500} brazo="brindar" />
+            <PersonaSilla x={134} y={P0} alto={78} pelo delay={500} brazo="palmas" brazoDelay={600} ritmo />
             <PersonaSilla x={192} y={P0} alto={76} color="fill-primary-700" kipa delay={2200} ritmo />
           </g>
 
@@ -450,6 +514,7 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
             className="stroke-ink/25"
             strokeWidth={TRAZO * 1.5}
           />
+          <Mezuza x={SERVICIO.x1 - 12} y={P0 - 44} alto={11} />
           <g transform={fuga(0.8)}>
             <Campana x={SERVICIO.x1 + 16} y={P0 - 78} ancho={40} />
             <Alacena x={SERVICIO.x1 + 62} y={P0 - 96} ancho={48} />
@@ -527,7 +592,12 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
         <g className={grupo('terraza')}>
           <path d={planoPiso(PISOS.terraza.piso)} className="fill-casa-piso stroke-ink/15" strokeWidth="1" />
           <g transform={fuga(0.86)}>
-            <Tanque x={CASA.x2 - 58} y={PISOS.terraza.piso - 4} />
+            <Tanque x={CASA.x2 - 16} y={PISOS.terraza.piso - 4} ancho={22} alto={20} />
+          </g>
+          {/* La sucá, contra el fondo: paños, sjaj de ramas —que tiene que
+              dejar ver el cielo, esa es toda la gracia— y la fruta colgando. */}
+          <g transform={fuga(0.62)}>
+            <Suca x={CASA.x2 - 100} y={PISOS.terraza.piso} ancho={78} alto={62} />
           </g>
           <Guirnalda x1={CASA.x1 + 12} x2={CASA.x2 + FONDO.x - 12} y={44} caida={13} />
 
@@ -565,8 +635,8 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
             <Microfono x={284} y={PISOS.terraza.piso} alto={44} mirando={-1} />
             <Persona x={300} y={PISOS.terraza.piso} alto={56} kipa delay={2000} brazo="rasgueo" ritmo />
             <Cuerdas x={310} y={PISOS.terraza.piso - 26} tipo="guitarra" />
-            <Persona x={344} y={PISOS.terraza.piso} alto={54} color="fill-primary-700" delay={800} brazo="rasgueo" brazoDelay={300} ritmo />
-            <Cuerdas x={353} y={PISOS.terraza.piso - 25} tipo="bajo" />
+            <Persona x={330} y={PISOS.terraza.piso} alto={54} color="fill-primary-700" delay={800} brazo="rasgueo" brazoDelay={300} ritmo />
+            <Cuerdas x={339} y={PISOS.terraza.piso - 25} tipo="bajo" />
           </g>
 
           <g transform={fuga(0.1)}>
@@ -585,6 +655,11 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
             {Array.from({ length: 18 }, (_, i) => CASA.x1 + 10 + i * 20).map((x) => (
               <path key={x} d={`M ${x} 98 L ${x} ${PISOS.terraza.piso - 4}`} />
             ))}
+          </g>
+          {/* Un maguen david forjado en la baranda, como el de las rejas
+              viejas de la comunidad. */}
+          <g>
+            <Maguen x={CASA.x1 + 130} y={PISOS.terraza.piso - 20} r={11} className="stroke-ink/45" />
           </g>
         </g>
 

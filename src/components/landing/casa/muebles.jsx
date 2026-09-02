@@ -788,3 +788,140 @@ export const Ciudad = ({ x1, x2, y }) => {
     </g>
   );
 };
+
+/* ------------------------------------------------------------------ */
+/* Símbolos, sauna y jacuzzi                                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * La mezuzá en la jamba. Es el mismo candelabro del logo con el cuerpo largo,
+ * inclinada como se clava de verdad, y va en cada puerta de la casa.
+ */
+export const Mezuza = ({ x, y, alto = 13 }) => (
+  <g transform={`translate(${x} ${y}) rotate(7)`}>
+    <rect x={-1.9} y={-alto} width="3.8" height={alto} rx="1" className="fill-primary" />
+    {[-1.3, 0, 1.3].map((dx, i) => (
+      <rect key={dx} x={dx - 0.35} y={-alto - 2.4 - (i === 1 ? 1.2 : 0)} width="0.7" height="3" className="fill-primary-700" />
+    ))}
+  </g>
+);
+
+/** Maguen David, para vidrios y barandas. */
+export const Maguen = ({ x, y, r = 8, className = 'stroke-primary-600' }) => {
+  const punta = (i) => {
+    const a = (Math.PI / 3) * i - Math.PI / 2;
+    return `${x + Math.cos(a) * r} ${y + Math.sin(a) * r}`;
+  };
+  return (
+    <g className={`fill-none ${className}`} strokeWidth="1.6" strokeLinejoin="round">
+      <path d={`M ${punta(0)} L ${punta(2)} L ${punta(4)} Z`} />
+      <path d={`M ${punta(1)} L ${punta(3)} L ${punta(5)} Z`} />
+    </g>
+  );
+};
+
+/** Menorá de siete brazos, para el estante del salón. */
+export const Menora = ({ x, y, alto = 22 }) => {
+  const brazos = [-3, -2, -1, 1, 2, 3];
+  return (
+    <g className="stroke-flame-deep fill-none" strokeWidth="1.6" strokeLinecap="round">
+      <path d={`M ${x} ${y} L ${x} ${y - alto}`} strokeWidth="2" />
+      <path d={`M ${x - 7} ${y} L ${x + 7} ${y}`} strokeWidth="2.4" />
+      {brazos.map((b) => (
+        <path
+          key={b}
+          d={`M ${x} ${y - alto * 0.42} q ${b * 2.6} ${-alto * 0.34} ${b * 5.2} ${-alto * 0.34} L ${x + b * 5.2} ${y - alto * 0.86}`}
+        />
+      ))}
+      {[...brazos, 0].map((b) => (
+        <circle key={`f-${b}`} cx={x + b * 5.2} cy={y - (b === 0 ? alto : alto * 0.9)} r="1.4" className="fill-flame stroke-none" />
+      ))}
+    </g>
+  );
+};
+
+/**
+ * La sucá de la terraza: tres paños de tela, el techo de ramas —que tiene que
+ * dejar ver el cielo, esa es la gracia— y las guirnaldas de fruta adentro.
+ */
+export const Suca = ({ x, y, ancho = 76, alto = 62 }) => (
+  <g>
+    <g className={filete} strokeWidth={TRAZO}>
+      {/* Los paños */}
+      <path d={`M ${x} ${y} L ${x} ${y - alto} L ${x + ancho} ${y - alto} L ${x + ancho} ${y} Z`} className="fill-primary-100/80" />
+      <path
+        d={`M ${x + ancho} ${y} L ${x + ancho} ${y - alto} L ${x + ancho + FONDO.x * 0.5} ${y - alto + FONDO.y * 0.5} L ${x + ancho + FONDO.x * 0.5} ${y + FONDO.y * 0.5} Z`}
+        className="fill-primary-200/70"
+      />
+      {/* La estructura */}
+      <path
+        d={`M ${x} ${y} L ${x} ${y - alto} M ${x + ancho} ${y} L ${x + ancho} ${y - alto} M ${x} ${y - alto} L ${x + ancho} ${y - alto}`}
+        className="stroke-barro-oscuro"
+        strokeWidth="3"
+      />
+    </g>
+    {/* El sjaj: ramas cruzadas, sueltas, que dejan pasar el cielo */}
+    {Array.from({ length: 9 }, (_, i) => (
+      <path
+        key={i}
+        d={`M ${x + 2 + i * 8.6} ${y - alto - 3} l ${6 + (i % 3) * 3} ${-2 - (i % 2) * 2}`}
+        className="stroke-primary-600"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+      />
+    ))}
+    {/* Adentro cuelga fruta, como corresponde */}
+    {[0.28, 0.5, 0.72].map((f, i) => (
+      <g key={f}>
+        <path d={`M ${x + ancho * f} ${y - alto} L ${x + ancho * f} ${y - alto + 8 + i * 2}`} className="stroke-ink/40" strokeWidth="1" />
+        <circle cx={x + ancho * f} cy={y - alto + 10 + i * 2} r="2.6" className={i === 1 ? 'fill-flame' : 'fill-primary-400'} />
+      </g>
+    ))}
+  </g>
+);
+
+/**
+ * El sauna: cabina de tablas verticales, puerta de vidrio, banco adentro y la
+ * estufa con las piedras. El vapor sale por arriba de la puerta.
+ */
+export const Sauna = ({ x, y, ancho = 74, alto = 86 }) => (
+  <g>
+    <g className={filete} strokeWidth={TRAZO} strokeLinejoin="round">
+      <rect x={x} y={y - alto} width={ancho} height={alto} className="fill-barro-claro" />
+      {Array.from({ length: Math.floor(ancho / 9) }, (_, i) => (
+        <path key={i} d={`M ${x + 6 + i * 9} ${y - alto + 3} L ${x + 6 + i * 9} ${y - 3}`} className="stroke-barro/70" strokeWidth="1.2" />
+      ))}
+      {/* La puerta de vidrio */}
+      <rect x={x + ancho * 0.52} y={y - alto + 10} width={ancho * 0.38} height={alto - 14} rx="2" className="fill-primary-100/70" />
+      {/* El banco */}
+      <rect x={x + 6} y={y - alto * 0.52} width={ancho * 0.42} height="5" className="fill-barro" />
+      <rect x={x + 6} y={y - alto * 0.28} width={ancho * 0.42} height="5" className="fill-barro" />
+      {/* La estufa con las piedras */}
+      <rect x={x + 8} y={y - 24} width="18" height="20" rx="2" className="fill-ink" />
+      {[0, 6, 12].map((d) => (
+        <circle key={d} cx={x + 12 + d} cy={y - 26} r="2.6" className="fill-flame-deep" />
+      ))}
+    </g>
+  </g>
+);
+
+/** El jacuzzi, con su borde de madera y el agua burbujeando. */
+export const Jacuzzi = ({ x, y, ancho = 66 }) => (
+  <g>
+    <Caja x={x} y={y - 26} ancho={ancho} alto={26} prof={0.3} />
+    <path
+      d={`M ${x + 4} ${y - 26} L ${x + ancho - 4} ${y - 26} L ${x + ancho - 4 + FONDO.x * 0.24} ${y - 26 + FONDO.y * 0.24} L ${x + 4 + FONDO.x * 0.24} ${y - 26 + FONDO.y * 0.24} Z`}
+      className="fill-primary-200"
+    />
+    {[0, 700, 1400, 2100].map((d, i) => (
+      <circle
+        key={d}
+        cx={x + 14 + i * 12}
+        cy={y - 28}
+        r={1.6 + (i % 2)}
+        className="animate-chispa fill-surface/80 motion-reduce:hidden"
+        style={{ animationDelay: `${d}ms`, animationDuration: '3.6s' }}
+      />
+    ))}
+  </g>
+);
