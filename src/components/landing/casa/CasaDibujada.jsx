@@ -250,7 +250,7 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
           </g>
           <g transform={fuga(0.2)}>
             <Silla x={182} y={P1} alto={42} />
-            <PersonaSilla x={182} y={P1} alto={64} kipa delay={300} />
+            <PersonaSilla x={182} y={P1} alto={64} kipa delay={300} brazo="teclear" brazoDelay={120} />
           </g>
 
           <g transform={fuga(0.34)}>
@@ -259,7 +259,7 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
           </g>
           <g transform={fuga(0.04)}>
             <Silla x={274} y={P1} alto={42} />
-            <PersonaSilla x={274} y={P1} alto={62} color="fill-primary-700" pelo delay={1600} />
+            <PersonaSilla x={274} y={P1} alto={62} color="fill-primary-700" pelo delay={1600} brazo="teclear" brazoDelay={480} />
           </g>
 
           <g transform={fuga(0.12)}>
@@ -283,7 +283,14 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
             className="fill-casa-costado"
           />
           <rect x={CASA.x1 - 24} y={P0 - 4} width={24} height="4" className="fill-barro" />
-          <Persona x={38} y={P0} alto={66} color="fill-primary-700" pelo delay={600} />
+          {/* Alguien llega, camina por la vereda y entra. El ciclo es largo a
+              propósito: pasa una vez cada veintiún segundos, como pasaría de
+              verdad, y no como un personaje en loop. */}
+          <g className="animate-caminar motion-reduce:animate-none">
+            <g className="animate-paso motion-reduce:animate-none">
+              <Persona x={38} y={P0} alto={66} color="fill-primary-700" pelo delay={600} />
+            </g>
+          </g>
 
           <Alfombra x={96} y={P0 - 3} ancho={186} prof={0.6} color="fill-barro-claro/60" />
 
@@ -309,12 +316,12 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
             <Silla x={236} y={P0} alto={44} mirando={-1} />
             <PersonaSilla x={128} y={P0} alto={74} mirando={-1} kipa delay={0} />
             <PersonaSilla x={182} y={P0} alto={72} mirando={-1} color="fill-primary-700" pelo delay={900} />
-            <PersonaSilla x={236} y={P0} alto={76} mirando={-1} kipa delay={1800} />
+            <PersonaSilla x={236} y={P0} alto={76} mirando={-1} kipa delay={1800} brazo="brindar" brazoDelay={3200} />
           </g>
           <g transform={fuga(0.06)}>
             <Silla x={146} y={P0} alto={44} />
             <Silla x={214} y={P0} alto={44} />
-            <PersonaSilla x={146} y={P0} alto={78} pelo delay={500} />
+            <PersonaSilla x={146} y={P0} alto={78} pelo delay={500} brazo="brindar" />
             <PersonaSilla x={214} y={P0} alto={76} color="fill-primary-700" kipa delay={2200} />
             <Persona x={280} y={P0} alto={82} mirando={-1} pelo delay={1300} />
           </g>
@@ -351,15 +358,15 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
               flotando a la altura de su cabeza. */}
           <g transform={fuga(0.34)}>
             <Alfombra x={182} y={SS - 2} ancho={38} prof={0.3} color="fill-primary-200" />
-            <PersonaSentada x={200} y={SS - 2} alto={54} pelo delay={0} />
+            <PersonaSentada x={200} y={SS - 2} alto={54} pelo delay={0} />{/* Los tres respiran juntos: en una clase de yoga la respiración es guiada, y sincronizarlos dice eso sin escribirlo. */}
           </g>
           <g transform={fuga(0.22)}>
             <Alfombra x={228} y={SS - 2} ancho={38} prof={0.3} color="fill-primary-200" />
-            <PersonaSentada x={246} y={SS - 2} alto={56} color="fill-primary-700" delay={900} />
+            <PersonaSentada x={246} y={SS - 2} alto={56} color="fill-primary-700" delay={0} />
           </g>
           <g transform={fuga(0.1)}>
             <Alfombra x={272} y={SS - 2} ancho={38} prof={0.3} color="fill-primary-200" />
-            <PersonaSentada x={290} y={SS - 2} alto={52} pelo delay={1800} />
+            <PersonaSentada x={290} y={SS - 2} alto={52} pelo delay={0} />
           </g>
           <g transform={fuga(0.5)}>
             <Persona x={306} y={SS} alto={62} mirando={-1} delay={1400} />
@@ -395,27 +402,56 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
               paso, el que deja ver a todos. */}
           <g transform={fuga(0.74)}>
             <Teclado x={134} y={PISOS.terraza.piso} ancho={48} />
-            <Persona x={158} y={PISOS.terraza.piso} alto={52} kipa delay={400} />
+            <Persona x={158} y={PISOS.terraza.piso} alto={52} kipa delay={400} brazo="teclear" ritmo />
           </g>
 
           <g transform={fuga(0.52)}>
-            <Microfono x={196} y={PISOS.terraza.piso} alto={46} />
-            <Persona x={212} y={PISOS.terraza.piso} alto={54} pelo delay={1200} />
+            <Microfono x={196} y={PISOS.terraza.piso} alto={46} ondas />
+            <Persona x={212} y={PISOS.terraza.piso} alto={54} pelo delay={1200} brazo="arco-brazo" ritmo />
             <Cuerdas x={200} y={PISOS.terraza.piso - 28} tipo="violin" mirando={-1} />
             <Arco x={190} y={PISOS.terraza.piso - 31} largo={20} />
           </g>
 
           <g transform={fuga(0.3)}>
             <Microfono x={238} y={PISOS.terraza.piso} alto={44} mirando={-1} />
-            <Persona x={254} y={PISOS.terraza.piso} alto={56} kipa delay={2000} />
+            <Persona
+              x={254}
+              y={PISOS.terraza.piso}
+              alto={56}
+              kipa
+              delay={2000}
+              brazo="rasgueo"
+              ritmo
+            />
             <Cuerdas x={264} y={PISOS.terraza.piso - 26} tipo="guitarra" />
-            <Persona x={296} y={PISOS.terraza.piso} alto={54} color="fill-primary-700" delay={800} />
+            {/* El bajo rasguea a contratiempo —medio tiempo de desfasaje— que
+                es lo que hace que dos personas tocando no se vean como una
+                sola animación duplicada. */}
+            <Persona
+              x={296}
+              y={PISOS.terraza.piso}
+              alto={54}
+              color="fill-primary-700"
+              delay={800}
+              brazo="rasgueo"
+              brazoDelay={300}
+              ritmo
+            />
             <Cuerdas x={305} y={PISOS.terraza.piso - 25} tipo="bajo" />
           </g>
 
           <g transform={fuga(0.1)}>
             <Cajon x={162} y={PISOS.terraza.piso} />
-            <PersonaSilla x={172} y={PISOS.terraza.piso} alto={52} color="fill-primary-700" pelo delay={1600} />
+            <PersonaSilla
+              x={172}
+              y={PISOS.terraza.piso}
+              alto={52}
+              color="fill-primary-700"
+              pelo
+              delay={1600}
+              brazo="golpear"
+              ritmo
+            />
             <Platillo x={196} y={PISOS.terraza.piso} alto={34} />
           </g>
 

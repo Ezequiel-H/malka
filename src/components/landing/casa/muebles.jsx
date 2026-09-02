@@ -143,8 +143,19 @@ export const Teclado = ({ x, y, ancho = 54 }) => (
     <path d={`M ${x + 8} ${y} L ${x + ancho - 8} ${y - 26} M ${x + ancho - 8} ${y} L ${x + 8} ${y - 26}`} className="stroke-ink" />
     <rect x={x} y={y - 32} width={ancho} height={7} rx="2" className="fill-ink" />
     <rect x={x + 3} y={y - 30} width={ancho - 6} height="3" className="fill-surface" />
+    {/* Las teclas se hunden desfasadas: al ojo le alcanza con ver dos o tres
+        bajando en distinto momento para leer que alguien está tocando. */}
     {Array.from({ length: 9 }, (_, i) => (
-      <rect key={i} x={x + 6 + i * 5.4} y={-30 + y} width="1.6" height="3" className="fill-ink" stroke="none" />
+      <rect
+        key={i}
+        x={x + 6 + i * 5.4}
+        y={-30 + y}
+        width="1.6"
+        height="3"
+        className="animate-tecla fill-ink motion-reduce:animate-none"
+        style={{ animationDelay: `${(i % 4) * 300}ms` }}
+        stroke="none"
+      />
     ))}
   </g>
 );
@@ -173,20 +184,24 @@ export const Cuerdas = ({ x, y, tipo = 'guitarra', mirando = 1 }) => {
   );
 };
 
-/** Arco de violín. */
+/** Arco de violín, yendo y viniendo sobre las cuerdas. */
 export const Arco = ({ x, y, largo = 26, giro = -28 }) => (
-  <path
-    d={`M ${x} ${y} L ${x + largo} ${y}`}
-    className="stroke-barro-oscuro"
-    strokeWidth="2"
-    strokeLinecap="round"
-    transform={`rotate(${giro} ${x} ${y})`}
-  />
+  <g transform={`translate(${x} ${y}) rotate(${giro})`}>
+    <path
+      d={`M 0 0 L ${largo} 0`}
+      className="animate-arco stroke-barro-oscuro motion-reduce:animate-none"
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+  </g>
 );
 
 /** Cajón peruano: un cubo para sentarse y golpear. */
 export const Cajon = ({ x, y }) => (
-  <g>
+  <g
+    className="animate-golpe motion-reduce:animate-none"
+    style={{ transformBox: 'fill-box', transformOrigin: 'bottom center' }}
+  >
     <Caja x={x} y={y - 26} ancho={20} alto={26} prof={0.3} />
     <circle cx={x + 10} cy={y - 14} r="3.4" className="fill-ink/50" />
   </g>
@@ -196,16 +211,34 @@ export const Cajon = ({ x, y }) => (
 export const Platillo = ({ x, y, alto = 40 }) => (
   <g className={filete} strokeWidth={TRAZO} strokeLinecap="round">
     <path d={`M ${x} ${y} L ${x} ${y - alto} M ${x - 7} ${y} L ${x + 7} ${y}`} className="stroke-ink" />
-    <ellipse cx={x} cy={y - alto} rx="12" ry="2.6" className="fill-flame" />
+    <ellipse
+      cx={x}
+      cy={y - alto}
+      rx="12"
+      ry="2.6"
+      className="animate-platillo fill-flame motion-reduce:animate-none"
+      style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
+    />
   </g>
 );
 
 /** Micrófono de pie, con jirafa. */
-export const Microfono = ({ x, y, alto = 52, mirando = 1 }) => (
+export const Microfono = ({ x, y, alto = 52, mirando = 1, ondas = false }) => (
   <g className={filete} strokeWidth={TRAZO} strokeLinecap="round" transform={`translate(${x} ${y}) scale(${mirando} 1)`}>
     <path d="M 0 0 L 0 -34" className="stroke-ink" strokeWidth={TRAZO * 1.2} />
     <path d={`M -8 0 L 8 0 M 0 -34 L 14 ${-alto}`} className="stroke-ink" />
     <rect x={12} y={-alto - 6} width="6" height="9" rx="3" className="fill-ink" />
+    {/* Tres arcos saliendo de la cápsula. Es la única licencia de historieta de
+        todo el dibujo y se la gana: sin ella el micrófono es un objeto apagado. */}
+    {ondas &&
+      [0, 600, 1200].map((d) => (
+        <path
+          key={d}
+          d={`M 20 ${-alto - 8} q 7 6 0 12`}
+          className="animate-onda fill-none stroke-ink/60 motion-reduce:hidden"
+          style={{ transformBox: 'fill-box', transformOrigin: 'left center', animationDelay: `${d}ms` }}
+        />
+      ))}
   </g>
 );
 
@@ -269,7 +302,10 @@ export const Plato = ({ x, y, r = 6 }) => (
 export const Laptop = ({ x, y, mirando = 1 }) => (
   <g transform={`translate(${x} ${y}) scale(${mirando} 1)`} className={filete} strokeWidth={TRAZO}>
     <path d="M 0 0 L 6 -18 L 30 -18 L 28 0 Z" className="fill-ink" />
-    <path d="M 9 -15 L 27 -15 L 25.6 -3 L 11 -3 Z" className="fill-primary-300" />
+    <path
+      d="M 9 -15 L 27 -15 L 25.6 -3 L 11 -3 Z"
+      className="animate-pantalla fill-primary-300 motion-reduce:animate-none"
+    />
   </g>
 );
 

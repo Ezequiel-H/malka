@@ -31,7 +31,19 @@ export const Sombra = ({ x, y, ancho, opacidad = 0.5 }) => (
 );
 
 /** Una persona: cabeza, cuerpo, sombra y respiración. */
-export const Persona = ({ x, y, alto = 34, color = 'fill-ink', mirando = 1, delay = 0, kipa = false, pelo = false }) => {
+export const Persona = ({
+  x,
+  y,
+  alto = 34,
+  color = 'fill-ink',
+  mirando = 1,
+  delay = 0,
+  kipa = false,
+  pelo = false,
+  brazo = null,
+  brazoDelay = 0,
+  ritmo = false,
+}) => {
   /* Proporciones de persona y no de muñeco: la cabeza entra unas cinco veces y
      media en el alto. Con la cabeza más grande el dibujo se va a infantil, que
      es justo lo que no queremos para un público de treinta años. */
@@ -49,6 +61,13 @@ export const Persona = ({ x, y, alto = 34, color = 'fill-ink', mirando = 1, dela
         className={`${color} animate-respirar motion-reduce:animate-none`}
         style={{ animationDelay: `${delay}ms` }}
       >
+        {/* Una capa más para el balanceo: llevar el tiempo con el cuerpo es
+            otro transform, y dos animaciones no pueden compartir nodo. El
+            origen va en los pies, que es desde donde uno se balancea. */}
+        <g
+          className={ritmo ? 'animate-balanceo motion-reduce:animate-none' : undefined}
+          style={ritmo ? { transformBox: 'fill-box', transformOrigin: 'bottom center', animationDelay: `${delay}ms` } : undefined}
+        >
         <g transform={`scale(${mirando} 1)`}>
           {/* Pelo largo y kipá: dos siluetas distintas sobre la misma cabeza.
               Es lo único que diferencia a una persona de otra a este tamaño, y
@@ -76,6 +95,26 @@ export const Persona = ({ x, y, alto = 34, color = 'fill-ink', mirando = 1, dela
               Q ${ancho / 2} ${-alto + cabeza * 2.2} ${ancho / 2} ${-alto + cabeza * 3.4}
               L ${ancho / 2} 0 Z`}
           />
+          {/* El brazo: un solo segmento que gira desde el hombro. Se dibuja
+              siempre hacia abajo y a la derecha para que su propia caja
+              empiece en el hombro, que es el punto sobre el que tiene que
+              girar. Sin brazos, ninguna figura va a parecer que está haciendo
+              algo — y sin eso no hay rasgueo, ni arco, ni tipeo. */}
+          {brazo && (
+            <g transform={`translate(${ancho * 0.32} ${-alto + cabeza * 3.1})`}>
+              <g
+                className={`animate-${brazo} motion-reduce:animate-none`}
+                style={{
+                  transformBox: 'fill-box',
+                  transformOrigin: 'top left',
+                  animationDelay: `${brazoDelay}ms`,
+                }}
+              >
+                <rect x={0} y={0} width={ancho * 0.26} height={alto * 0.36} rx={ancho * 0.13} />
+              </g>
+            </g>
+          )}
+        </g>
         </g>
       </g>
     </g>
@@ -117,7 +156,19 @@ export const PersonaSentada = ({ x, y, alto = 26, color = 'fill-ink', delay = 0 
  * un cowork o una mesa se lean como tales — con todos parados, cualquier
  * ambiente parece un cóctel.
  */
-export const PersonaSilla = ({ x, y, alto = 62, color = 'fill-ink', mirando = 1, delay = 0, kipa = false, pelo = false }) => {
+export const PersonaSilla = ({
+  x,
+  y,
+  alto = 62,
+  color = 'fill-ink',
+  mirando = 1,
+  delay = 0,
+  kipa = false,
+  pelo = false,
+  brazo = null,
+  brazoDelay = 0,
+  ritmo = false,
+}) => {
   const cabeza = alto * 0.115;
   const asiento = -alto * 0.46;
   return (
@@ -127,6 +178,13 @@ export const PersonaSilla = ({ x, y, alto = 62, color = 'fill-ink', mirando = 1,
         className={`${color} animate-respirar motion-reduce:animate-none`}
         style={{ animationDelay: `${delay}ms` }}
       >
+        {/* Una capa más para el balanceo: llevar el tiempo con el cuerpo es
+            otro transform, y dos animaciones no pueden compartir nodo. El
+            origen va en los pies, que es desde donde uno se balancea. */}
+        <g
+          className={ritmo ? 'animate-balanceo motion-reduce:animate-none' : undefined}
+          style={ritmo ? { transformBox: 'fill-box', transformOrigin: 'bottom center', animationDelay: `${delay}ms` } : undefined}
+        >
         <g transform={`scale(${mirando} 1)`}>
           {pelo && (
             <path
@@ -152,6 +210,21 @@ export const PersonaSilla = ({ x, y, alto = 62, color = 'fill-ink', mirando = 1,
           {/* Muslo y pierna */}
           <path d={`M ${-alto * 0.08} ${asiento} L ${alto * 0.24} ${asiento} L ${alto * 0.24} ${asiento + alto * 0.11} L ${-alto * 0.08} ${asiento + alto * 0.11} Z`} />
           <path d={`M ${alto * 0.15} ${asiento + alto * 0.08} L ${alto * 0.24} ${asiento + alto * 0.08} L ${alto * 0.22} 0 L ${alto * 0.13} 0 Z`} />
+          {brazo && (
+            <g transform={`translate(${alto * 0.075} ${asiento - alto * 0.27})`}>
+              <g
+                className={`animate-${brazo} motion-reduce:animate-none`}
+                style={{
+                  transformBox: 'fill-box',
+                  transformOrigin: 'top left',
+                  animationDelay: `${brazoDelay}ms`,
+                }}
+              >
+                <rect x={0} y={0} width={alto * 0.075} height={alto * 0.24} rx={alto * 0.037} />
+              </g>
+            </g>
+          )}
+        </g>
         </g>
       </g>
     </g>

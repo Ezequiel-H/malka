@@ -264,6 +264,87 @@ export default {
           '0%, 100%': { opacity: '0.55' },
           '50%': { opacity: '0.9' },
         },
+        /* ---- La grilla musical del dibujo ------------------------------
+           Todo lo que se mueve en la terraza está apoyado en un mismo pulso de
+           100 negras por minuto: 0,6 s por tiempo. Que el rasgueo dure un
+           tiempo, el arco dos y el balanceo cuatro es lo que hace que seis
+           personas parezcan tocando la misma canción en vez de moverse cada una
+           por su cuenta. Es el truco entero. */
+        rasgueo: {
+          '0%, 100%': { transform: 'rotate(-16deg)' },
+          '50%': { transform: 'rotate(6deg)' },
+        },
+        arco: {
+          '0%, 100%': { transform: 'translateX(-5px)' },
+          '50%': { transform: 'translateX(5px)' },
+        },
+        arcoBrazo: {
+          '0%, 100%': { transform: 'rotate(-8deg)' },
+          '50%': { transform: 'rotate(10deg)' },
+        },
+        teclear: {
+          '0%, 100%': { transform: 'rotate(-4deg)' },
+          '50%': { transform: 'rotate(4deg)' },
+        },
+        golpear: {
+          '0%, 100%': { transform: 'rotate(-26deg)' },
+          '55%': { transform: 'rotate(4deg)' },
+        },
+        /* El brindis pasa una vez cada tanto y el resto del ciclo el brazo está
+           quieto: una copa que sube y baja sin parar se ve como un metrónomo. */
+        brindar: {
+          '0%, 68%, 100%': { transform: 'rotate(0deg)' },
+          '76%, 90%': { transform: 'rotate(-46deg)' },
+        },
+        /* El cuerpo entero, llevando el tiempo. Un grado y medio: se siente, no
+           se ve. */
+        balanceo: {
+          '0%, 100%': { transform: 'rotate(-1.4deg)' },
+          '50%': { transform: 'rotate(1.4deg)' },
+        },
+        /* El platillo, después del golpe. */
+        platillo: {
+          '0%': { transform: 'scaleY(1)' },
+          '8%': { transform: 'scaleY(0.62)' },
+          '30%': { transform: 'scaleY(1.06)' },
+          '100%': { transform: 'scaleY(1)' },
+        },
+        /* El cajón acusa el golpe con un achatamiento mínimo. */
+        golpe: {
+          '0%, 100%': { transform: 'scaleY(1)' },
+          '6%': { transform: 'scaleY(0.97)' },
+        },
+        /* Las teclas que se hunden, desfasadas entre sí. */
+        tecla: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(1.2px)' },
+        },
+        /* La pantalla encendida de una laptop: nunca del todo estable. */
+        pantalla: {
+          '0%, 100%': { opacity: '0.72' },
+          '40%': { opacity: '1' },
+          '70%': { opacity: '0.85' },
+        },
+        /* Ondas saliendo del micrófono. */
+        onda: {
+          '0%': { opacity: '0', transform: 'scale(0.4)' },
+          '30%': { opacity: '0.5' },
+          '100%': { opacity: '0', transform: 'scale(1.5)' },
+        },
+        /* Quien llega camina hasta la puerta y entra. El ciclo es largo a
+           propósito: pasa una vez cada veinte segundos, como pasaría de verdad. */
+        caminar: {
+          '0%': { transform: 'translateX(-46px)', opacity: '0' },
+          '8%': { opacity: '1' },
+          '62%': { transform: 'translateX(14px)', opacity: '1' },
+          '72%': { transform: 'translateX(20px)', opacity: '0' },
+          '100%': { transform: 'translateX(20px)', opacity: '0' },
+        },
+        /* El paso: sube y baja mientras avanza. */
+        paso: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-1.6px)' },
+        },
         shimmer: {
           from: { backgroundPosition: '200% 0' },
           to: { backgroundPosition: '-200% 0' },
@@ -287,6 +368,20 @@ export default {
         llama: 'llama 1.8s ease-in-out infinite',
         respirar: 'respirar 4.2s ease-in-out infinite',
         latir: 'latir 5s ease-in-out infinite',
+        rasgueo: 'rasgueo 0.6s ease-in-out infinite',
+        arco: 'arco 1.2s ease-in-out infinite',
+        'arco-brazo': 'arcoBrazo 1.2s ease-in-out infinite',
+        teclear: 'teclear 0.6s ease-in-out infinite',
+        golpear: 'golpear 0.6s cubic-bezier(0.3, 0, 0.2, 1) infinite',
+        brindar: 'brindar 9.6s ease-in-out infinite',
+        balanceo: 'balanceo 2.4s ease-in-out infinite',
+        platillo: 'platillo 2.4s cubic-bezier(0.2, 0, 0.3, 1) infinite',
+        golpe: 'golpe 0.6s ease-out infinite',
+        tecla: 'tecla 0.6s ease-in-out infinite',
+        pantalla: 'pantalla 4.8s ease-in-out infinite',
+        onda: 'onda 1.8s ease-out infinite',
+        caminar: 'caminar 21s linear infinite',
+        paso: 'paso 0.9s ease-in-out infinite',
         shimmer: 'shimmer 1.4s linear infinite',
       },
     },
