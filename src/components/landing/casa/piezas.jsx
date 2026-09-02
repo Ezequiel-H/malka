@@ -1,4 +1,3 @@
-import { FONDO } from './geometria';
 
 /**
  * Las piezas sueltas del dibujo de la casa.
@@ -31,37 +30,8 @@ export const Sombra = ({ x, y, ancho, opacidad = 0.5 }) => (
   />
 );
 
-/**
- * Una caja con volumen: cara frontal, tapa y canto. Sirve de escritorio, de
- * mesa, de estante y de parrilla — todo el mobiliario de la casa es esto con
- * medidas distintas.
- */
-export const Caja = ({
-  x,
-  y,
-  ancho,
-  alto,
-  prof = 0.22,
-  claro = 'fill-barro-claro',
-  base = 'fill-barro',
-  oscuro = 'fill-barro-oscuro',
-}) => {
-  const dx = FONDO.x * prof;
-  const dy = FONDO.y * prof;
-  return (
-    <g>
-      <path d={`M ${x} ${y} L ${x + ancho} ${y} L ${x + ancho + dx} ${y + dy} L ${x + dx} ${y + dy} Z`} className={claro} />
-      <rect x={x} y={y} width={ancho} height={alto} className={base} />
-      <path
-        d={`M ${x + ancho} ${y} L ${x + ancho + dx} ${y + dy} L ${x + ancho + dx} ${y + alto + dy} L ${x + ancho} ${y + alto} Z`}
-        className={oscuro}
-      />
-    </g>
-  );
-};
-
 /** Una persona: cabeza, cuerpo, sombra y respiración. */
-export const Persona = ({ x, y, alto = 34, color = 'fill-ink', mirando = 1, delay = 0 }) => {
+export const Persona = ({ x, y, alto = 34, color = 'fill-ink', mirando = 1, delay = 0, kipa = false, pelo = false }) => {
   /* Proporciones de persona y no de muñeco: la cabeza entra unas cinco veces y
      media en el alto. Con la cabeza más grande el dibujo se va a infantil, que
      es justo lo que no queremos para un público de treinta años. */
@@ -80,6 +50,20 @@ export const Persona = ({ x, y, alto = 34, color = 'fill-ink', mirando = 1, dela
         style={{ animationDelay: `${delay}ms` }}
       >
         <g transform={`scale(${mirando} 1)`}>
+          {/* Pelo largo y kipá: dos siluetas distintas sobre la misma cabeza.
+              Es lo único que diferencia a una persona de otra a este tamaño, y
+              alcanza para que un grupo deje de parecer una fila de clones. */}
+          {pelo && (
+            <path
+              d={`M ${-cabeza * 1.15} ${-alto + cabeza * 0.6}
+                  a ${cabeza * 1.15} ${cabeza * 1.15} 0 0 1 ${cabeza * 2.3} 0
+                  l 0 ${cabeza * 2.4} l ${-cabeza * 0.7} 0 l 0 ${-cabeza * 1.6}
+                  l ${-cabeza * 0.9} 0 l 0 ${cabeza * 1.6} l ${-cabeza * 0.7} 0 Z`}
+            />
+          )}
+          {kipa && (
+            <path d={`M ${-cabeza * 0.78} ${-alto + cabeza * 0.42} a ${cabeza * 0.8} ${cabeza * 0.8} 0 0 1 ${cabeza * 1.56} 0 Z`} />
+          )}
           <circle cx="0" cy={-alto + cabeza} r={cabeza} />
           {/* Cuello corto y hombros caídos: el tronco arranca apenas debajo
               de la cabeza y se ensancha, que es lo que hace que una silueta se
@@ -119,6 +103,53 @@ export const PersonaSentada = ({ x, y, alto = 26, color = 'fill-ink', delay = 0 
     </g>
   </g>
 );
+
+/**
+ * Alguien sentado en una silla, de costado: cabeza, torso apenas inclinado
+ * hacia adelante, muslo horizontal y pierna al piso. Es la pose que hace que
+ * un cowork o una mesa se lean como tales — con todos parados, cualquier
+ * ambiente parece un cóctel.
+ */
+export const PersonaSilla = ({ x, y, alto = 62, color = 'fill-ink', mirando = 1, delay = 0, kipa = false, pelo = false }) => {
+  const cabeza = alto * 0.115;
+  const asiento = -alto * 0.46;
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      <Sombra x={0} y={0} ancho={alto * 0.42} opacidad={0.34} />
+      <g
+        className={`${color} animate-respirar motion-reduce:animate-none`}
+        style={{ animationDelay: `${delay}ms` }}
+      >
+        <g transform={`scale(${mirando} 1)`}>
+          {pelo && (
+            <path
+              d={`M ${-cabeza * 1.15} ${asiento - alto * 0.34 + cabeza * 0.6}
+                  a ${cabeza * 1.15} ${cabeza * 1.15} 0 0 1 ${cabeza * 2.3} 0
+                  l 0 ${cabeza * 2.2} l ${-cabeza * 2.3} 0 Z`}
+            />
+          )}
+          {kipa && (
+            <path
+              d={`M ${-cabeza * 0.78} ${asiento - alto * 0.34 + cabeza * 0.42} a ${cabeza * 0.8} ${cabeza * 0.8} 0 0 1 ${cabeza * 1.56} 0 Z`}
+            />
+          )}
+          <circle cx="0" cy={asiento - alto * 0.34 + cabeza} r={cabeza} />
+          {/* Torso */}
+          <path
+            d={`M ${-alto * 0.075} ${asiento}
+                L ${-alto * 0.085} ${asiento - alto * 0.3}
+                Q ${-alto * 0.04} ${asiento - alto * 0.36} 0 ${asiento - alto * 0.36}
+                Q ${alto * 0.06} ${asiento - alto * 0.35} ${alto * 0.085} ${asiento - alto * 0.28}
+                L ${alto * 0.09} ${asiento} Z`}
+          />
+          {/* Muslo y pierna */}
+          <path d={`M ${-alto * 0.08} ${asiento} L ${alto * 0.24} ${asiento} L ${alto * 0.24} ${asiento + alto * 0.11} L ${-alto * 0.08} ${asiento + alto * 0.11} Z`} />
+          <path d={`M ${alto * 0.15} ${asiento + alto * 0.08} L ${alto * 0.24} ${asiento + alto * 0.08} L ${alto * 0.22} 0 L ${alto * 0.13} 0 Z`} />
+        </g>
+      </g>
+    </g>
+  );
+};
 
 /** Planta en maceta. Se mece desde la base, que es donde se doblan las plantas. */
 export const Planta = ({ x, y, alto = 26, delay = 0, maceta = true }) => (

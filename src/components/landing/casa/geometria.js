@@ -18,13 +18,18 @@
    deforma los muebles. */
 export const FONDO = { x: 44, y: -26 };
 
-export const CASA = { x1: 70, x2: 290 };
-export const QUINCHO = { x1: 300, x2: 386 };
+export const CASA = { x1: 58, x2: 314 };
+export const QUINCHO = { x1: 322, x2: 416 };
+
+/* Un solo grosor de trazo para todo el dibujo. Es lo que separa una
+   ilustración de un collage: si cada objeto trae su propio filete, el ojo lee
+   piezas sueltas en vez de una escena. */
+export const TRAZO = 1.6;
 
 /* Los pisos, de arriba hacia abajo. `techo` y `piso` son las dos alturas que
    definen el volumen de cada uno; el resto del dibujo se cuelga de ahí. */
 export const PISOS = {
-  terraza: { techo: 62, piso: 130 },
+  terraza: { techo: 40, piso: 130 },
   estudio: { techo: 136, piso: 270 },
   cowork: { techo: 276, piso: 410 },
   salon: { techo: 416, piso: 560 },
