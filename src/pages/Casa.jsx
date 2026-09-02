@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Icon } from '../components/ui';
 import IconoPropuesta from '../components/landing/IconosPropuestas';
 import Grano from '../components/landing/Grano';
@@ -44,12 +45,12 @@ import fotoCaro from '../assets/landing/staff/caro.jpg';
    afuera de las secciones porque las usan dos lugares: la lista de "quiénes
    somos" y la barra que en el teléfono va pegada abajo del dibujo. */
 const ESPACIOS = [
-  { nombre: 'El salón', que: 'La mesa larga y el Shabat.', icono: 'salon', zona: 'mesa', piso: 'planta' },
-  { nombre: 'La cocina', que: 'Lo que termina en la mesa.', icono: 'cocinita', zona: 'cocina', piso: 'planta' },
-  { nombre: 'El cowork', que: 'Wifi, escritorio y café.', icono: 'cowork', zona: 'cowork', piso: 'primero' },
-  { nombre: 'El garage', que: 'Los autos, y también yoga.', icono: 'garage', zona: 'clase', piso: 'subsuelo' },
-  { nombre: 'La terraza', que: 'Música y la ciudad abajo.', icono: 'terraza', zona: 'banda', piso: 'terraza' },
-  { nombre: 'El fondo', que: 'La pileta y el quincho.', icono: 'fondo', zona: 'parrilla', piso: 'todo' },
+  { nombre: 'El salón', corto: 'Salón', que: 'La mesa larga y el Shabat.', icono: 'salon', zona: 'mesa', piso: 'planta' },
+  { nombre: 'La cocina', corto: 'Cocina', que: 'Lo que termina en la mesa.', icono: 'cocinita', zona: 'cocina', piso: 'planta' },
+  { nombre: 'El cowork', corto: 'Cowork', que: 'Wifi, escritorio y café.', icono: 'cowork', zona: 'cowork', piso: 'primero' },
+  { nombre: 'El garage', corto: 'Garage', que: 'Los autos, y también yoga.', icono: 'garage', zona: 'clase', piso: 'subsuelo' },
+  { nombre: 'La terraza', corto: 'Terraza', que: 'Música y la ciudad abajo.', icono: 'terraza', zona: 'banda', piso: 'terraza' },
+  { nombre: 'El fondo', corto: 'Fondo', que: 'La pileta y el quincho.', icono: 'fondo', zona: 'parrilla', piso: 'todo' },
 ];
 
 const SECCIONES = [
@@ -192,26 +193,34 @@ const INDICE = [
  * y la barra pegada abajo del dibujo en el teléfono—, así que elegir un espacio
  * se ve y se siente igual en cualquier pantalla.
  */
-const PildoraEspacio = ({ espacio, elegido, onClick }) => (
+const PildoraEspacio = ({ espacio, elegido, onClick, compacta = false }) => (
   <button
     type="button"
     onClick={onClick}
     aria-pressed={elegido}
-    className={`group inline-flex shrink-0 items-center gap-2 rounded-pill border py-1.5 pl-1.5 pr-3.5 transition-all duration-base ease-standard focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary/25 ${
+    className={`group inline-flex shrink-0 items-center gap-2 rounded-pill border transition-all duration-base ease-standard focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary/25 ${
+      compacta ? 'w-full min-w-0 justify-center px-1.5 py-2.5' : 'py-1.5 pl-1.5 pr-3.5'
+    } ${
       elegido
         ? 'border-primary bg-primary text-surface shadow-subtle'
         : 'border-ink/10 bg-surface/70 text-ink-soft hover:border-ink/25 hover:text-ink'
     }`}
   >
     <span
-      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-pill transition-colors duration-base ${
-        elegido ? 'bg-surface/20 text-surface' : 'bg-ink/5 text-ink-soft group-hover:text-ink'
+      className={`flex shrink-0 items-center justify-center rounded-pill transition-colors duration-base ${
+        compacta ? 'h-4 w-4' : 'h-6 w-6'
+      } ${
+        elegido
+          ? compacta
+            ? 'text-surface'
+            : 'bg-surface/20 text-surface'
+          : `text-ink-soft group-hover:text-ink ${compacta ? '' : 'bg-ink/5'}`
       }`}
     >
-      <IconoPropuesta nombre={espacio.icono} className="h-3.5 w-3.5" />
+      <IconoPropuesta nombre={espacio.icono} className={compacta ? 'h-4 w-4' : 'h-3.5 w-3.5'} />
     </span>
-    <span className="whitespace-nowrap font-grotesk text-[0.72rem] font-semibold uppercase leading-none tracking-label">
-      {espacio.nombre}
+    <span className={`min-w-0 truncate font-grotesk font-semibold uppercase leading-none tracking-label ${compacta ? 'text-[0.64rem]' : 'whitespace-nowrap text-[0.72rem]'}`}>
+      {compacta ? espacio.corto : espacio.nombre}
     </span>
   </button>
 );
@@ -245,9 +254,26 @@ const VisorCasa = ({ onCerrar }) => {
       role="dialog"
       aria-modal="true"
       aria-label="La casa por dentro"
-      className="fixed inset-0 z-[70] flex animate-fade-in flex-col bg-surface-page md:hidden"
+      className="fixed inset-0 z-[70] animate-fade-in bg-surface-page md:hidden"
     >
-      <header className="flex shrink-0 items-center justify-between px-5 pt-4">
+      {/* El dibujo ocupa la pantalla entera y todo lo demás flota encima: en un
+          teléfono, repartir la altura entre dibujo, texto y botones deja tres
+          cosas chicas. La caja de la cámara termina donde empieza la barra de
+          abajo, así que el espacio queda centrado en lo que se ve, no en lo que
+          tapa la barra. */}
+      <div className="absolute inset-x-0 bottom-[8.5rem] top-14 flex items-center justify-center overflow-hidden">
+        <CasaDibujada
+          activo={espacio?.piso ?? 'todo'}
+          zona={espacio?.zona ?? 'casa'}
+          /* La casa entera entra completa a lo ancho —recortada deja de ser un
+             plano—; un espacio suelto llena el alto y se come los costados, que
+             es justo lo que no estás mirando. */
+          acercar={espacio ? 1.7 : 1}
+          className={espacio ? 'h-full w-auto max-w-none' : 'h-auto max-h-full w-full'}
+        />
+      </div>
+
+      <header className="relative flex items-center justify-between px-5 pt-4">
         <p className="text-[0.66rem] font-semibold uppercase tracking-label text-ink-faint">
           La casa por dentro
         </p>
@@ -261,35 +287,20 @@ const VisorCasa = ({ onCerrar }) => {
         </button>
       </header>
 
-      {/* La caja del teléfono es vertical y el dibujo apaisado, así que las dos
-          vistas no se encuadran igual: la casa entera entra completa a lo ancho
-          —si se recorta deja de ser un plano—, y un espacio suelto llena el
-          alto y se come los costados, que es justo lo que no estás mirando. */}
-      <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden">
-        <CasaDibujada
-          activo={espacio?.piso ?? 'todo'}
-          zona={espacio?.zona ?? 'casa'}
-          /* Un espacio suelto se mira de cerca: acá no hay texto al lado que
-             compita, así que el encuadre se acerca más que en escritorio. */
-          acercar={espacio ? 1.45 : 1}
-          className={
-            espacio
-              ? 'h-full w-auto max-w-none transition-[height] duration-slow'
-              : 'h-auto max-h-full w-full'
-          }
-        />
-      </div>
-
-      <div className="shrink-0 pb-6 pt-2">
-        <p className="min-h-[3rem] px-5 text-sm leading-snug text-ink-soft">
+      {/* Los seis espacios entran juntos en dos filas: en la tira que se
+          arrastraba, los dos últimos no existían hasta que alguien adivinaba
+          que había que deslizar. */}
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-surface-page via-surface-page to-transparent pb-5 pt-10">
+        <p className="px-5 pb-3 text-sm leading-snug text-ink-soft">
           <span className="font-semibold text-ink">{espacio ? espacio.nombre : 'Toda la casa'}</span>
           {' — '}
           {espacio ? espacio.que : 'Elegí un espacio y te lo muestro por dentro.'}
         </p>
-        <ul className="flex snap-x snap-mandatory gap-2 overflow-x-auto px-5 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <ul className="grid grid-cols-3 gap-2 px-5">
           {ESPACIOS.map((e) => (
-            <li key={e.nombre} className="snap-start">
+            <li key={e.nombre} className="min-w-0">
               <PildoraEspacio
+                compacta
                 espacio={e}
                 elegido={espacio?.zona === e.zona}
                 onClick={() => setEspacio((actual) => (actual?.zona === e.zona ? null : e))}
@@ -487,13 +498,39 @@ const Casa = () => {
           <img src={logoMalka} alt="Malka" className="h-6 w-auto shrink-0" />
           {/* Con sesión iniciada, la barra deja de ofrecer lo que ya tenés: en
               vez de "registrate" te lleva adentro, que es a lo que venías. */}
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            {/* En el teléfono la casa no está a la vista mientras leés, así que
+                la puerta para verla vive acá arriba y no adentro del texto:
+                está siempre a un toque, en cualquier sección. */}
+            {telefono && (
+              <button
+                type="button"
+                onClick={() => setVisor(true)}
+                aria-label="Ver la casa por dentro"
+                title="Ver la casa por dentro"
+                /* Sólo el ícono: con el logo, "ingresar" y "registrate" no
+                   entran cuatro cosas con texto en 390px, y la que no puede
+                   achicarse es la que te mete adentro. */
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-pill border border-ink/20 text-ink transition-control duration-fast hover:border-ink/40 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ink/25"
+              >
+                <IconoPropuesta nombre="casita" className="h-5 w-5" />
+              </button>
+            )}
             {user ? (
               <LandingButton to="/dashboard" size="sm" className="whitespace-nowrap">
                 Ir a mi cuenta
               </LandingButton>
             ) : (
               <>
+                {/* En el teléfono es un link de texto y no una píldora: tres
+                    píldoras seguidas no entran en 390px, y la que tiene que
+                    pesar es "registrate". */}
+                <Link
+                  to="/login"
+                  className="whitespace-nowrap px-1 font-grotesk text-[0.66rem] font-semibold uppercase tracking-label text-ink-soft transition-control duration-fast hover:text-ink sm:hidden"
+                >
+                  Ingresar
+                </Link>
                 <LandingButton
                   to="/login"
                   variant="outline"
@@ -503,7 +540,7 @@ const Casa = () => {
                 >
                   Iniciar sesión
                 </LandingButton>
-                <LandingButton to="/register" size="sm" className="whitespace-nowrap">
+                <LandingButton to="/register" size="sm" icon={telefono ? null : undefined} className="whitespace-nowrap">
                   Registrate
                 </LandingButton>
               </>
@@ -610,8 +647,8 @@ const Casa = () => {
                     >
                       <CasaDibujada
                         activo="todo"
-                        zona="casa"
-                        className="h-auto w-full [mask-image:radial-gradient(100%_86%_at_50%_46%,#000_30%,transparent_84%)]"
+                        zona="todo"
+                        className="h-auto w-full"
                       />
                     </button>
                   )}
@@ -673,17 +710,6 @@ const Casa = () => {
                 {/* Los espacios de la casa, en una lista corta. Antes cada uno
                     tenía su sección y la página se hacía interminable: nombrarlos
                     acá cuenta lo mismo y deja que el dibujo haga el resto. */}
-                {p.espacios && telefono && (
-                  <LandingButton
-                    variant="outline"
-                    size="md"
-                    icon="forward"
-                    className="mt-8 self-start"
-                    onClick={() => setVisor(true)}
-                  >
-                    Recorré la casa
-                  </LandingButton>
-                )}
                 {p.espacios && (
                   <div className="hidden md:block">
                     <p className="mt-10 text-[0.66rem] font-semibold uppercase tracking-label text-ink-faint">

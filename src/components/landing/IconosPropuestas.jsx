@@ -140,7 +140,21 @@ const Arbolito = () => (
   </>
 );
 
+/**
+ * La casa de Malka en chiquito. Techo plano y no a dos aguas: la casa de la
+ * página es una caja con terraza, y un triangulito arriba sería otra casa.
+ */
+const Casita = () => (
+  <>
+    <path d="M5 20V8h14v12" {...comun} />
+    <path d="M3.2 8h17.6" {...comun} />
+    <path d="M5 13.2h14M5 16.6h14" {...comun} />
+    <path d="M10.4 20v-3.4h3.2V20" {...comun} />
+  </>
+);
+
 const FIGURAS = {
+  casita: Casita,
   salon: Velas,
   cocinita: Olla,
   cowork: Laptopcita,
