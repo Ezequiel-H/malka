@@ -10,7 +10,7 @@ import {
   Cartel,
   Ciudad,
   Chispas,
-  Cajon,
+  Bateria,
   Candelabro,
   Copa,
   Cuerdas,
@@ -30,7 +30,6 @@ import {
   ParrillaArgentina,
   Pizarra,
   Plato,
-  Platillo,
   Cantero,
   Parlante,
   Piso,
@@ -679,8 +678,8 @@ const CasaDibujada = ({ activo = 'todo', zona = 'todo', className = '' }) => {
             { x: 118, t: 0.44, quien: 'teclado' },
             { x: 174, t: 0.82, quien: 'voz' },
             { x: 230, t: 0.82, quien: 'violin' },
-            { x: 286, t: 0.44, quien: 'guitarra' },
-            { x: 342, t: 0.12, quien: 'cajon' },
+            { x: 276, t: 0.44, quien: 'guitarra' },
+            { x: 326, t: 0.12, quien: 'bateria' },
           ].map(({ x, t, quien }) => {
             /* La fuga corre 44 unidades hacia adentro: se descuentan acá para
                que la separación que se ve en pantalla sea la que se pidió. */
@@ -711,8 +710,17 @@ const CasaDibujada = ({ activo = 'todo', zona = 'todo', className = '' }) => {
                 {quien === 'violin' && (
                   <>
                     <Persona x={px} y={piso} alto={55} delay={1800} brazo="arco-brazo" ritmo mirando={alCentro} />
-                    <Cuerdas x={px + 12 * alCentro} y={piso - 28} tipo="violin" mirando={alCentro} />
-                    <Arco x={px + 22 * alCentro} y={piso - 31} largo={20} giro={alCentro > 0 ? -28 : 208} />
+                    {/* El violín va inclinado, apoyado en el hombro, y el arco
+                        cruza por encima de las cuerdas: es el gesto que hace que
+                        se entienda que lo está tocando y no sosteniendo. */}
+                    <Cuerdas
+                      x={px + 11 * alCentro}
+                      y={piso - 30}
+                      tipo="violin"
+                      mirando={alCentro}
+                      giro={-38 * alCentro}
+                    />
+                    <Arco x={px + 24 * alCentro} y={piso - 36} largo={22} giro={alCentro > 0 ? 42 : 138} />
                   </>
                 )}
                 {quien === 'guitarra' && (
@@ -721,11 +729,12 @@ const CasaDibujada = ({ activo = 'todo', zona = 'todo', className = '' }) => {
                     <Cuerdas x={px + 10 * alCentro} y={piso - 26} tipo="guitarra" mirando={alCentro} />
                   </>
                 )}
-                {quien === 'cajon' && (
+                {quien === 'bateria' && (
                   <>
-                    <Cajon x={px - 10} y={piso} />
-                    <PersonaSilla x={px} y={piso} alto={53} color="fill-primary-700" pelo delay={1600} brazo="golpear" ritmo mirando={alCentro} />
-                    <Platillo x={px + 26 * alCentro} y={piso} alto={34} />
+                    {/* El baterista va detrás del bombo, sentado, y el kit
+                        adelante: al revés se le ve el cuerpo pisando el parche. */}
+                    <PersonaSilla x={px - 4} y={piso} alto={54} color="fill-primary-700" pelo delay={1600} brazo="golpear" ritmo mirando={alCentro} />
+                    <Bateria x={px} y={piso} escala={0.86} />
                   </>
                 )}
               </g>

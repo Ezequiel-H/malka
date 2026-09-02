@@ -105,43 +105,45 @@ const PROPUESTAS = [
  * saber?— y una duda se despeja mostrando el "no", no escondiéndolo detrás de
  * un clic.
  */
+/* Las preguntas, cortas. Cada una es una ficha que se abre: se ve la lista
+   entera de un vistazo —que es lo que uno quiere cuando tiene una duda— y el
+   texto aparece sólo el de la que abriste. Siete párrafos uno abajo del otro
+   eran una pared, por más bien escrita que estuviera. */
 const PREGUNTAS = [
   {
+    pregunta: '¿Hay que ser socio?',
     veredicto: 'No',
-    pregunta: '¿Necesito ser socio?',
-    detalle: 'No hace falta asociarse a nada para venir a Malka.',
+    detalle: 'De nada. Se entra y ya.',
   },
   {
-    veredicto: 'Sí, una vez',
     pregunta: '¿Tengo que registrarme?',
-    detalle:
-      'Sí: la agenda vive adentro de esta página y para verla te registrás. Se hace una sola vez y es gratis.',
+    veredicto: 'Sí, una vez',
+    detalle: 'La agenda vive acá adentro. Te registrás una sola vez y es gratis.',
   },
   {
-    veredicto: 'Algunas',
     pregunta: '¿Y además me inscribo?',
-    detalle:
-      'Para algunas actividades sí, desde adentro y en un toque. Para caer a malkear un martes, con estar registrado alcanza.',
+    veredicto: 'A algunas',
+    detalle: 'Algunas actividades piden inscripción, desde adentro y en un toque.',
   },
   {
-    veredicto: 'Nada',
     pregunta: '¿Cuánto tengo que saber?',
-    detalle: 'Nuestra movida es judía y pluralista, abierta a distintas miradas y experiencias.',
+    veredicto: 'Nada',
+    detalle: 'Nuestra movida es judía y pluralista, abierta a distintas miradas.',
   },
   {
-    veredicto: 'Obvio',
     pregunta: '¿Puedo venir solo?',
+    veredicto: 'Obvio',
     detalle: 'Charlá con la pipol que viene por acá. Acá casi todo se puede.',
   },
   {
-    veredicto: '¡Obvio!',
     pregunta: '¿Puedo proponer algo?',
-    detalle: 'Nos encantaría escuchar ideas que sumen a la comunidad. Contanos.',
+    veredicto: '¡Obvio!',
+    detalle: 'Contanos la idea. Nos encanta que sumen.',
   },
   {
-    veredicto: 'Casi siempre no',
     pregunta: '¿Hay que poner plata?',
-    detalle: 'Algunas actividades tienen un costo para cubrir materiales. Siempre te avisamos antes.',
+    veredicto: 'Casi nunca',
+    detalle: 'Alguna actividad cubre materiales. Siempre te avisamos antes.',
   },
 ];
 
@@ -192,6 +194,7 @@ const Casa = () => {
    * muestra el ambiente equivocado.
    */
   const [manual, setManual] = useState(null);
+  const [pregunta, setPregunta] = useState(null);
   const manualRef = useRef(null);
   const mirar = (seccionId, espacio) => {
     const elegido = { seccion: seccionId, zona: espacio.zona, piso: espacio.piso };
@@ -553,22 +556,42 @@ const Casa = () => {
                       <span className="h-px w-8 bg-primary/50" />
                       Preguntas frecuentes
                     </p>
-                    <ul className="mt-4">
-                      {PREGUNTAS.map((q) => (
-                        <li
-                          key={q.pregunta}
-                          className="grid gap-x-8 gap-y-1 border-b border-ink/10 py-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]"
-                        >
-                          <p className="font-semibold leading-snug text-ink">{q.pregunta}</p>
-                          <div>
-                            <p className="font-grotesk font-bold leading-tight tracking-tight text-primary-700">
-                              {q.veredicto}
-                            </p>
-                            <p className="mt-1 text-sm leading-relaxed text-ink-soft">{q.detalle}</p>
-                          </div>
-                        </li>
-                      ))}
+                    <ul className="mt-4 flex flex-wrap gap-2">
+                      {PREGUNTAS.map((q, i) => {
+                        const abierta = pregunta === i;
+                        return (
+                          <li key={q.pregunta}>
+                            <button
+                              type="button"
+                              onClick={() => setPregunta(abierta ? null : i)}
+                              aria-expanded={abierta}
+                              className={`flex items-center gap-2 rounded-pill border px-4 py-2 text-left text-sm transition-all duration-base ease-standard ${
+                                abierta
+                                  ? 'border-primary/40 bg-primary-50 text-primary-700'
+                                  : 'border-ink/12 bg-surface/50 text-ink hover:border-primary/30 hover:bg-surface'
+                              }`}
+                            >
+                              {q.pregunta}
+                              <span
+                                className={`font-grotesk text-xs font-bold uppercase tracking-label transition-colors duration-base ${
+                                  abierta ? 'text-primary-700' : 'text-primary/70'
+                                }`}
+                              >
+                                {q.veredicto}
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
                     </ul>
+                    <p
+                      className={`mt-5 max-w-lg text-ink-soft transition-all duration-slow ease-entrance ${
+                        pregunta == null ? 'translate-y-1 opacity-0' : 'translate-y-0 opacity-100'
+                      }`}
+                      aria-live="polite"
+                    >
+                      {pregunta == null ? '\u00a0' : PREGUNTAS[pregunta].detalle}
+                    </p>
                   </>
                 )}
 
@@ -598,16 +621,25 @@ const Casa = () => {
 
               <ul className="mt-10 grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-4">
                 {STAFF.map((persona) => (
-                  <li key={persona.nombre}>
-                    <div className="aspect-[4/5] w-full overflow-hidden rounded-card bg-primary-100">
+                  <li key={persona.nombre} className="group">
+                    {/* La foto arranca en verde de la casa y se pone a color
+                        cuando la mirás. Es toda la interacción que pide una
+                        ficha de equipo: que responda, no que haga un show. */}
+                    <div className="relative aspect-[4/5] w-full overflow-hidden rounded-card bg-primary-100">
                       <img
                         src={persona.foto}
                         alt={persona.nombre}
                         loading="lazy"
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-cover grayscale-[0.55] transition-all duration-cinematic ease-standard group-hover:scale-[1.04] group-hover:grayscale-0 motion-reduce:transition-none"
+                      />
+                      <span
+                        aria-hidden
+                        className="pointer-events-none absolute inset-0 bg-primary/25 mix-blend-multiply transition-opacity duration-cinematic group-hover:opacity-0"
                       />
                     </div>
-                    <p className="mt-3 font-semibold leading-tight text-ink">{persona.nombre}</p>
+                    <p className="mt-3 font-semibold leading-tight text-ink transition-colors duration-base group-hover:text-primary-700">
+                      {persona.nombre}
+                    </p>
                     <p className="text-sm text-ink-muted">{persona.rol}</p>
                   </li>
                 ))}

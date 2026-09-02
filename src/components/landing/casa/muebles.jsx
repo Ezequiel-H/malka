@@ -181,7 +181,7 @@ export const Teclado = ({ x, y, ancho = 54 }) => (
  * son dos elipses que se pisan —que es literalmente la forma de una caja de
  * guitarra— y el mástil un rectángulo largo.
  */
-export const Cuerdas = ({ x, y, tipo = 'guitarra', mirando = 1 }) => {
+export const Cuerdas = ({ x, y, tipo = 'guitarra', mirando = 1, giro = 0 }) => {
   /* Medidas chicas a propósito: al lado de una persona de sesenta unidades, una
      caja de guitarra dibujada "a escala real" se convierte en una mancha que se
      come a quien la toca. Lo que tiene que leerse es la silueta. */
@@ -191,11 +191,25 @@ export const Cuerdas = ({ x, y, tipo = 'guitarra', mirando = 1 }) => {
     violin: { cuerpo: 6.4, cintura: 4.6, mastil: 17, color: 'fill-barro-oscuro' },
   }[tipo];
   return (
-    <g transform={`translate(${x} ${y}) scale(${mirando} 1)`} className={filete} strokeWidth={TRAZO}>
+    <g transform={`translate(${x} ${y}) scale(${mirando} 1) rotate(${giro})`} className={filete} strokeWidth={TRAZO}>
       <ellipse cx="0" cy="0" rx={M.cuerpo} ry={M.cuerpo * 0.86} className={M.color} />
       <ellipse cx="0" cy={-M.cuerpo * 1.15} rx={M.cintura} ry={M.cintura * 0.82} className={M.color} />
       <rect x={-1.9} y={-M.cuerpo * 1.15 - M.mastil} width="3.8" height={M.mastil} className="fill-ink" />
       <rect x={-3.4} y={-M.cuerpo * 1.15 - M.mastil - 6} width="6.8" height="7" rx="1.4" className="fill-ink" />
+      {/* Detalles: la boca de la caja y las cuerdas. Son cuatro trazos y son la
+          diferencia entre una silueta de instrumento y un instrumento. */}
+      {tipo === 'violin' ? (
+        <>
+          <path d={`M ${-M.cuerpo * 0.5} -1 q 0 4 0 5 M ${M.cuerpo * 0.5} -1 q 0 4 0 5`} className="stroke-ink/50" strokeWidth="1.2" />
+          <path d={`M -1 ${M.cuerpo * 0.6} L -1 ${-M.cuerpo * 1.15 - M.mastil} M 1 ${M.cuerpo * 0.6} L 1 ${-M.cuerpo * 1.15 - M.mastil}`} className="stroke-ink/35" strokeWidth="0.7" />
+          <rect x={-3} y={M.cuerpo * 0.55} width="6" height="2.4" rx="1" className="fill-ink" />
+        </>
+      ) : (
+        <>
+          <circle cx="0" cy={-M.cuerpo * 0.15} r={M.cuerpo * 0.26} className="fill-ink/25" />
+          <path d={`M -2 ${M.cuerpo * 0.7} L -2 ${-M.cuerpo * 1.15 - M.mastil} M 2 ${M.cuerpo * 0.7} L 2 ${-M.cuerpo * 1.15 - M.mastil}`} className="stroke-ink/30" strokeWidth="0.7" />
+        </>
+      )}
     </g>
   );
 };
@@ -203,12 +217,13 @@ export const Cuerdas = ({ x, y, tipo = 'guitarra', mirando = 1 }) => {
 /** Arco de violín, yendo y viniendo sobre las cuerdas. */
 export const Arco = ({ x, y, largo = 26, giro = -28 }) => (
   <g transform={`translate(${x} ${y}) rotate(${giro})`}>
-    <path
-      d={`M 0 0 L ${largo} 0`}
-      className="animate-arco stroke-barro-oscuro motion-reduce:animate-none"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
+    <g className="animate-arco motion-reduce:animate-none">
+      {/* La vara y el pelo, separados: un arco de una sola línea se lee como un
+          palito. Y el talón, que es lo que se agarra. */}
+      <path d={`M 0 0 L ${largo} 0`} className="stroke-barro-oscuro" strokeWidth="2" strokeLinecap="round" />
+      <path d={`M 1 2 L ${largo - 1} 2`} className="stroke-barro-claro" strokeWidth="1.2" strokeLinecap="round" />
+      <rect x={-2} y={-1.6} width="5" height="5.2" rx="1.4" className="fill-ink" />
+    </g>
   </g>
 );
 
@@ -1285,5 +1300,47 @@ export const Toalla = ({ x, y }) => (
   <g className={filete} strokeWidth="1.2">
     <path d={`M ${x} ${y} l 16 0 l -2 22 l -12 0 Z`} className="fill-primary-200" />
     <path d={`M ${x + 1} ${y + 8} l 14 0`} className="stroke-primary-400" strokeWidth="2" />
+  </g>
+);
+
+/**
+ * Una batería chica, de las que entran en una terraza: bombo, redoblante,
+ * platillo y hi-hat.
+ *
+ * Con un cajón y un platillo la percusión se leía como "una caja y un plato".
+ * Lo que hace que algo se lea como batería son cuatro cosas y están las cuatro:
+ * el parche redondo del bombo mirando al frente, el redoblante en su trípode a
+ * la altura de la cintura, el platillo alto y en diagonal, y el hi-hat cerrado
+ * al costado. El pulso lo pone el bombo, que acusa cada golpe.
+ */
+export const Bateria = ({ x, y, escala = 1 }) => (
+  <g transform={`translate(${x} ${y}) scale(${escala})`}>
+    {/* Bombo, de frente */}
+    <g
+      className="animate-golpe motion-reduce:animate-none"
+      style={{ transformBox: 'fill-box', transformOrigin: 'bottom center' }}
+    >
+      <ellipse cx="0" cy="-15" rx="17" ry="15" className="fill-barro-claro stroke-ink" strokeWidth={TRAZO} />
+      <ellipse cx="0" cy="-15" rx="12" ry="10.5" className="fill-none stroke-ink/30" strokeWidth="1.2" />
+      <circle cx="0" cy="-15" r="3" className="fill-ink/70" />
+      <path d="M -14 -3 l -4 3 M 14 -3 l 4 3" className="stroke-ink" strokeWidth={TRAZO} strokeLinecap="round" />
+    </g>
+
+    {/* Redoblante en su trípode */}
+    <g className={filete} strokeWidth={TRAZO}>
+      <path d="M -30 0 l 5 -16 M -18 0 l -5 -16" className="stroke-ink" strokeLinecap="round" />
+      <rect x={-32} y={-24} width="18" height="8" rx="2" className="fill-surface" />
+      <path d="M -32 -20 l 18 0" className="stroke-ink/30" strokeWidth="1" />
+    </g>
+
+    {/* Platillo en diagonal y hi-hat cerrado */}
+    <g className={filete} strokeWidth={TRAZO} strokeLinecap="round">
+      <path d="M 24 0 L 24 -34" className="stroke-ink" />
+      <g className="animate-platillo motion-reduce:animate-none" style={{ transformBox: 'fill-box', transformOrigin: 'center' }}>
+        <path d="M 12 -36 L 36 -32" className="stroke-flame" strokeWidth="3" />
+      </g>
+      <path d="M -40 0 L -40 -22" className="stroke-ink" />
+      <path d="M -47 -22 L -33 -22 M -47 -25 L -33 -25" className="stroke-flame/80" strokeWidth="2.4" />
+    </g>
   </g>
 );
