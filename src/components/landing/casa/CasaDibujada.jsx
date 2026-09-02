@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react';
 import { Guirnalda, Humo, Persona, PersonaSentada, PersonaSilla, Vela } from './piezas';
 import {
   Alacena,
@@ -49,7 +48,6 @@ import {
   Zocalo,
 } from './muebles';
 import { CASA, FONDO, PISOS, SERVICIO, SUELO, TRAZO, costado, planoPiso, paredFondo } from './geometria';
-import { quiereQuietud } from '../scrollFx';
 
 /**
  * La casa, dibujada en corte axonométrico.
@@ -96,18 +94,22 @@ const FOCOS = {
   todo: { x: 236, y: 262, s: 0.92 },
   casa: { x: 236, y: 262, s: 1.05 },
 
-  puerta: { x: 104, y: P0v - 46, s: 2.05 },
-  mesa: { x: 176, y: P0v - 44, s: 1.85 },
-  cocina: { x: 352, y: P0v - 48, s: 2 },
+  /* El zoom no es el mismo en todas: la puerta y el baño son un objeto y piden
+     estar encima; la mesa, el cowork y la clase son un ambiente con gente y se
+     entienden de más lejos. Un zoom parejo para todo obliga a elegir entre
+     perder el detalle o perder el contexto. */
+  puerta: { x: 108, y: P0v - 48, s: 1.9 },
+  mesa: { x: 172, y: P0v - 46, s: 1.5 },
+  cocina: { x: 352, y: P0v - 50, s: 1.72 },
 
-  cowork: { x: 226, y: P1v - 44, s: 1.85 },
-  bano: { x: 352, y: P1v - 46, s: 1.95 },
+  cowork: { x: 224, y: P1v - 46, s: 1.46 },
+  bano: { x: 352, y: P1v - 48, s: 1.86 },
 
-  banda: { x: 288, y: 86, s: 1.85 },
-  suca: { x: 350, y: 92, s: 2.05 },
+  banda: { x: 288, y: 84, s: 1.56 },
+  suca: { x: 348, y: 90, s: 1.92 },
 
-  clase: { x: 306, y: SSv - 46, s: 1.85 },
-  cochera: { x: 112, y: SSv - 44, s: 2 },
+  clase: { x: 304, y: SSv - 48, s: 1.5 },
+  cochera: { x: 116, y: SSv - 46, s: 1.84 },
 };
 
 /* La lámina tiene cielo de más arriba de la terraza. No es decorativo: sin ese
@@ -151,122 +153,34 @@ const fuga = (t) => {
   return `translate(${FONDO.x * t} ${FONDO.y * t}) translate(${CENTRO.x} ${CENTRO.y}) scale(${s}) translate(${-CENTRO.x} ${-CENTRO.y})`;
 };
 
-const CasaDibujada = ({ activo = 'todo', className = '' }) => {
-  const camaraRef = useRef(null);
-  const poseRef = useRef({ ...FOCOS.todo });
-
-  useEffect(() => {
-    const g = camaraRef.current;
-    if (!g) return undefined;
-
-    const aplicar = ({ x, y, s }) => {
-      g.setAttribute(
-        'transform',
-        `translate(${VISTA.x + VISTA.ancho / 2 - s * x} ${VISTA.y + VISTA.alto / 2 - s * y}) scale(${s})`
-      );
-    };
-
-    const secciones = [...document.querySelectorAll('[data-zona]')];
-    if (!secciones.length) return undefined;
-
-    const suave = (t) => t * t * (3 - 2 * t);
-
-    /**
-     * El objetivo lo manda el scroll; el encuadre lo alcanza con un resorte.
-     *
-     * Atarlo uno a uno al scroll lo hacía exacto pero duro: la cámara se movía
-     * como una barra de scroll, no como una cámara. Ahora el scroll dice
-     * **adónde** hay que mirar y un resorte crítico —empuje proporcional a lo
-     * que falta, más rozamiento— se encarga de **cómo** se llega. Eso es lo que
-     * da la inercia: la cámara arranca decidida, desacelera sola y se asienta
-     * sin rebote. Y como el objetivo sigue siendo una función del scroll, si
-     * frenás en el medio, la cámara frena con vos.
-     */
-    const objetivo = () => {
-      const centroPantalla = window.innerHeight / 2;
-      const marcas = secciones.map((n) => {
-        const r = n.getBoundingClientRect();
-        return { zona: n.dataset.zona, y: r.top + r.height / 2 };
-      });
-
-      /* Las secciones vienen en orden de documento, así que sus centros crecen
-         con el índice: la de más abajo está más abajo en pantalla. Tener este
-         orden claro no es un detalle — con la comparación al revés, la cámara
-         devuelve siempre el primer encuadre y el zoom no aparece nunca. */
-      if (centroPantalla <= marcas[0].y) return encuadrar(FOCOS[marcas[0].zona] ?? FOCOS.todo);
-      const ultima = marcas[marcas.length - 1];
-      if (centroPantalla >= ultima.y) return encuadrar(FOCOS[ultima.zona] ?? FOCOS.todo);
-
-      const i = marcas.findIndex(
-        (m, k) => k < marcas.length - 1 && m.y <= centroPantalla && marcas[k + 1].y > centroPantalla
-      );
-      const a = encuadrar(FOCOS[marcas[i].zona] ?? FOCOS.todo);
-      const b = encuadrar(FOCOS[marcas[i + 1].zona] ?? FOCOS.todo);
-      const t = suave((centroPantalla - marcas[i].y) / Math.max(1, marcas[i + 1].y - marcas[i].y));
-
-      return {
-        x: a.x + (b.x - a.x) * t,
-        y: a.y + (b.y - a.y) * t,
-        /* La escala se interpola en escala logarítmica: pasar de 1 a 2 y de 2 a
-           4 se tienen que sentir igual de largos, porque el ojo lee el zoom en
-           proporciones y no en diferencias. Interpolado lineal, el arranque de
-           un acercamiento fuerte se siente de golpe y el final, dormido. */
-        s: Math.exp(Math.log(a.s) + (Math.log(b.s) - Math.log(a.s)) * t),
-      };
-    };
-
-    if (quiereQuietud()) {
-      aplicar(encuadrar(FOCOS.todo));
-      return undefined;
-    }
-
-    /* Resorte crítico: sin rebote, pero con inercia. `k` es cuánto empuja lo
-       que falta y `roce` cuánto se frena; estos dos números son toda la
-       personalidad del movimiento. */
-    const k = 0.14;
-    const roce = 0.76;
-    const vel = { x: 0, y: 0, s: 0 };
-    let corriendo = false;
-
-    const paso = () => {
-      const pose = poseRef.current;
-      const meta = objetivo();
-
-      vel.x = (vel.x + (meta.x - pose.x) * k) * roce;
-      vel.y = (vel.y + (meta.y - pose.y) * k) * roce;
-      vel.s = (vel.s + (meta.s - pose.s) * k) * roce;
-      pose.x += vel.x;
-      pose.y += vel.y;
-      pose.s += vel.s;
-      aplicar(pose);
-
-      const quieto =
-        Math.abs(meta.x - pose.x) + Math.abs(meta.y - pose.y) + Math.abs(meta.s - pose.s) * 120 < 0.35 &&
-        Math.abs(vel.x) + Math.abs(vel.y) < 0.05;
-
-      if (quieto) {
-        corriendo = false;
-        return;
-      }
-      requestAnimationFrame(paso);
-    };
-
-    const despertar = () => {
-      if (corriendo) return;
-      corriendo = true;
-      requestAnimationFrame(paso);
-    };
-
-    poseRef.current = { ...objetivo() };
-    aplicar(poseRef.current);
-    window.addEventListener('scroll', despertar, { passive: true });
-    window.addEventListener('resize', despertar);
-    return () => {
-      window.removeEventListener('scroll', despertar);
-      window.removeEventListener('resize', despertar);
-      corriendo = true;
-    };
-  }, []);
+const CasaDibujada = ({ activo = 'todo', zona = 'todo', className = '' }) => {
+  /**
+   * La cámara: un estado, un `transform`, una transición de CSS.
+   *
+   * Antes esto era un bucle: cada frame leía el scroll, calculaba el encuadre y
+   * escribía el transform a mano sobre un SVG de cientos de nodos. El navegador
+   * tenía que rehacer el dibujo entero a otra escala sesenta veces por segundo
+   * y, cuando no llegaba, temblaba. Peor: el elemento pegado con `sticky`
+   * también recibía un transform en cada scroll, así que se componía aparte y
+   * quedaba un frame atrás de la página. Eso es exactamente lo que se veía
+   * vibrar.
+   *
+   * Ahora el encuadre cambia **una vez por sección** y el navegador interpola
+   * la transición solo, en el compositor. No hay JavaScript corriendo mientras
+   * la cámara viaja: es la misma razón por la que un `transition` de CSS nunca
+   * tiembla y un bucle de `requestAnimationFrame` sí puede.
+   */
+  const pose = encuadrar(FOCOS[zona] ?? FOCOS.todo);
+  const camara = {
+    transform: `translate(${VISTA.x + VISTA.ancho / 2 - pose.s * pose.x}px, ${
+      VISTA.y + VISTA.alto / 2 - pose.s * pose.y
+    }px) scale(${pose.s})`,
+    /* La curva no es un `ease-in-out` cualquiera: sale rápido y llega muy
+       despacio, que es como frena una cámara de verdad y lo que hace que un
+       movimiento largo no se sienta un traslado. */
+    transition: 'transform 1100ms cubic-bezier(0.32, 0.72, 0, 1)',
+    transformOrigin: '0 0',
+  };
 
   const enFoco = (id) => activo === 'todo' || activo === id;
 
@@ -358,7 +272,7 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
         </radialGradient>
       </defs>
 
-      <g ref={camaraRef}>
+      <g style={camara}>
         {/* La tierra en la que está enterrado el subsuelo. Sin este tono
             alrededor, el nivel de abajo se lee como un piso más de un edificio
             flotando, y no como lo que es. */}

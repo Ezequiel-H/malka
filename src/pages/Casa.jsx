@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import CasaDibujada from '../components/landing/casa/CasaDibujada';
 import LandingButton from '../components/landing/LandingButton';
 import logoMalka from '../assets/logo-malka-positivo.png';
-import { quiereQuietud } from '../components/landing/scrollFx';
 
 /**
  * La landing como plano de la casa.
@@ -34,16 +33,10 @@ import { quiereQuietud } from '../components/landing/scrollFx';
  * cocina— y mirarlas juntas es no mirar ninguna.
  */
 const SECCIONES = [
-  {
-    id: 'entrada',
-    piso: 'todo',
-    zona: 'todo',
-    kicker: 'Casa Malka · Comunidad Amijai',
-    titulo: 'Es una casa.',
-    entrada: 'Con subsuelo, dos plantas, terraza y la puerta abierta.',
-    texto:
-      'Un lugar para jóvenes judíos de 18 a 35 en 3 de Febrero 1325. Abre de lunes a viernes de 14 a 21, no hace falta ser socio y no hay que anotarse para venir.',
-  },
+  /* La portada no lleva texto en la columna: el texto de la portada es el
+     wordmark y la frase, centrados sobre la casa. Dos titulares compitiendo en
+     la misma pantalla era exactamente el problema. */
+  { id: 'entrada', piso: 'todo', zona: 'todo', portada: true },
   {
     id: 'puerta',
     piso: 'planta',
@@ -128,74 +121,27 @@ const SECCIONES = [
 
 const Casa = () => {
   const [activo, setActivo] = useState('todo');
-  const columnaRef = useRef(null);
-  const heroRef = useRef(null);
-  const textoRef = useRef(null);
+  const [zona, setZona] = useState('todo');
 
   /**
-   * La portada: la casa arranca centrada, con el wordmark y la frase, y se
-   * corre a su columna cuando empezás a bajar.
+   * La portada: la casa arranca centrada y se corre a su columna al bajar.
    *
-   * El desplazamiento es una función del scroll —igual que la cámara— así que
-   * la casa acompaña el dedo en vez de animarse sola. Y no hay dos casas: es la
-   * misma, corriéndose. Dibujar una para la portada y otra para el recorrido
-   * habría significado un salto en el medio.
+   * El movimiento va por clase y transición, no por scroll. La versión anterior
+   * escribía un `transform` en cada scroll **sobre el elemento pegado con
+   * `sticky`**, y eso es lo que hacía vibrar todo: un elemento sticky con
+   * transform se compone en una capa aparte y queda un frame atrás de la
+   * página. Acá el transform vive en un envoltorio interno —el sticky queda
+   * limpio— y cambia una sola vez, cuando dejás la portada.
    */
-  useEffect(() => {
-    const columna = columnaRef.current;
-    const hero = heroRef.current;
-    const texto = textoRef.current;
-    if (!columna || !hero || !texto) return undefined;
-
-    const suave = (t) => t * t * (3 - 2 * t);
-    let pedido = null;
-
-    const pintar = () => {
-      pedido = null;
-      const recorrido = window.innerHeight * 0.75;
-      const p = Math.min(1, Math.max(0, window.scrollY / recorrido));
-      const e = suave(p);
-      const ancho = window.innerWidth >= 1024;
-
-      /* Además de correrse, en la portada la casa sube un poco: es lo que deja
-         el hueco para el wordmark y la frase sin achicar el dibujo del resto de
-         la página. */
-      /* En la portada la casa se corre al centro, sube y se achica un poco: el
-         hueco que deja abajo es donde entran el wordmark y la frase. Al bajar,
-         los tres valores vuelven a cero y la casa queda en su columna. */
-      columna.style.transform = ancho
-        ? `translate(${(1 - e) * 50}%, ${(1 - e) * -13}%) scale(${1 - (1 - e) * 0.08})`
-        : '';
-      hero.style.opacity = `${Math.max(0, 1 - p * 1.7)}`;
-      hero.style.pointerEvents = p > 0.4 ? 'none' : 'auto';
-      texto.style.opacity = ancho ? `${e}` : '1';
-    };
-
-    if (quiereQuietud()) {
-      columna.style.transform = '';
-      hero.style.opacity = '0';
-      texto.style.opacity = '1';
-      return undefined;
-    }
-
-    const alScrollear = () => {
-      if (pedido == null) pedido = requestAnimationFrame(pintar);
-    };
-    pintar();
-    window.addEventListener('scroll', alScrollear, { passive: true });
-    window.addEventListener('resize', alScrollear);
-    return () => {
-      if (pedido != null) cancelAnimationFrame(pedido);
-      window.removeEventListener('scroll', alScrollear);
-      window.removeEventListener('resize', alScrollear);
-    };
-  }, []);
+  const enPortada = zona === 'todo';
 
   useEffect(() => {
     const obs = new IntersectionObserver(
       (entradas) => {
         for (const e of entradas) {
-          if (e.isIntersecting) setActivo(e.target.dataset.piso);
+          if (!e.isIntersecting) continue;
+          setActivo(e.target.dataset.piso);
+          setZona(e.target.dataset.zona);
         }
       },
       /* La banda angosta del medio de la pantalla: así el piso cambia cuando la
@@ -231,20 +177,29 @@ const Casa = () => {
       <main className="mx-auto max-w-6xl px-5 sm:px-8">
         <div className="lg:grid lg:grid-cols-12 lg:gap-x-12">
           {/* El dibujo: fijo al costado en escritorio, fijo arriba en mobile. */}
-          <div
-            ref={columnaRef}
-            className="sticky top-16 z-30 -mx-5 bg-surface-page/95 px-5 backdrop-blur will-change-transform sm:-mx-8 sm:px-8 lg:top-16 lg:z-auto lg:col-span-6 lg:mx-0 lg:flex lg:h-[calc(100vh-4rem)] lg:items-center lg:bg-transparent lg:px-0 lg:backdrop-blur-none"
-          >
+          <div className="sticky top-16 z-30 -mx-5 bg-surface-page/95 px-5 backdrop-blur sm:-mx-8 sm:px-8 lg:top-16 lg:z-auto lg:col-span-6 lg:mx-0 lg:flex lg:h-[calc(100vh-4rem)] lg:items-center lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
+            <div
+              className={`relative w-full transition-transform duration-[1100ms] ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none ${
+                enPortada ? 'lg:translate-x-1/2 lg:-translate-y-[16%] lg:scale-[0.68]' : ''
+              }`}
+            >
             <CasaDibujada
               activo={activo}
+              zona={zona}
               className="mx-auto h-[36vh] w-auto max-w-full py-2 lg:h-auto lg:max-h-[calc(100vh-12rem)] lg:w-full lg:py-0"
             />
+
+            </div>
 
             {/* La portada, encima de la casa centrada. Se va cuando la casa se
                 corre: a partir de ahí manda el texto de cada piso. */}
             <div
-              ref={heroRef}
-              className="pointer-events-none absolute inset-x-0 bottom-0 hidden flex-col items-center gap-5 text-center lg:flex"
+              /* La portada vive fuera del envoltorio que se transforma —si no,
+                 el texto se achica y se mueve con la casa— y se corre al centro
+                 por su cuenta, porque la columna ocupa media pantalla. */
+              className={`pointer-events-none absolute inset-x-0 bottom-4 hidden flex-col items-center gap-5 text-center transition-opacity duration-700 lg:flex lg:translate-x-1/2 ${
+                enPortada ? 'opacity-100' : 'opacity-0'
+              }`}
             >
               {/* El wordmark y la frase entran cuando la casa terminó de
                   armarse, no antes: si aparecen mientras el edificio todavía se
@@ -257,15 +212,30 @@ const Casa = () => {
               <p className="max-w-lg animate-fade-in-up font-grotesk text-[1.6rem] font-semibold leading-tight tracking-tight text-ink [animation-delay:1420ms] [animation-duration:700ms] [animation-fill-mode:backwards]">
                 El punto de encuentro para tu identidad judía.
               </p>
-              <span className="flex animate-fade-in-up items-center gap-3 text-[0.66rem] font-semibold uppercase tracking-label text-ink-muted [animation-delay:1620ms] [animation-fill-mode:backwards]">
-                Bajá y entrá a la casa
-                <span className="h-px w-10 origin-left animate-rule-draw bg-ink-faint [animation-delay:1800ms]" />
-              </span>
+              <div className="pointer-events-auto mt-1 flex animate-fade-in-up flex-col items-center gap-4 [animation-delay:1620ms] [animation-fill-mode:backwards]">
+                <LandingButton to="/register" size="lg">
+                  Entrá a tu casa
+                </LandingButton>
+                <span className="flex items-center gap-3 text-[0.66rem] font-semibold uppercase tracking-label text-ink-muted">
+                  Bajá y conocé la casa
+                  <span className="h-px w-10 origin-left animate-rule-draw bg-ink-faint [animation-delay:1800ms]" />
+                </span>
+              </div>
             </div>
           </div>
 
-          <div ref={textoRef} className="lg:col-span-6">
-            {SECCIONES.map((p, i) => (
+          <div className="lg:col-span-6">
+            {SECCIONES.map((p, i) =>
+              p.portada ? (
+                <section
+                  key={p.id}
+                  id={p.id}
+                  data-piso={p.piso}
+                  data-zona={p.zona}
+                  className="min-h-screen"
+                  aria-hidden
+                />
+              ) : (
               <section
                 key={p.id}
                 id={p.id}
@@ -292,15 +262,10 @@ const Casa = () => {
                 <p className="mt-6 text-2xl leading-snug sm:text-3xl">{p.entrada}</p>
                 <p className="mt-5 max-w-xl leading-relaxed text-ink-soft sm:text-lg">{p.texto}</p>
 
-                {i === 0 && (
-                  <div className="mt-8 flex flex-wrap gap-3">
-                    <LandingButton to="/register" size="lg">
-                      Entrá a tu casa
-                    </LandingButton>
-                  </div>
-                )}
+
               </section>
-            ))}
+              )
+            )}
 
             <section
               data-piso="todo"
