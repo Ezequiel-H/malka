@@ -321,7 +321,7 @@ const Casa = () => {
           <div className="sticky top-16 z-30 -mx-5 bg-surface-page/95 px-5 backdrop-blur sm:-mx-8 sm:px-8 lg:top-16 lg:z-auto lg:col-span-6 lg:mx-0 lg:flex lg:h-[calc(100vh-4rem)] lg:items-center lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
             <div
               className={`relative w-full transition-transform duration-[1100ms] ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none ${
-                enPortada ? 'lg:translate-x-1/2 lg:-translate-y-[5%] lg:scale-[0.72]' : ''
+                enPortada ? 'lg:translate-x-1/2 lg:-translate-y-[3%] lg:scale-[0.94]' : ''
               }`}
             >
             <CasaDibujada
@@ -471,8 +471,8 @@ const Casa = () => {
             {/* ---- Quiénes te reciben ---- */}
             <section
               id="staff"
-              data-piso="planta"
-              data-zona="puerta"
+              data-piso="terraza"
+              data-zona="equipo"
               className="flex min-h-[86vh] flex-col justify-center py-20"
             >
               <p className="text-[0.7rem] font-semibold uppercase tracking-label text-ink-soft">
@@ -482,8 +482,9 @@ const Casa = () => {
                 Te esperamos con una sonrisa
               </h2>
               <p className="mt-6 max-w-xl leading-relaxed text-ink-soft sm:text-lg">
-                Alguien de nuestro staff te va a estar esperando en la puerta. Si es tu primera vez,
-                decíselo: de eso se trata.
+                Alguien de nuestro staff te va a estar esperando. Si es tu primera vez, decíselo:
+                de eso se trata. A la mayoría los vas a encontrar arriba, en la terraza, cuando hay
+                música.
               </p>
 
               <ul className="mt-10 grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-4">

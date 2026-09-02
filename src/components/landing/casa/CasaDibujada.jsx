@@ -33,7 +33,7 @@ import {
   Platillo,
   Cantero,
   Parlante,
-  Pergola,
+  QuinchoCerrado,
   Piso,
   Jacuzzi,
   Pileta,
@@ -120,7 +120,8 @@ const FOCOS = {
   cowork: { x: 224, y: P1v - 46, s: 1.46 },
   bano: { x: 352, y: P1v - 48, s: 1.86 },
 
-  banda: { x: 190, y: 84, s: 1.5 },
+  banda: { x: 178, y: 84, s: 1.58 },
+  equipo: { x: 252, y: 90, s: 1.24 },
   suca: { x: 372, y: 88, s: 1.86 },
 
   clase: { x: 304, y: SSv - 48, s: 1.5 },
@@ -576,56 +577,61 @@ const CasaDibujada = ({ activo = 'todo', zona = 'todo', className = '' }) => {
 
         {/* ================= EL PATIO DEL FONDO =========================== */}
         <g className={grupo('patio')} filter={foco('patio')}>
-          {/* El suelo del patio, en fuga como todo lo demás, y las medianeras
-              que lo cierran. Un patio sin paredes se lee como un descampado. */}
+          {/* El suelo del patio, con baldosa en vez de madera, y las paredes
+              del lote. Un patio sin paredes se lee como un descampado; y sin
+              cambiar el material del piso, como una habitación sin techo. */}
           <path d={planoPiso(SUELO, PATIO.x1, PATIO.x2)} className="fill-casa-piso" />
           <Piso x1={PATIO.x1} x2={PATIO.x2} y={SUELO} material="baldosa" />
+
+          {/* La medianera del fondo y la del costado, más bajas que la casa: es
+              lo que hace que se entienda que acá se terminó el techo y empezó
+              el cielo. */}
           <path
-            d={`M ${PATIO.x2} ${SUELO} L ${PATIO.x2} ${SUELO - 96} L ${PATIO.x2 + FONDO.x} ${SUELO - 96 + FONDO.y} L ${PATIO.x2 + FONDO.x} ${SUELO + FONDO.y} Z`}
-            className="fill-casa-costado stroke-ink/30"
-            strokeWidth="1"
+            d={`M ${PATIO.x1 + FONDO.x} ${SUELO + FONDO.y} L ${PATIO.x2 + FONDO.x} ${SUELO + FONDO.y} L ${PATIO.x2 + FONDO.x} ${SUELO - 104 + FONDO.y} L ${PATIO.x1 + FONDO.x} ${SUELO - 104 + FONDO.y} Z`}
+            className="fill-casa-costado stroke-ink/45"
+            strokeWidth={TRAZO}
           />
           <path
-            d={`M ${PATIO.x1 + FONDO.x} ${SUELO + FONDO.y} L ${PATIO.x2 + FONDO.x} ${SUELO + FONDO.y} L ${PATIO.x2 + FONDO.x} ${SUELO - 96 + FONDO.y} L ${PATIO.x1 + FONDO.x} ${SUELO - 96 + FONDO.y} Z`}
-            className="fill-casa-fondo stroke-ink/25"
-            strokeWidth="1"
+            d={`M ${PATIO.x2} ${SUELO} L ${PATIO.x2} ${SUELO - 104} L ${PATIO.x2 + FONDO.x} ${SUELO - 104 + FONDO.y} L ${PATIO.x2 + FONDO.x} ${SUELO + FONDO.y} Z`}
+            className="fill-casa-sombra/70 stroke-ink/45"
+            strokeWidth={TRAZO}
+          />
+          {/* La albardilla: el filete de arriba de la medianera. Sin él, la
+              pared se confunde con el cielo. */}
+          <path
+            d={`M ${PATIO.x1 + FONDO.x} ${SUELO - 104 + FONDO.y} L ${PATIO.x2 + FONDO.x} ${SUELO - 104 + FONDO.y} L ${PATIO.x2} ${SUELO - 104} `}
+            className="fill-none stroke-ink"
+            strokeWidth={TRAZO * 1.2}
           />
 
-          {/* Los árboles del fondo, contra la medianera */}
-          <g transform={fuga(0.92)}>
-            <Arbol x={PATIO.x1 + 52} y={SUELO} alto={116} />
-            <Arbol x={PATIO.x2 - 40} y={SUELO} alto={98} />
+          {/* Los árboles del fondo */}
+          <g transform={fuga(0.9)}>
+            <Arbol x={PATIO.x1 + 40} y={SUELO} alto={112} />
           </g>
-          <g transform={fuga(0.74)}>
-            <Cantero x={PATIO.x1 + 8} y={SUELO} ancho={78} />
+          <g transform={fuga(0.78)}>
+            <Cantero x={PATIO.x1 + 96} y={SUELO} ancho={64} />
           </g>
 
-          {/* El quincho: pérgola, parrilla y mesa larga debajo */}
-          <g transform={fuga(0.56)}>
-            <Pergola x={PATIO.x1 + 88} y={SUELO} ancho={128} alto={92} prof={0.62} />
+          {/* El quincho, cerrado y con la parrilla adentro */}
+          <g transform={fuga(0.5)}>
+            <QuinchoCerrado x={PATIO.x1 + 68} y={SUELO} ancho={148} alto={98} prof={0.62} />
+            <Humo x={PATIO.x1 + 118} y={SUELO - 142} delay={200} escala={1.1} />
+            <Humo x={PATIO.x1 + 126} y={SUELO - 136} delay={1400} escala={0.9} />
             <Parrilla x={PATIO.x1 + 104} y={SUELO - 48} piso={SUELO} ancho={62} />
-            <Humo x={PATIO.x1 + 122} y={SUELO - 60} delay={200} />
-            <Humo x={PATIO.x1 + 142} y={SUELO - 58} delay={1100} escala={0.8} />
-            <Chispas x={PATIO.x1 + 132} y={SUELO - 50} />
+            <Chispas x={PATIO.x1 + 130} y={SUELO - 50} />
           </g>
-          <g transform={fuga(0.34)}>
-            <Mesa x={PATIO.x1 + 104} y={SUELO - 44} ancho={96} piso={SUELO} prof={0.32} />
-            <Plato x={PATIO.x1 + 126} y={SUELO - 44} />
-            <Plato x={PATIO.x1 + 166} y={SUELO - 44} />
-          </g>
-          <g transform={fuga(0.16)}>
-            <Persona x={PATIO.x1 + 100} y={SUELO} alto={74} kipa delay={600} brazo="voltear" brazoDelay={300} />
-            <Persona x={PATIO.x1 + 190} y={SUELO} alto={70} mirando={-1} pelo delay={1800} ritmo />
+          <g transform={fuga(0.24)}>
+            <Persona x={PATIO.x1 + 96} y={SUELO} alto={74} kipa delay={600} brazo="voltear" brazoDelay={300} />
           </g>
 
-          {/* La pileta, del lado del sol, con su reposera */}
           {/* La pileta, del lado del sol y bien al frente del patio: si va al
               fondo queda tapada por el quincho y se lee como una baldosa. */}
-          <g transform={fuga(0.18)}>
-            <Pileta x={PATIO.x1 + 6} y={SUELO - 6} ancho={112} fondo={0.46} />
+          <g transform={fuga(0.16)}>
+            <Pileta x={PATIO.x1 + 4} y={SUELO - 6} ancho={116} fondo={0.46} />
           </g>
           <g transform={fuga(0.02)}>
-            <Reposera x={PATIO.x1 + 60} y={SUELO} />
+            <Reposera x={PATIO.x1 + 62} y={SUELO} />
+            <Persona x={PATIO.x1 + 168} y={SUELO} alto={70} mirando={-1} pelo delay={1800} ritmo />
           </g>
         </g>
 
@@ -642,7 +648,11 @@ const CasaDibujada = ({ activo = 'todo', zona = 'todo', className = '' }) => {
           {/* La sucá, contra el fondo: paños, sjaj de ramas —que tiene que
               dejar ver el cielo, esa es toda la gracia— y la fruta colgando. */}
           <g transform={fuga(0.4)}>
-            <Suca x={CASA.x2 - 96} y={PISOS.terraza.piso} ancho={84} alto={66} />
+            <Suca x={CASA.x2 - 100} y={PISOS.terraza.piso} ancho={88} alto={70} />
+          </g>
+          <g transform={fuga(0.16)}>
+            <PersonaSilla x={CASA.x2 - 76} y={PISOS.terraza.piso} alto={54} kipa delay={400} />
+            <PersonaSilla x={CASA.x2 - 40} y={PISOS.terraza.piso} alto={52} mirando={-1} pelo delay={1500} />
           </g>
           <Guirnalda x1={CASA.x1 + 12} x2={CASA.x2 + FONDO.x - 12} y={44} caida={13} />
 
@@ -701,6 +711,23 @@ const CasaDibujada = ({ activo = 'todo', zona = 'todo', className = '' }) => {
           <g>
             <Maguen x={CASA.x1 + 130} y={PISOS.terraza.piso - 20} r={11} className="stroke-ink/45" />
           </g>
+        </g>
+
+        {/* La pared exterior del fondo de la casa: maciza, de la vereda al
+            techo, con la puerta que da al patio. Sin ella no se entendía dónde
+            termina la casa y el patio parecía otra habitación más. */}
+        <g>
+          <path
+            d={`M ${CASA.x2} ${SUELO} L ${CASA.x2} ${PISOS.terraza.piso} L ${CASA.x2 + 10} ${PISOS.terraza.piso} L ${CASA.x2 + 10} ${SUELO} Z`}
+            className="fill-casa-costado stroke-ink"
+            strokeWidth={TRAZO * 1.1}
+          />
+          <path
+            d={`M ${CASA.x2} ${SUELO} L ${CASA.x2} ${SUELO - 70} L ${CASA.x2 + 10} ${SUELO - 70} L ${CASA.x2 + 10} ${SUELO} Z`}
+            className="fill-casa-piso stroke-ink"
+            strokeWidth={TRAZO}
+          />
+          <Mezuza x={CASA.x2 + 12} y={SUELO - 46} alto={11} />
         </g>
 
         {/* ---- las líneas del corte, siempre encima ---- */}

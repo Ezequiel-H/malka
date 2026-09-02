@@ -926,15 +926,27 @@ export const Suca = ({ x, y, ancho = 84, alto = 66 }) => {
         );
       })}
 
-      {/* Adentro: la mesa chica y las guirnaldas de fruta que se cuelgan */}
-      <g transform={`translate(${dx * 0.55} ${dy * 0.55})`}>
-        <Caja x={x + ancho * 0.3} y={y - 22} ancho={ancho * 0.42} alto={4} prof={0.16} />
-        {[0.26, 0.5, 0.74].map((f, i) => (
-          <g key={f}>
-            <path d={`M ${x + ancho * f} ${y - alto + 4} L ${x + ancho * f} ${y - alto + 12 + i * 3}`} className="stroke-ink/35" strokeWidth="1" />
-            <circle cx={x + ancho * f} cy={y - alto + 14 + i * 3} r="2.8" className={i === 1 ? 'fill-flame' : 'fill-primary-400'} />
-          </g>
+      {/* Adentro: la mesa puesta, las guirnaldas de fruta y una guirnalda de
+          papel cruzando de pared a pared. Una sucá vacía se lee como un
+          cobertizo; lo que la vuelve sucá es que adentro se come. */}
+      <g transform={`translate(${dx * 0.5} ${dy * 0.5})`}>
+        <path
+          d={`M ${x + 6} ${y - alto + 14} q ${ancho / 2} ${14} ${ancho - 12} 0`}
+          className="fill-none stroke-primary-400"
+          strokeWidth="1.4"
+        />
+        {[0.2, 0.4, 0.6, 0.8].map((f, i) => (
+          <circle
+            key={f}
+            cx={x + 6 + (ancho - 12) * f}
+            cy={y - alto + 20 + (i % 2) * 2}
+            r="2.6"
+            className={i % 2 ? 'fill-flame' : 'fill-primary-400'}
+          />
         ))}
+        <Caja x={x + ancho * 0.22} y={y - 24} ancho={ancho * 0.56} alto={5} prof={0.2} />
+        <Plato x={x + ancho * 0.34} y={y - 26} r={5} />
+        <Plato x={x + ancho * 0.6} y={y - 26} r={5} />
       </g>
     </g>
   );
@@ -1039,7 +1051,51 @@ export const Pileta = ({ x, y, ancho = 96, fondo = 0.5 }) => {
 /* El patio del fondo                                                  */
 /* ------------------------------------------------------------------ */
 
-/** La pérgola del quincho: cuatro postes y las vigas cruzadas. */
+/**
+ * El quincho: un cuarto cerrado con su parrilla adentro, no una pérgola.
+ *
+ * Tiene paredes, techo a dos aguas, una ventana y un vano ancho por donde se
+ * ve la parrilla; y la chimenea con humo, que es lo que hace que se entienda
+ * de una que ahí adentro hay fuego. Un techo apoyado en postes se lee como
+ * galería, no como quincho.
+ */
+export const QuinchoCerrado = ({ x, y, ancho = 150, alto = 96, prof = 0.66 }) => {
+  const dx = FONDO.x * prof;
+  const dy = FONDO.y * prof;
+  const cumbrera = alto + 26;
+  return (
+    <g className={filete} strokeWidth={TRAZO} strokeLinejoin="round">
+      {/* La pared del fondo y el costado */}
+      <path
+        d={`M ${x + dx} ${y + dy} L ${x + ancho + dx} ${y + dy} L ${x + ancho + dx} ${y - alto + dy} L ${x + dx} ${y - alto + dy} Z`}
+        className="fill-casa-fondo"
+      />
+      <path
+        d={`M ${x + ancho} ${y} L ${x + ancho + dx} ${y + dy} L ${x + ancho + dx} ${y - alto + dy} L ${x + ancho} ${y - alto} Z`}
+        className="fill-casa-costado"
+      />
+      {/* El frente, con el vano ancho por donde se ve la parrilla */}
+      <path d={`M ${x} ${y} L ${x} ${y - alto} L ${x + ancho} ${y - alto} L ${x + ancho} ${y}`} className="fill-none" />
+      <rect x={x} y={y - alto} width={26} height={alto} className="fill-casa-piso" />
+      <rect x={x + ancho - 30} y={y - alto} width={30} height={alto} className="fill-casa-piso" />
+      <rect x={x + ancho - 24} y={y - alto + 16} width={18} height={20} rx="2" className="fill-primary-100" />
+
+      {/* El techo a dos aguas y la chimenea */}
+      <path
+        d={`M ${x - 6} ${y - alto} L ${x + ancho / 2} ${y - cumbrera} L ${x + ancho + 6} ${y - alto} Z`}
+        className="fill-barro"
+      />
+      <path
+        d={`M ${x + ancho / 2} ${y - cumbrera} L ${x + ancho / 2 + dx} ${y - cumbrera + dy} L ${x + ancho + 6 + dx} ${y - alto + dy} L ${x + ancho + 6} ${y - alto} Z`}
+        className="fill-barro-oscuro"
+      />
+      <rect x={x + ancho * 0.3} y={y - cumbrera - 22} width="14" height="26" className="fill-casa-costado" />
+      <rect x={x + ancho * 0.3 - 3} y={y - cumbrera - 26} width="20" height="6" className="fill-ink/70" />
+    </g>
+  );
+};
+
+/** La pérgola: cuatro postes y las vigas cruzadas. */
 export const Pergola = ({ x, y, ancho = 108, alto = 74, prof = 0.7 }) => {
   const dx = FONDO.x * prof;
   const dy = FONDO.y * prof;
