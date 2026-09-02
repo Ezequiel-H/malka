@@ -5,6 +5,10 @@ import { useAuth } from '../contexts/AuthContext';
 import CasaDibujada from '../components/landing/casa/CasaDibujada';
 import LandingButton from '../components/landing/LandingButton';
 import logoMalka from '../assets/logo-malka-positivo.png';
+import fotoWally from '../assets/landing/staff/wally.jpg';
+import fotoMati from '../assets/landing/staff/mati.jpg';
+import fotoBrian from '../assets/landing/staff/brian.jpg';
+import fotoCaro from '../assets/landing/staff/caro.jpg';
 
 /**
  * La landing como plano de la casa.
@@ -52,12 +56,12 @@ const SECCIONES = [
        más directa de mostrar una casa —dejar que el otro elija por dónde
        empieza— y de paso convierte la lista en el índice del dibujo. */
     espacios: [
-      { nombre: 'El salón', que: 'La mesa larga y las mejores ceremonias de Shabat.', zona: 'mesa', piso: 'planta' },
-      { nombre: 'La cocina', que: 'Experiencias culinarias de la mano de referentes.', zona: 'cocina', piso: 'planta' },
-      { nombre: 'El cowork', que: 'Wifi, escritorio y café con cakes toda la semana.', zona: 'cowork', piso: 'primero' },
-      { nombre: 'La sala de abajo', que: 'Yoga, escritura, cine y lo que se te ocurra.', zona: 'clase', piso: 'subsuelo' },
-      { nombre: 'La terraza', que: 'Unplugged, algún fueguito y la ciudad abajo.', zona: 'banda', piso: 'terraza' },
-      { nombre: 'El fondo', que: 'Los árboles, la pileta y el sueño del quincho.', zona: 'parrilla', piso: 'todo' },
+      { nombre: 'El salón', que: 'La mesa larga y el Shabat.', icono: 'salon', zona: 'mesa', piso: 'planta' },
+      { nombre: 'La cocina', que: 'Lo que termina en la mesa.', icono: 'cocinita', zona: 'cocina', piso: 'planta' },
+      { nombre: 'El cowork', que: 'Wifi, escritorio y café.', icono: 'cowork', zona: 'cowork', piso: 'primero' },
+      { nombre: 'La sala de abajo', que: 'Yoga, cine y talleres.', icono: 'sala', zona: 'clase', piso: 'subsuelo' },
+      { nombre: 'La terraza', que: 'Música y la ciudad abajo.', icono: 'terraza', zona: 'banda', piso: 'terraza' },
+      { nombre: 'El fondo', que: 'La pileta y el quincho.', icono: 'fondo', zona: 'parrilla', piso: 'todo' },
     ],
   },
   {
@@ -76,8 +80,7 @@ const SECCIONES = [
     zona: 'bano',
     kicker: 'Sauna Sessions',
     titulo: 'Sí, también hay sauna',
-    entrada: 'Y jacuzzi. La casa tiene esas cosas.',
-    texto: 'Cuándo cae la próxima session, en la agenda.',
+    entrada: 'Y jacuzzi.',
   },
 ];
 
@@ -104,60 +107,53 @@ const PROPUESTAS = [
  */
 const PREGUNTAS = [
   {
-    icono: 'user',
-    veredicto: 'No hace falta',
+    veredicto: 'No',
     pregunta: '¿Necesito ser socio?',
-    detalle: 'No hace falta asociarte para nuestras actividades.',
+    detalle: 'No hace falta asociarse a nada para venir a Malka.',
   },
   {
-    icono: 'addToCalendar',
-    veredicto: 'Sólo a veces',
-    pregunta: '¿Tengo que anotarme?',
-    detalle: 'Para venir a malkear, no. Para algunas actividades sí: leé bien el form.',
+    veredicto: 'Sí, una vez',
+    pregunta: '¿Tengo que registrarme?',
+    detalle:
+      'Sí: la agenda vive adentro de esta página y para verla te registrás. Se hace una sola vez y es gratis.',
   },
   {
-    icono: 'book',
+    veredicto: 'Algunas',
+    pregunta: '¿Y además me inscribo?',
+    detalle:
+      'Para algunas actividades sí, desde adentro y en un toque. Para caer a malkear un martes, con estar registrado alcanza.',
+  },
+  {
     veredicto: 'Nada',
     pregunta: '¿Cuánto tengo que saber?',
     detalle: 'Nuestra movida es judía y pluralista, abierta a distintas miradas y experiencias.',
   },
   {
-    icono: 'users',
     veredicto: 'Obvio',
     pregunta: '¿Puedo venir solo?',
     detalle: 'Charlá con la pipol que viene por acá. Acá casi todo se puede.',
   },
   {
-    icono: 'idea',
     veredicto: '¡Obvio!',
     pregunta: '¿Puedo proponer algo?',
     detalle: 'Nos encantaría escuchar ideas que sumen a la comunidad. Contanos.',
   },
   {
-    icono: 'coffee',
     veredicto: 'Casi siempre no',
     pregunta: '¿Hay que poner plata?',
     detalle: 'Algunas actividades tienen un costo para cubrir materiales. Siempre te avisamos antes.',
   },
 ];
 
-/* Los cuatro que te reciben. Las fotos van acá cuando Malka las mande; hasta
-   entonces la ficha muestra las iniciales, que es más honesto que una foto de
-   banco de imágenes. */
+/* Los cuatro que te reciben, con sus caras. Las fotos llegaron de Malka y están
+   recortadas al mismo alto y a la misma proporción: cuatro retratos con encuadres
+   distintos se leen como cuatro fichas prestadas de otro lado. */
 const STAFF = [
-  { nombre: 'Wally Liebhaber', rol: 'Dirección' },
-  { nombre: 'Rab Mati Bomse', rol: 'Dirección' },
-  { nombre: 'Sem. Brian Bruh', rol: 'Dirección' },
-  { nombre: 'Caro Weber', rol: 'Asistente de Dirección' },
+  { nombre: 'Wally Liebhaber', rol: 'Dirección', foto: fotoWally },
+  { nombre: 'Rab Mati Bomse', rol: 'Dirección', foto: fotoMati },
+  { nombre: 'Sem. Brian Bruh', rol: 'Dirección', foto: fotoBrian },
+  { nombre: 'Caro Weber', rol: 'Asistente de Dirección', foto: fotoCaro },
 ];
-
-const iniciales = (nombre) =>
-  nombre
-    .replace(/^Sem\.\s*/, '')
-    .split(' ')
-    .slice(0, 2)
-    .map((p) => p[0])
-    .join('');
 
 /* Los datos de la casa. Los que se pueden abrir, se abren. */
 const CONTACTO = [
@@ -482,7 +478,11 @@ const Casa = () => {
                     <p className="mt-10 text-[0.66rem] font-semibold uppercase tracking-label text-ink-faint">
                       Tocá un espacio y la casa te lo muestra
                     </p>
-                    <ul className="mt-3 grid gap-x-8 sm:grid-cols-2">
+                    {/* Tarjetas y no renglones: son botones, y un botón tiene
+                        que verse tocable antes de que lo toques. El elegido se
+                        queda en verde y con el filete a la izquierda, así se
+                        sabe qué está mostrando la casa en este momento. */}
+                    <ul className="mt-4 grid gap-3 sm:grid-cols-2">
                       {p.espacios.map((e) => {
                         const elegido = manual?.zona === e.zona;
                         return (
@@ -490,26 +490,37 @@ const Casa = () => {
                             <button
                               type="button"
                               onClick={() => mirar(p.id, e)}
-                              className={`group w-full border-t py-4 text-left transition-colors duration-base ${
-                                elegido ? 'border-primary/60' : 'border-ink/10 hover:border-primary/40'
+                              aria-pressed={elegido}
+                              className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-card border px-4 py-3.5 text-left transition-all duration-base ease-standard ${
+                                elegido
+                                  ? 'border-primary/40 bg-primary-50 shadow-subtle'
+                                  : 'border-ink/10 bg-surface/50 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-surface hover:shadow-subtle'
                               }`}
                             >
-                              <span className="flex items-center gap-2">
+                              <span
+                                aria-hidden
+                                className={`absolute inset-y-0 left-0 w-0.5 transition-all duration-base ${
+                                  elegido ? 'bg-primary' : 'bg-transparent'
+                                }`}
+                              />
+                              <span
+                                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-pill transition-colors duration-base ${
+                                  elegido
+                                    ? 'bg-primary/15 text-primary-700'
+                                    : 'bg-ink/5 text-ink-soft group-hover:bg-primary/10 group-hover:text-primary-700'
+                                }`}
+                              >
+                                <IconoPropuesta nombre={e.icono} className="h-5 w-5" />
+                              </span>
+                              <span className="min-w-0">
                                 <span
-                                  className={`font-semibold leading-tight transition-colors duration-base ${
+                                  className={`block font-semibold leading-tight transition-colors duration-base ${
                                     elegido ? 'text-primary-700' : 'text-ink'
                                   }`}
                                 >
                                   {e.nombre}
                                 </span>
-                                <span
-                                  className={`h-1.5 w-1.5 rounded-pill transition-all duration-base ${
-                                    elegido ? 'bg-primary' : 'bg-transparent group-hover:bg-primary/40'
-                                  }`}
-                                />
-                              </span>
-                              <span className="mt-1 block text-sm leading-relaxed text-ink-soft">
-                                {e.que}
+                                <span className="mt-0.5 block truncate text-sm text-ink-soft">{e.que}</span>
                               </span>
                             </button>
                           </li>
@@ -588,10 +599,13 @@ const Casa = () => {
               <ul className="mt-10 grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-4">
                 {STAFF.map((persona) => (
                   <li key={persona.nombre}>
-                    <div className="flex aspect-[4/5] w-full items-center justify-center overflow-hidden rounded-card bg-primary-100">
-                      <span className="font-grotesk text-2xl font-bold tracking-tight text-primary-700">
-                        {iniciales(persona.nombre)}
-                      </span>
+                    <div className="aspect-[4/5] w-full overflow-hidden rounded-card bg-primary-100">
+                      <img
+                        src={persona.foto}
+                        alt={persona.nombre}
+                        loading="lazy"
+                        className="h-full w-full object-cover"
+                      />
                     </div>
                     <p className="mt-3 font-semibold leading-tight text-ink">{persona.nombre}</p>
                     <p className="text-sm text-ink-muted">{persona.rol}</p>

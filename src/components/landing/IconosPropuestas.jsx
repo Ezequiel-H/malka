@@ -75,7 +75,74 @@ const Corcheas = () => (
   </>
 );
 
+/* Los seis espacios de la casa, en el mismo trazo. */
+
+/** El salón: la mesa larga con sus dos velas. */
+const Mesa = () => (
+  <>
+    <path d="M3.5 13h17" {...comun} />
+    <path d="M5.5 13v6M18.5 13v6" {...comun} />
+    <path d="M9.5 13V8M14.5 13V8" {...comun} />
+    <path d="M9.5 8c0-1 .8-1.2.8-2.2M14.5 8c0-1 .8-1.2.8-2.2" {...comun} />
+  </>
+);
+
+/** La cocina: la campana sobre las hornallas. */
+const Campanita = () => (
+  <>
+    <path d="M5 9.5l2-4h10l2 4z" {...comun} />
+    <path d="M8 5.5V4" {...comun} />
+    <path d="M4.5 14.5h15v5h-15z" {...comun} />
+    <circle cx="8.5" cy="17" r="1.2" {...comun} />
+    <circle cx="15.5" cy="17" r="1.2" {...comun} />
+  </>
+);
+
+/** El cowork: la laptop abierta. */
+const Laptopcita = () => (
+  <>
+    <path d="M6 6.5h12v9H6z" {...comun} />
+    <path d="M3.5 18.5h17" {...comun} />
+    <path d="M9.5 18.5h5" {...comun} />
+  </>
+);
+
+/** La sala de abajo: la colchoneta enrollada. */
+const Colchoneta = () => (
+  <>
+    <rect x="4.5" y="7" width="15" height="10" rx="5" {...comun} />
+    <ellipse cx="8" cy="12" rx="2.5" ry="4" {...comun} />
+    <path d="M14 9.5h3M14 14.5h3" {...comun} />
+  </>
+);
+
+/** La terraza: la guirnalda de luces. */
+const Guirnaldita = () => (
+  <>
+    <path d="M3 6c4 5 14 5 18 0" {...comun} />
+    <path d="M7 8.5v2M12 10.5v2M17 8.5v2" {...comun} />
+    <circle cx="7" cy="12" r="1.4" {...comun} />
+    <circle cx="12" cy="14" r="1.4" {...comun} />
+    <circle cx="17" cy="12" r="1.4" {...comun} />
+  </>
+);
+
+/** El fondo: el árbol del patio. */
+const Arbolito = () => (
+  <>
+    <path d="M12 20v-6" {...comun} />
+    <path d="M12 14a5 5 0 1 1 3.6-8.5A4 4 0 1 1 12 14z" {...comun} />
+    <path d="M8 20h8" {...comun} />
+  </>
+);
+
 const FIGURAS = {
+  salon: Mesa,
+  cocinita: Campanita,
+  cowork: Laptopcita,
+  sala: Colchoneta,
+  terraza: Guirnaldita,
+  fondo: Arbolito,
   judaismo: Tora,
   actividades: Chispa,
   coworking: Taza,
