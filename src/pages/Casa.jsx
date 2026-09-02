@@ -451,7 +451,7 @@ const Casa = () => {
               activo={manual?.piso ?? activo}
               zona={manual?.zona ?? zona}
               acercar={acercar}
-              className="mx-auto h-[34vh] w-auto max-w-none py-1 sm:h-[38vh] md:h-auto md:max-h-[calc(100vh-5rem)] md:w-[112%] md:-ml-[9%] md:py-0 lg:w-[112%] lg:-ml-[12%] 2xl:w-[116%] 2xl:-ml-[16%] [mask-image:radial-gradient(farthest-side_at_50%_46%,#000_46%,transparent_100%)] md:[mask-image:radial-gradient(farthest-side_at_52%_46%,#000_54%,transparent_100%)]"
+              className="mx-auto h-[34vh] w-auto max-w-none py-1 sm:h-[38vh] md:h-auto md:max-h-[calc(100vh-5rem)] md:w-[112%] md:-ml-[9%] md:py-0 lg:w-[112%] lg:-ml-[12%] 2xl:w-[116%] 2xl:-ml-[16%] [mask-image:radial-gradient(100%_86%_at_50%_46%,#000_30%,transparent_84%)] md:[mask-image:radial-gradient(106%_94%_at_53%_45%,#000_50%,transparent_90%)]"
             />
 
               {/* En el teléfono el recorrido vive pegado abajo del dibujo: se
