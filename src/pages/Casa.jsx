@@ -157,10 +157,19 @@ const iniciales = (nombre) =>
     .map((p) => p[0])
     .join('');
 
+const INDICE = [
+  { id: 'quienes', label: 'Quiénes somos' },
+  { id: 'propuestas', label: 'Propuestas' },
+  { id: 'sauna', label: 'Sauna Sessions' },
+  { id: 'staff', label: 'El equipo' },
+  { id: 'sumate', label: 'Sumate' },
+];
+
 const Casa = () => {
   const { user } = useAuth();
   const [activo, setActivo] = useState('todo');
   const [zona, setZona] = useState('todo');
+  const [seccion, setSeccion] = useState('entrada');
 
   /**
    * La portada: la casa arranca centrada y se corre a su columna al bajar.
@@ -214,6 +223,7 @@ const Casa = () => {
       }
       setActivo(mejor.dataset.piso);
       setZona(mejor.dataset.zona);
+      if (mejor.id) setSeccion(mejor.id);
     };
 
     let pedido = null;
@@ -293,28 +303,72 @@ const Casa = () => {
         </nav>
       </header>
 
-      <main className="relative">
-        {/* La casa va de fondo y a sangre: sale de cuadro por arriba, por abajo
-            y por los costados. Antes vivía adentro de una columna y se veía el
-            recuadro del dibujo, que la convertía en una lámina pegada al
-            costado del texto en vez de en el lugar donde pasa todo. */}
-        <div className="pointer-events-none sticky top-0 h-screen overflow-hidden">
-          <CasaDibujada
-            activo={activo}
-            zona={zona}
-            anclaX={0.62}
-            ajuste="xMidYMid slice"
-            className="h-full w-full"
-          />
-          {/* El velo que hace legible el texto sin tapar la casa: opaco del lado
-              de la lectura y transparente del otro. */}
-          <div className="absolute inset-0 bg-gradient-to-b from-surface-page via-surface-page/90 to-surface-page/96 lg:bg-gradient-to-r lg:from-surface-page lg:from-30% lg:via-surface-page/92 lg:via-58% lg:to-transparent" />
-        </div>
+      {/* El índice del recorrido, contra el borde. Con seis secciones y una
+          casa que cambia de encuadre, lo que faltaba para entender el flujo era
+          saber dónde estás parado y cuánto falta: eso lo resuelve una lista de
+          seis renglones, no más animación. */}
+      <nav
+        aria-label="Secciones"
+        className={`fixed right-7 top-1/2 z-40 hidden -translate-y-1/2 flex-col items-end gap-3 transition-opacity duration-500 xl:flex ${
+          enPortada ? 'pointer-events-none opacity-0' : 'opacity-100'
+        }`}
+      >
+        {INDICE.map((i) => (
+          <a
+            key={i.id}
+            href={`#${i.id}`}
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById(i.id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }}
+            className="group flex flex-row-reverse items-center gap-3"
+          >
+            {/* Va contra el borde derecho: es el único costado que el dibujo
+                nunca invade, y ahí el índice se lee sin pelearse con la casa. */}
+            <span
+              className={`h-px transition-all duration-500 ${
+                seccion === i.id ? 'w-8 bg-ink' : 'w-4 bg-ink/25 group-hover:w-6 group-hover:bg-ink/50'
+              }`}
+            />
+            <span
+              className={`text-[0.62rem] font-semibold uppercase tracking-label transition-all duration-300 ${
+                seccion === i.id
+                  ? 'text-ink opacity-100'
+                  : 'text-ink-faint opacity-0 group-hover:opacity-100'
+              }`}
+            >
+              {i.label}
+            </span>
+          </a>
+        ))}
+      </nav>
 
-        {/* El texto va encima del fondo pegado, no al lado. */}
-        <div className="relative -mt-[100vh]">
-          <div className="mx-auto max-w-6xl px-5 sm:px-8">
-            <div className="lg:w-[46%]">
+      <main className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
+        <div className="lg:grid lg:grid-cols-12 lg:gap-x-12">
+          {/* El dibujo: fijo al costado en escritorio, fijo arriba en mobile. */}
+          <div className="sticky top-16 z-30 -mx-5 bg-surface-page/95 px-5 backdrop-blur sm:-mx-8 sm:px-8 lg:top-16 lg:z-auto lg:col-span-6 lg:mx-0 lg:flex lg:h-[calc(100vh-4rem)] lg:items-center lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
+            {/* La casa no se mueve nunca de su columna. Antes se corría al
+                centro en la portada y volvía al scrollear: ese viaje lateral, con
+                el texto cortándose al mismo tiempo, era el momento más brusco de
+                la página. Ahora lo único que cambia es el encuadre de la cámara,
+                que ya sabe moverse suave. */}
+            <div className="relative w-full">
+            {/* Dos cosas para que la casa deje de verse metida en una caja:
+                se sale de su columna hacia el borde de la página —rompe la
+                grilla, que es lo que la saca de la vitrina— y sus bordes se
+                desvanecen con una máscara, así el dibujo termina en el aire y
+                no en un rectángulo. */}
+            <CasaDibujada
+              activo={activo}
+              zona={zona}
+              className="mx-auto h-[38vh] w-auto max-w-none py-2 lg:h-auto lg:max-h-[calc(100vh-5rem)] lg:w-[118%] lg:-ml-[18%] lg:py-0 [mask-image:radial-gradient(125%_105%_at_54%_46%,#000_62%,transparent_100%)]"
+            />
+
+            </div>
+
+                      </div>
+
+          <div className="lg:col-span-6">
             {SECCIONES.map((p, i) =>
               p.portada ? (
                 /* La portada es la primera sección de la columna, no una capa
@@ -364,7 +418,12 @@ const Casa = () => {
                    colchón sobra. */
                 className="flex min-h-[92vh] flex-col justify-center pb-14 pt-[42vh] lg:min-h-[88vh] lg:py-20"
               >
-                <p className="text-[0.7rem] font-semibold uppercase tracking-label text-ink-soft">
+                {/* El nombre del espacio, con su filete: es lo que ata el
+                    texto con lo que la cámara está mirando. Sin esa etiqueta,
+                    las dos columnas se leen como dos cosas separadas que
+                    casualmente scrollean juntas. */}
+                <p className="flex items-center gap-3 text-[0.7rem] font-semibold uppercase tracking-label text-ink-soft">
+                  <span className="h-px w-8 bg-primary/50" />
                   {p.kicker}
                 </p>
                 <h2
@@ -427,6 +486,7 @@ const Casa = () => {
               </section>
               )
             )}
+
             {/* ---- Quiénes te reciben ---- */}
             <section
               id="staff"
@@ -466,6 +526,7 @@ const Casa = () => {
                 encuadre exclusivo de la portada, y si otra sección lo pide, la
                 portada vuelve a aparecer encima del texto. */}
             <section
+              id="sumate"
               data-piso="todo"
               data-zona="ciudad"
               className="flex min-h-[86vh] flex-col justify-center py-20"
@@ -508,8 +569,6 @@ const Casa = () => {
                 ))}
               </dl>
             </section>
-
-            </div>
           </div>
         </div>
       </main>

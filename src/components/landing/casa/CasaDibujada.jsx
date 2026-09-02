@@ -93,39 +93,35 @@ const SSv = PISOS.subsuelo.piso;
  * mirar ninguna. Cada sección de la página apunta acá con su `data-zona`, así
  * que agregar un encuadre nuevo es agregar una línea, no tocar la cámara.
  */
-/* Las escalas están calibradas para un dibujo que se recorta a sangre: al
-   llenar la pantalla, la lámina ya viene magnificada, así que los planos
-   generales piden números por debajo de 1 —si no, la casa entera no entra de
-   alto— y los de un espacio se quedan cerca del 1,5. */
 const FOCOS = {
   /* Cada sección tiene el suyo y ninguno se repite: si dos secciones piden el
      mismo encuadre, la segunda se siente un déjà vu y el recorrido pierde el
      hilo. Por eso hay tres planos generales distintos —la ciudad, la fachada y
      la casa— y no uno usado tres veces. */
-  todo: { x: 318, y: 262, s: 0.72 },
-  ciudad: { x: 320, y: 222, s: 0.6 },
-  fachada: { x: 196, y: 300, s: 0.7 },
-  casa: { x: 250, y: 262, s: 0.78 },
+  todo: { x: 318, y: 262, s: 1.0 },
+  ciudad: { x: 320, y: 222, s: 0.95 },
+  fachada: { x: 196, y: 300, s: 1.46 },
+  casa: { x: 250, y: 262, s: 1.78 },
 
-  pileta: { x: 468, y: P0v - 30, s: 1.85 },
-  parrilla: { x: 580, y: P0v - 62, s: 1.55 },
+  pileta: { x: 468, y: P0v - 30, s: 2.4 },
+  parrilla: { x: 580, y: P0v - 62, s: 2.05 },
 
   /* El zoom no es el mismo en todas: la puerta y el baño son un objeto y piden
      estar encima; la mesa, el cowork y la clase son un ambiente con gente y se
      entienden de más lejos. Un zoom parejo para todo obliga a elegir entre
      perder el detalle o perder el contexto. */
-  puerta: { x: 96, y: P0v - 50, s: 1.75 },
-  mesa: { x: 172, y: P0v - 46, s: 1.45 },
-  cocina: { x: 352, y: P0v - 50, s: 1.7 },
+  puerta: { x: 96, y: P0v - 50, s: 2.4 },
+  mesa: { x: 172, y: P0v - 46, s: 1.94 },
+  cocina: { x: 352, y: P0v - 50, s: 2.2 },
 
-  cowork: { x: 224, y: P1v - 46, s: 1.42 },
-  bano: { x: 352, y: P1v - 48, s: 1.75 },
+  cowork: { x: 224, y: P1v - 46, s: 1.9 },
+  bano: { x: 352, y: P1v - 48, s: 2.3 },
 
-  banda: { x: 178, y: 84, s: 1.5 },
-  equipo: { x: 252, y: 90, s: 1.12 },
-  suca: { x: 372, y: 88, s: 1.8 },
+  banda: { x: 178, y: 84, s: 1.96 },
+  equipo: { x: 252, y: 90, s: 1.76 },
+  suca: { x: 372, y: 88, s: 2.35 },
 
-  clase: { x: 304, y: SSv - 48, s: 1.48 },
+  clase: { x: 304, y: SSv - 48, s: 1.94 },
   cochera: { x: 116, y: SSv - 46, s: 1.84 },
 };
 
@@ -147,14 +143,13 @@ const VISTA = { x: -62, y: -110, ancho: 872, alto: 760 };
  * salga de la lámina, que es lo que hace cualquier visor de mapas.
  */
 const encuadrar = ({ x, y, s }) => {
+  const ancho = VISTA.ancho / s;
   const alto = VISTA.alto / s;
   const limitar = (v, ventana, desde, total) =>
     Math.min(Math.max(v, desde + ventana / 2), desde + total - ventana / 2);
   return {
     s,
-    /* Sin margen a lo ancho: el dibujo se recorta a sangre, así que dejar que
-       la cámara se acerque al borde no muestra ningún vacío. */
-    x,
+    x: limitar(x, ancho, VISTA.x, VISTA.ancho),
     y: limitar(y, alto, VISTA.y, VISTA.alto),
   };
 };
@@ -175,17 +170,7 @@ const fuga = (t) => {
   return `translate(${FONDO.x * t} ${FONDO.y * t}) translate(${CENTRO.x} ${CENTRO.y}) scale(${s}) translate(${-CENTRO.x} ${-CENTRO.y})`;
 };
 
-const CasaDibujada = ({
-  activo = 'todo',
-  zona = 'todo',
-  className = '',
-  /* Dónde cae el centro del encuadre a lo ancho de la pantalla. Con el texto
-     encima del dibujo, apuntar al medio deja el espacio enfocado justo debajo
-     de la columna de lectura; corriéndolo a dos tercios, lo que la cámara mira
-     queda siempre del lado libre. */
-  anclaX = 0.5,
-  ajuste = 'xMidYMid meet',
-}) => {
+const CasaDibujada = ({ activo = 'todo', zona = 'todo', className = '' }) => {
   /**
    * La cámara: un estado, un `transform`, una transición de CSS.
    *
@@ -204,7 +189,7 @@ const CasaDibujada = ({
    */
   const pose = encuadrar(FOCOS[zona] ?? FOCOS.todo);
   const camara = {
-    transform: `translate(${VISTA.x + VISTA.ancho * anclaX - pose.s * pose.x}px, ${
+    transform: `translate(${VISTA.x + VISTA.ancho / 2 - pose.s * pose.x}px, ${
       VISTA.y + VISTA.alto / 2 - pose.s * pose.y
     }px) scale(${pose.s})`,
     /* La curva no es un `ease-in-out` cualquiera: sale rápido y llega muy
@@ -217,7 +202,7 @@ const CasaDibujada = ({
   const enFoco = (id) => activo === 'todo' || activo === id;
 
   const grupo = (id) =>
-    `transition-opacity duration-cinematic ease-standard ${enFoco(id) ? 'opacity-100' : 'opacity-55'}`;
+    `transition-opacity duration-cinematic ease-standard ${enFoco(id) ? 'opacity-100' : 'opacity-40'}`;
 
   /* El filtro va como atributo y no como clase de Tailwind: es un filtro de
      SVG, no de CSS. Bajarles la opacidad a los pisos que no estás leyendo no
@@ -278,7 +263,6 @@ const CasaDibujada = ({
   return (
     <svg
       viewBox={`${VISTA.x} ${VISTA.y} ${VISTA.ancho} ${VISTA.alto}`}
-      preserveAspectRatio={ajuste}
       className={className}
       role="img"
       aria-label="Corte de la casa de Malka: la terraza y la huerta arriba, el estudio, el cowork, el salón con la mesa larga y el quincho con la parrilla."
@@ -290,7 +274,7 @@ const CasaDibujada = ({
             desenfoque el ojo entiende cuál es el plano de foco, que es
             exactamente lo que hace una cámara. */}
         <filter id="casa-fuera-de-foco" x="-10%" y="-10%" width="120%" height="120%">
-          <feGaussianBlur stdDeviation="1.5" />
+          <feGaussianBlur stdDeviation="1.9" />
         </filter>
         <linearGradient id="casa-rincon" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#2c3d34" stopOpacity="0.14" />
