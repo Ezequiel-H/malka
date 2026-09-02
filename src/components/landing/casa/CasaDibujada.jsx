@@ -144,8 +144,15 @@ const VISTA = { x: -62, y: -110, ancho: 872, alto: 760 };
 const encuadrar = ({ x, y, s }) => {
   const ancho = VISTA.ancho / s;
   const alto = VISTA.alto / s;
+  /* Si la ventana es más grande que el dibujo entero —pasa cuando la cámara
+     se aleja por debajo de 1, que es como entra la casa completa en una
+     pantalla vertical— no hay nada que limitar: se centra y listo. Sin este
+     caso, las dos cotas se cruzan y el clamp devuelve el borde, que era un
+     encuadre corrido a la nada. */
   const limitar = (v, ventana, desde, total) =>
-    Math.min(Math.max(v, desde + ventana / 2), desde + total - ventana / 2);
+    ventana >= total
+      ? desde + total / 2
+      : Math.min(Math.max(v, desde + ventana / 2), desde + total - ventana / 2);
   return {
     s,
     x: limitar(x, ancho, VISTA.x, VISTA.ancho),

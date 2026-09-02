@@ -169,13 +169,19 @@ const CONTACTO = [
   {
     que: 'Dónde',
     dato: '3 de Febrero 1325, CABA',
+    icono: 'pin',
     href: 'https://maps.google.com/?q=3+de+Febrero+1325,+CABA',
   },
-  { que: 'Cuándo', dato: 'Lunes a viernes, de 14 a 21' },
-  { que: 'WhatsApp', dato: '+54 9 11 3440-5730', href: 'https://wa.me/5491134405730' },
-  { que: 'Instagram', dato: '@somosmalka', href: 'https://www.instagram.com/somosmalka/' },
-  { que: 'Mail', dato: 'malka@casamalka.org', href: 'mailto:malka@casamalka.org' },
-  { que: 'Creada por', dato: 'Comunidad Amijai', href: 'https://amijai.org/' },
+  { que: 'Cuándo', dato: 'Lunes a viernes, de 14 a 21', icono: 'reloj' },
+  { que: 'WhatsApp', dato: '+54 9 11 3440-5730', icono: 'whatsapp', href: 'https://wa.me/5491134405730' },
+  {
+    que: 'Instagram',
+    dato: '@somosmalka',
+    icono: 'instagram',
+    href: 'https://www.instagram.com/somosmalka/',
+  },
+  { que: 'Mail', dato: 'malka@casamalka.org', icono: 'sobre', href: 'mailto:malka@casamalka.org' },
+  { que: 'Creada por', dato: 'Comunidad Amijai', icono: 'maguen', href: 'https://amijai.org/' },
 ];
 
 const INDICE = [
@@ -264,12 +270,15 @@ const VisorCasa = ({ onCerrar }) => {
       <div className="absolute inset-x-0 bottom-[8.5rem] top-14 flex items-center justify-center overflow-hidden">
         <CasaDibujada
           activo={espacio?.piso ?? 'todo'}
-          zona={espacio?.zona ?? 'casa'}
-          /* La casa entera entra completa a lo ancho —recortada deja de ser un
-             plano—; un espacio suelto llena el alto y se come los costados, que
-             es justo lo que no estás mirando. */
-          acercar={espacio ? 1.7 : 1}
-          className={espacio ? 'h-full w-auto max-w-none' : 'h-auto max-h-full w-full'}
+          zona={espacio?.zona ?? 'todo'}
+          /* El dibujo mide siempre lo mismo y lo único que cambia es la cámara.
+             Antes la vista general venía en un elemento de otro tamaño que el
+             de los espacios: al elegir uno, el dibujo cambiaba de caja de
+             golpe y se veía un salto. Ahora la casa entera entra porque la
+             cámara se aleja —abajo de 1—, no porque el elemento se achique, y
+             el viaje hasta un espacio es una sola transición continua. */
+          acercar={espacio ? 1.7 : 0.85}
+          className="h-full w-auto max-w-none"
         />
       </div>
 
@@ -344,6 +353,7 @@ const Casa = () => {
      costado ni el observer que lo mueve. */
   const [telefono, setTelefono] = useState(esTelefono);
   const [visor, setVisor] = useState(false);
+  const [menu, setMenu] = useState(false);
   useEffect(() => {
     const medir = () => {
       setAcercar(cuantoAcercar(window.innerWidth));
@@ -353,10 +363,19 @@ const Casa = () => {
     return () => window.removeEventListener('resize', medir);
   }, []);
   /* Si la ventana crece con el visor abierto, la casa ya está al costado: el
-     visor sobra y se cierra solo. */
+     visor sobra y se cierra solo. Lo mismo el menú, que es de teléfono. */
   useEffect(() => {
-    if (!telefono && visor) setVisor(false);
-  }, [telefono, visor]);
+    if (telefono) return;
+    if (visor) setVisor(false);
+    if (menu) setMenu(false);
+  }, [telefono, visor, menu]);
+
+  useEffect(() => {
+    if (!menu) return undefined;
+    const alTeclear = (e) => e.key === 'Escape' && setMenu(false);
+    window.addEventListener('keydown', alTeclear);
+    return () => window.removeEventListener('keydown', alTeclear);
+  }, [menu]);
   const manualRef = useRef(null);
   const mirar = (seccionId, espacio) => {
     const elegido = { seccion: seccionId, zona: espacio.zona, piso: espacio.piso };
@@ -489,48 +508,22 @@ const Casa = () => {
           Una casa no te recibe con el cartel de "iniciar sesión" en la cara. */}
       <header
         className={`sticky top-0 z-50 border-b bg-surface-page/90 backdrop-blur-xl transition-all duration-500 ${
-          enPortada
+          enPortada && !menu
             ? 'pointer-events-none -translate-y-3 border-transparent opacity-0'
             : 'translate-y-0 border-ink/10 opacity-100'
         }`}
       >
         <nav className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-5 sm:gap-4 sm:px-8">
           <img src={logoMalka} alt="Malka" className="h-5 w-auto shrink-0 sm:h-6" />
-          {/* La puerta a la casa va de este lado, pegada al logo y separada por
-              un filete: es de la página, no de tu cuenta. Con los tres botones
-              juntos a la derecha la barra se leía como un amontonamiento. */}
-          {telefono && (
-            <>
-              <span aria-hidden className="h-5 w-px shrink-0 bg-ink/15" />
-              <button
-                type="button"
-                onClick={() => setVisor(true)}
-                aria-label="Ver la casa por dentro"
-                title="Ver la casa por dentro"
-                className="-ml-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-pill text-ink transition-control duration-fast hover:bg-ink/5 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ink/25"
-              >
-                <IconoPropuesta nombre="casita" className="h-5 w-5" />
-              </button>
-            </>
-          )}
           {/* Con sesión iniciada, la barra deja de ofrecer lo que ya tenés: en
               vez de "registrate" te lleva adentro, que es a lo que venías. */}
-          <div className="ml-auto flex items-center gap-3 sm:gap-3">
+          <div className="ml-auto flex items-center gap-3">
             {user ? (
               <LandingButton to="/dashboard" size="sm" className="whitespace-nowrap">
                 Ir a mi cuenta
               </LandingButton>
             ) : (
               <>
-                {/* En el teléfono es un link de texto y no una píldora: tres
-                    píldoras seguidas no entran en 390px, y la que tiene que
-                    pesar es "registrate". */}
-                <Link
-                  to="/login"
-                  className="whitespace-nowrap px-1 font-grotesk text-[0.66rem] font-semibold uppercase tracking-label text-ink-soft transition-control duration-fast hover:text-ink sm:hidden"
-                >
-                  Ingresar
-                </Link>
                 <LandingButton
                   to="/login"
                   variant="outline"
@@ -545,8 +538,73 @@ const Casa = () => {
                 </LandingButton>
               </>
             )}
+            {/* En el teléfono, un menú de verdad: renglones de 56px que se
+                tocan sin apuntar, en vez de tres controles chicos apretados
+                contra el borde. Ahí adentro viven las secciones, la casa y el
+                ingreso. */}
+            {telefono && (
+              <button
+                type="button"
+                aria-expanded={menu}
+                aria-controls="menu-casa"
+                aria-label={menu ? 'Cerrar menú' : 'Abrir menú'}
+                onClick={() => setMenu((abierto) => !abierto)}
+                className="-mr-2 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-pill text-ink transition-control duration-fast hover:bg-ink/5 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ink/25"
+              >
+                <Icon name={menu ? 'close' : 'menu'} size="md" />
+              </button>
+            )}
           </div>
         </nav>
+
+        {menu && telefono && (
+          <div
+            id="menu-casa"
+            className="animate-fade-in-up border-t border-ink/10 bg-surface-page px-5 pb-8 pt-2"
+          >
+            <ul className="flex flex-col divide-y divide-ink/10">
+              <li>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenu(false);
+                    setVisor(true);
+                  }}
+                  className="flex w-full items-center gap-3 py-4 text-left font-grotesk text-base font-semibold text-ink"
+                >
+                  <IconoPropuesta nombre="casita" className="h-5 w-5 shrink-0 text-ink-soft" />
+                  Ver la casa por dentro
+                </button>
+              </li>
+              {INDICE.filter((i) => i.id !== 'sauna').map((i) => (
+                <li key={i.id}>
+                  <a
+                    href={`#${i.id}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setMenu(false);
+                      document.getElementById(i.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                    className="block py-4 font-grotesk text-base font-semibold text-ink"
+                  >
+                    {i.label}
+                  </a>
+                </li>
+              ))}
+              {!user && (
+                <li>
+                  <Link
+                    to="/login"
+                    onClick={() => setMenu(false)}
+                    className="block py-4 font-grotesk text-base font-semibold text-ink-soft"
+                  >
+                    Ingresar
+                  </Link>
+                </li>
+              )}
+            </ul>
+          </div>
+        )}
       </header>
 
       {/* El índice del recorrido, contra el borde. Con seis secciones y una
@@ -912,7 +970,14 @@ const Casa = () => {
                   está por escribirnos no tiene por qué perder la página. */}
               <dl className="mt-14 grid gap-x-8 gap-y-6 border-t border-ink/10 pt-10 sm:grid-cols-2">
                 {CONTACTO.map((c) => (
-                  <div key={c.que}>
+                  <div key={c.que} className="flex items-start gap-3">
+                    {/* El ícono no decora: es lo que hace que la lista se lea de
+                        un vistazo. En una grilla de seis datos, el rótulo en
+                        versalita chica es lo último que mira el ojo. */}
+                    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-pill border border-ink/12 bg-surface/60 text-ink-soft">
+                      <IconoPropuesta nombre={c.icono} className="h-[18px] w-[18px]" />
+                    </span>
+                    <div className="min-w-0">
                     <dt className="text-[0.66rem] font-semibold uppercase tracking-label text-ink-faint">
                       {c.que}
                     </dt>
@@ -922,12 +987,16 @@ const Casa = () => {
                           href={c.href}
                           target="_blank"
                           rel="noreferrer noopener"
-                          className="group inline-flex items-center gap-2 text-ink transition-colors duration-base hover:text-primary-700"
+                          /* Inline y no flex: cuando la dirección se parte en
+                             dos renglones, la flechita tiene que seguir a la
+                             última palabra, no quedarse flotando al final del
+                             primero. */
+                          className="group text-ink transition-colors duration-base hover:text-primary-700"
                         >
                           {c.dato}
                           <span
                             aria-hidden
-                            className="text-ink-faint transition-transform duration-base group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary-700"
+                            className="ml-1.5 inline-block text-ink-faint transition-transform duration-base group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary-700"
                           >
                             ↗
                           </span>
@@ -936,6 +1005,7 @@ const Casa = () => {
                         <span className="text-ink">{c.dato}</span>
                       )}
                     </dd>
+                    </div>
                   </div>
                 ))}
               </dl>

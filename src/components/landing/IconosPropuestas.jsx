@@ -153,8 +153,63 @@ const Casita = () => (
   </>
 );
 
+/** Dónde: el pin del mapa. */
+const Pin = () => (
+  <>
+    <path d="M12 21c4.2-4.4 6.3-7.7 6.3-10a6.3 6.3 0 1 0-12.6 0c0 2.3 2.1 5.6 6.3 10z" {...comun} />
+    <circle cx="12" cy="11" r="2.3" {...comun} />
+  </>
+);
+
+/** Cuándo: el reloj. */
+const Reloj = () => (
+  <>
+    <circle cx="12" cy="12" r="8.2" {...comun} />
+    <path d="M12 7.2V12l3.2 1.9" {...comun} />
+  </>
+);
+
+/** WhatsApp: el globo con el tubo adentro, a línea como el resto. */
+const Whatsapp = () => (
+  <>
+    <path d="M20.2 11.7a8.2 8.2 0 0 1-12.3 7.1L3.8 20l1.2-4A8.2 8.2 0 1 1 20.2 11.7z" {...comun} />
+    <path d="M9.4 9.2c-.3.7-.2 1.6.4 2.5.7 1.1 1.7 1.9 2.9 2.3.9.3 1.6.2 2-.2l-1-1.2-1 .4a4.6 4.6 0 0 1-1.9-2l.6-.8-.9-1.3z" {...comun} />
+  </>
+);
+
+/** Instagram: el cuadrado redondeado con el lente. */
+const Instagram = () => (
+  <>
+    <rect x="4" y="4" width="16" height="16" rx="4.6" {...comun} />
+    <circle cx="12" cy="12" r="3.6" {...comun} />
+    <circle cx="16.6" cy="7.4" r=".9" {...comun} />
+  </>
+);
+
+/** Mail: el sobre. */
+const Sobre = () => (
+  <>
+    <rect x="3.2" y="5.6" width="17.6" height="12.8" rx="2.2" {...comun} />
+    <path d="M3.8 7.4L12 13l8.2-5.6" {...comun} />
+  </>
+);
+
+/** Amijai: el maguén david. */
+const MaguenChico = () => (
+  <>
+    <path d="M12 3.4l7.4 12.8H4.6z" {...comun} />
+    <path d="M12 20.6L4.6 7.8h14.8z" {...comun} />
+  </>
+);
+
 const FIGURAS = {
   casita: Casita,
+  pin: Pin,
+  reloj: Reloj,
+  whatsapp: Whatsapp,
+  instagram: Instagram,
+  sobre: Sobre,
+  maguen: MaguenChico,
   salon: Velas,
   cocinita: Olla,
   cowork: Laptopcita,
