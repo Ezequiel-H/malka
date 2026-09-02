@@ -1189,9 +1189,10 @@ export const ParrillaArgentina = ({ x, y, ancho = 132, alto = 118, chimenea = tr
   const mesada = y - 46;
   return (
     <g className={filete} strokeWidth={TRAZO} strokeLinejoin="round">
-      {/* El paredón de ladrillo contra el que se hace la parrilla, y el cuerpo
-          de mampostería debajo de la mesada. */}
-      <rect x={x - 8} y={mesada - alto + 40} width={ancho + 16} height={alto - 40 + 46} className="fill-casa-fondo stroke-ink/30" strokeWidth="1" />
+      {/* El cuerpo de mampostería debajo de la mesada. La pared de atrás no se
+          dibuja: la parrilla va contra la medianera del patio, y agregarle su
+          propio paredón montaba dos paredes con perspectivas distintas —que es
+          exactamente el bulto raro que se veía. */}
       <rect x={x} y={mesada} width={ancho} height={46} className="fill-casa-costado" />
       {Array.from({ length: 3 }, (_, f) =>
         Array.from({ length: 5 }, (_, c) => (

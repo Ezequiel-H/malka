@@ -37,119 +37,58 @@ import logoMalka from '../assets/logo-malka-positivo.png';
  */
 const SECCIONES = [
   /* La portada no lleva texto en la columna: el texto de la portada es el
-     wordmark y la frase, centrados sobre la casa. Dos titulares compitiendo en
-     la misma pantalla era exactamente el problema. */
+     wordmark y la frase. Dos titulares en la misma pantalla era el problema. */
   { id: 'entrada', piso: 'todo', zona: 'todo', portada: true },
   {
-    id: 'intro',
+    id: 'quienes',
     piso: 'todo',
-    zona: 'fachada',
+    zona: 'casa',
     kicker: 'Casa Malka · Comunidad Amijai',
     titulo: 'Esto es Malka',
     entrada: 'Una casa abierta donde siempre hay un mate esperándote.',
     texto:
-      'Un espacio de reunión, intercambio y actividades para jóvenes judíos de 18 a 35 que buscan un lugar de pertenencia que los identifique.',
+      'Un espacio de reunión, intercambio y actividades para jóvenes judíos de 18 a 35 que buscan un lugar de pertenencia que los identifique. Podés caer de lunes a viernes, entre las 14 y las 21: no hace falta asociarse ni anotarse.',
+    espacios: [
+      ['El salón', 'La mesa larga y las mejores ceremonias de Shabat.'],
+      ['La cocina', 'Experiencias culinarias de la mano de referentes.'],
+      ['El cowork', 'Wifi, escritorio y café con cakes toda la semana.'],
+      ['La sala de abajo', 'Yoga, escritura, cine y lo que se te ocurra.'],
+      ['La terraza', 'Unplugged, algún fueguito y la ciudad abajo.'],
+      ['El fondo', 'Los árboles, la pileta y el sueño del quincho con parrilla.'],
+    ],
   },
   {
-    id: 'puerta',
-    piso: 'planta',
-    zona: 'puerta',
-    kicker: 'La puerta',
-    titulo: 'Venite darling',
-    entrada: 'Podés caer de lunes a viernes, entre las 14 y las 21.',
-    texto:
-      'No hace falta asociarse ni anotarse: se entra y ya. Eso sí, si es feriado o festividad puede que estemos cerrados o con horarios especiales, ¡así que chill!',
-  },
-  {
-    id: 'salon',
+    id: 'propuestas',
     piso: 'planta',
     zona: 'mesa',
-    kicker: 'Planta baja',
-    titulo: 'El salón',
-    entrada: 'Acá pasan las mejores ceremonias de Shabat.',
+    kicker: 'Muchas puertas',
+    titulo: 'Lo que se puede hacer acá',
+    entrada: 'Cada uno vive su propio judaísmo.',
     texto:
-      'Un salón que te recibe con diferentes propuestas: hablamos de Torá y también vivimos experiencias culinarias únicas de la mano de referentes de la gastronomía.',
+      'Por eso Malka tiene muchas puertas, y cada una te lleva a experiencias sociales, culturales y espirituales distintas. La agenda cambia todas las semanas y vive adentro.',
   },
   {
-    id: 'cocina',
-    piso: 'planta',
-    zona: 'cocina',
-    kicker: 'Planta baja',
-    titulo: 'La cocina',
-    entrada: 'Experiencias culinarias únicas.',
-    texto:
-      'De la mano de referentes de la gastronomía, y también del que se anima a cocinar para todos. Lo que sale de acá termina siempre en la mesa larga o en el patio.',
-  },
-  {
-    id: 'quincho',
-    piso: 'todo',
-    zona: 'parrilla',
-    kicker: 'En el fondo',
-    titulo: 'El sueño del quincho',
-    entrada: 'Cumplimos el sueño del quincho con parrilla.',
-    texto:
-      'Para comer rico mientras charlamos y debatimos. ¿Los temas? Un hermoso variadito que va desde judaísmo moderno hasta economía y emprendedurismo. Acá hay lugar para todo lo que sea aprendizaje y compartir ideas.',
-  },
-  {
-    id: 'pileta',
-    piso: 'todo',
-    zona: 'pileta',
-    kicker: 'En el patio',
-    titulo: 'La pileta',
-    entrada: 'Una pileta para disfrutar el verano.',
-    texto:
-      'Del otro lado del patio, con sus árboles y su sombra. Siempre hay un mate esperándote, un café para compartir y, cuando aprieta el calor, esto.',
-  },
-  {
-    id: 'cowork',
-    piso: 'primero',
-    zona: 'cowork',
-    kicker: 'Primer piso',
-    titulo: 'El cowork',
-    entrada: 'Trabajá durante la semana como en casa.',
-    texto:
-      'Queremos que te apropies del espacio: nosotros ponemos el wifi, el lugar y el café con cakes, vos traé tu compu y buena energía.',
-  },
-  {
-    id: 'bano',
+    id: 'sauna',
     piso: 'primero',
     zona: 'bano',
     kicker: 'Sauna Sessions',
-    titulo: 'El sauna y el jacuzzi',
-    entrada: 'Sí, la casa también tiene eso.',
+    titulo: 'Sí, también hay sauna',
+    entrada: 'Y jacuzzi. La casa tiene esas cosas.',
     texto:
-      'Un rato de calor y de charla lenta, que es otra forma de encontrarse. Cuándo cae la próxima session lo vas a ver en la agenda.',
+      'Un rato de calor y de charla lenta, que resultó ser otra forma de encontrarse. Cuándo cae la próxima session lo vas a ver en la agenda.',
   },
-  {
-    id: 'terraza',
-    piso: 'terraza',
-    zona: 'banda',
-    kicker: 'Arriba de todo',
-    titulo: 'La terraza',
-    entrada: 'Nuestro lugar premium para frenar el tiempo.',
-    texto:
-      'Acá disfrutamos de encuentros, unplugged musicales, algún fueguito y nuevos vínculos. Y de mirar un ratito las estrellas.',
-  },
-  {
-    id: 'suca',
-    piso: 'terraza',
-    zona: 'suca',
-    kicker: 'Las festividades',
-    titulo: 'La sucá',
-    entrada: 'En Sucot se arma arriba y no se baja en toda la semana.',
-    texto:
-      'Cada festividad tiene su forma en la casa: las velas del viernes, la sucá de octubre, la januquiá en la ventana.',
-  },
-  {
-    id: 'subsuelo',
-    piso: 'subsuelo',
-    zona: 'clase',
-    kicker: 'Abajo de todo',
-    titulo: 'La sala',
-    entrada: 'Yoga, escritura, cine y lo que se te ocurra.',
-    texto:
-      'Practicamos talleres y también hay lugar para charlas, bootcamps y diferentes clases. Es el nivel más callado de la casa. Del otro lado entran los autos.',
-  },
+];
+
+/* Las seis puertas de Malka, que ya son las suyas: están en su sitio desde
+   siempre y son la mejor manera de decir qué se puede hacer acá sin escribir
+   una lista de actividades que vence en una semana. */
+const PROPUESTAS = [
+  { icono: 'book', label: 'Judaísmo' },
+  { icono: 'sparkles', label: 'Actividades' },
+  { icono: 'coffee', label: 'Coworking' },
+  { icono: 'chef', label: 'Asaditos' },
+  { icono: 'leaf', label: 'Huerta' },
+  { icono: 'music', label: 'Música' },
 ];
 
 /**
@@ -239,7 +178,7 @@ const Casa = () => {
      navegador, así que la cámara —que sólo mira en qué sección estás— la
      acompaña sola. */
   const bajar = () => {
-    document.getElementById('intro')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.getElementById('quienes')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
   /**
@@ -358,11 +297,12 @@ const Casa = () => {
         <div className="lg:grid lg:grid-cols-12 lg:gap-x-12">
           {/* El dibujo: fijo al costado en escritorio, fijo arriba en mobile. */}
           <div className="sticky top-16 z-30 -mx-5 bg-surface-page/95 px-5 backdrop-blur sm:-mx-8 sm:px-8 lg:top-16 lg:z-auto lg:col-span-6 lg:mx-0 lg:flex lg:h-[calc(100vh-4rem)] lg:items-center lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
-            <div
-              className={`relative w-full transition-transform duration-[1100ms] ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none ${
-                enPortada ? 'lg:translate-x-1/2 lg:-translate-y-[7%] lg:scale-[0.94]' : ''
-              }`}
-            >
+            {/* La casa no se mueve nunca de su columna. Antes se corría al
+                centro en la portada y volvía al scrollear: ese viaje lateral, con
+                el texto cortándose al mismo tiempo, era el momento más brusco de
+                la página. Ahora lo único que cambia es el encuadre de la cámara,
+                que ya sabe moverse suave. */}
+            <div className="relative w-full">
             <CasaDibujada
               activo={activo}
               zona={zona}
@@ -371,74 +311,46 @@ const Casa = () => {
 
             </div>
 
-            {/* La portada se reparte arriba y abajo de la casa: el wordmark
-                corona y la frase apoya. Todo junto debajo dejaba media pantalla
-                de crema vacío arriba, que es lo que se sentía. */}
-            <div
-              className={`pointer-events-none absolute inset-x-0 top-[6%] hidden justify-center transition-opacity duration-700 lg:flex lg:translate-x-1/2 ${
-                enPortada ? 'opacity-100' : 'opacity-0'
-              }`}
-            >
-              <img
-                src={logoMalka}
-                alt="Malka"
-                className="h-14 w-auto animate-fade-in-up [animation-delay:1250ms] [animation-duration:700ms] [animation-fill-mode:backwards]"
-              />
-            </div>
-
-            {/* La portada, encima de la casa centrada. Se va cuando la casa se
-                corre: a partir de ahí manda el texto de cada piso. */}
-            <div
-              /* La portada vive fuera del envoltorio que se transforma —si no,
-                 el texto se achica y se mueve con la casa— y se corre al centro
-                 por su cuenta, porque la columna ocupa media pantalla. */
-              className={`pointer-events-none absolute inset-x-0 bottom-[7%] hidden flex-col items-center gap-5 text-center transition-opacity duration-700 lg:flex lg:translate-x-1/2 lg:gap-4 ${
-                enPortada ? 'opacity-100' : 'opacity-0'
-              }`}
-            >
-              {/* El wordmark y la frase entran cuando la casa terminó de
-                  armarse, no antes: si aparecen mientras el edificio todavía se
-                  está montando, compiten con él y no se ve ninguno de los dos. */}
-              <p className="max-w-xl animate-fade-in-up font-grotesk text-[2rem] font-semibold leading-[1.1] tracking-tight text-ink [animation-delay:1400ms] [animation-duration:700ms] [animation-fill-mode:backwards]">
-                El punto de encuentro para tu identidad judía.
-              </p>
-
-              {/* Los tres datos que decide cualquiera que llega: para quién,
-                  cuándo y dónde. En la portada valen más que cualquier frase de
-                  bienvenida. */}
-              <ul className="flex animate-fade-in-up flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[0.68rem] font-semibold uppercase tracking-label text-ink-soft [animation-delay:1520ms] [animation-fill-mode:backwards]">
-                {['18 a 35 años', 'Lunes a viernes, 14 a 21', '3 de Febrero 1325'].map((d, i) => (
-                  <li key={d} className="flex items-center gap-3">
-                    {i > 0 && <span className="h-1 w-1 rounded-pill bg-ink-faint" />}
-                    {d}
-                  </li>
-                ))}
-              </ul>
-
-              <div className="pointer-events-auto mt-2 flex animate-fade-in-up flex-col items-center gap-5 [animation-delay:1640ms] [animation-fill-mode:backwards]">
-                <div className="flex flex-wrap items-center justify-center gap-3">
-                  <LandingButton size="lg" icon="chevronDown" onClick={bajar}>
-                    Conocé la casa
-                  </LandingButton>
-                  <LandingButton to={user ? '/activities' : '/register'} variant="outline" size="lg">
-                    {user ? 'Ver la agenda' : 'Entrá a tu casa'}
-                  </LandingButton>
-                </div>
-              </div>
-            </div>
-          </div>
+                      </div>
 
           <div className="lg:col-span-6">
             {SECCIONES.map((p, i) =>
               p.portada ? (
+                /* La portada es la primera sección de la columna, no una capa
+                   flotando encima: así entra y sale con el scroll como todo lo
+                   demás y no hay ninguna coreografía que sincronizar. */
                 <section
                   key={p.id}
                   id={p.id}
                   data-piso={p.piso}
                   data-zona={p.zona}
-                  className="min-h-screen"
-                  aria-hidden
-                />
+                  className="flex min-h-[92vh] flex-col justify-center pb-14 pt-[42vh] lg:min-h-[88vh] lg:py-20"
+                >
+                  <img
+                    src={logoMalka}
+                    alt="Malka"
+                    className="h-12 w-auto self-start animate-fade-in-up [animation-delay:1250ms] [animation-duration:700ms] [animation-fill-mode:backwards]"
+                  />
+                  <p className="mt-7 max-w-xl animate-fade-in-up font-grotesk text-[clamp(1.7rem,3.4vw,2.4rem)] font-semibold leading-[1.1] tracking-tight text-ink [animation-delay:1400ms] [animation-duration:700ms] [animation-fill-mode:backwards]">
+                    El punto de encuentro para tu identidad judía.
+                  </p>
+                  <ul className="mt-7 flex animate-fade-in-up flex-wrap items-center gap-x-3 gap-y-2 text-[0.68rem] font-semibold uppercase tracking-label text-ink-soft [animation-delay:1520ms] [animation-fill-mode:backwards]">
+                    {['18 a 35 años', 'Lunes a viernes, 14 a 21', '3 de Febrero 1325'].map((d, i) => (
+                      <li key={d} className="flex items-center gap-3">
+                        {i > 0 && <span className="h-1 w-1 rounded-pill bg-ink-faint" />}
+                        {d}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-9 flex animate-fade-in-up flex-wrap items-center gap-3 [animation-delay:1640ms] [animation-fill-mode:backwards]">
+                    <LandingButton size="lg" icon="chevronDown" onClick={bajar}>
+                      Conocé la casa
+                    </LandingButton>
+                    <LandingButton to={user ? '/activities' : '/register'} variant="outline" size="lg">
+                      {user ? 'Ver la agenda' : 'Entrá a tu casa'}
+                    </LandingButton>
+                  </div>
+                </section>
               ) : (
               <section
                 key={p.id}
@@ -466,46 +378,54 @@ const Casa = () => {
                 <p className="mt-6 text-2xl leading-snug sm:text-3xl">{p.entrada}</p>
                 <p className="mt-5 max-w-xl leading-relaxed text-ink-soft sm:text-lg">{p.texto}</p>
 
+                {/* Los espacios de la casa, en una lista corta. Antes cada uno
+                    tenía su sección y la página se hacía interminable: nombrarlos
+                    acá cuenta lo mismo y deja que el dibujo haga el resto. */}
+                {p.espacios && (
+                  <ul className="mt-9 grid gap-x-8 gap-y-4 sm:grid-cols-2">
+                    {p.espacios.map(([donde, que]) => (
+                      <li key={donde} className="border-t border-ink/10 pt-3">
+                        <p className="font-semibold leading-tight text-ink">{donde}</p>
+                        <p className="mt-1 text-sm leading-relaxed text-ink-soft">{que}</p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {p.id === 'propuestas' && (
+                  <>
+                    <ul className="mt-9 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3">
+                      {PROPUESTAS.map((c) => (
+                        <li key={c.label} className="flex items-center gap-3">
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill border border-primary/25 text-primary-700">
+                            <Icon name={c.icono} size="sm" />
+                          </span>
+                          <span className="font-semibold text-ink">{c.label}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <p className="mt-12 text-[0.7rem] font-semibold uppercase tracking-label text-ink-soft">
+                      ¿Tenés más preguntas? Es por acá
+                    </p>
+                    <ul className="mt-6 grid gap-x-8 gap-y-6 sm:grid-cols-2">
+                      {PREGUNTAS.map((q) => (
+                        <li key={q.pregunta}>
+                          <p className="font-grotesk font-bold leading-tight tracking-tight text-primary-700">
+                            {q.veredicto}
+                          </p>
+                          <p className="mt-1 font-semibold leading-snug text-ink">{q.pregunta}</p>
+                          <p className="mt-1 text-sm leading-relaxed text-ink-soft">{q.detalle}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+
 
               </section>
               )
             )}
-
-            {/* ---- Las preguntas, de frente ---- */}
-            <section
-              id="preguntas"
-              data-piso="todo"
-              data-zona="casa"
-              className="flex min-h-[86vh] flex-col justify-center py-20"
-            >
-              <p className="text-[0.7rem] font-semibold uppercase tracking-label text-ink-soft">
-                ¿Tenés más preguntas?
-              </p>
-              <h2 className="mt-4 text-[clamp(2rem,4.4vw,3rem)] font-bold uppercase leading-[0.95] tracking-display">
-                Es por acá
-              </h2>
-
-              <ul className="mt-10 grid gap-x-6 gap-y-7 sm:grid-cols-2">
-                {PREGUNTAS.map((p) => (
-                  <li key={p.pregunta} className="flex gap-4">
-                    {/* El iconito de línea es el mismo lenguaje que usa Malka
-                        hoy en su sitio para las tres columnas de "cuándo, qué,
-                        dónde". Acá cumple además una función: da entrada a la
-                        respuesta, que es lo que se lee primero. */}
-                    <span className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-pill border border-primary/25 text-primary-700">
-                      <Icon name={p.icono} size="md" />
-                    </span>
-                    <div>
-                      <p className="font-grotesk text-lg font-bold leading-tight tracking-tight text-primary-700">
-                        {p.veredicto}
-                      </p>
-                      <p className="mt-1 font-semibold leading-snug text-ink">{p.pregunta}</p>
-                      <p className="mt-1 text-sm leading-relaxed text-ink-soft">{p.detalle}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </section>
 
             {/* ---- Quiénes te reciben ---- */}
             <section
