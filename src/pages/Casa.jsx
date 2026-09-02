@@ -558,9 +558,14 @@ const Casa = () => {
         </nav>
 
         {menu && telefono && (
+          /* Absoluto y no en el flujo. Cuando el panel empujaba la página, al
+             tocar una sección pasaban dos cosas en el mismo frame: el panel
+             desaparecía —y todo subía 400px— y el navegador scrolleaba al
+             destino calculado con la página vieja. Resultado: caías media
+             pantalla más abajo, en la sección siguiente. */
           <div
             id="menu-casa"
-            className="animate-fade-in-up border-t border-ink/10 bg-surface-page px-5 pb-8 pt-2"
+            className="absolute inset-x-0 top-full animate-fade-in-up border-b border-ink/10 bg-surface-page px-5 pb-8 pt-2 shadow-[0_18px_24px_-18px_rgba(44,61,52,0.35)]"
           >
             <ul className="flex flex-col divide-y divide-ink/10">
               <li>
@@ -746,7 +751,7 @@ const Casa = () => {
                 data-zona={p.zona}
                 /* En el teléfono no hay dibujo al costado ni franja arriba:
                    la sección es texto y ocupa lo que necesita. */
-                className="flex min-h-[62vh] flex-col justify-center py-14 md:min-h-screen md:py-0 md:pt-24 md:pb-24 xl:pt-32 xl:pb-32"
+                className="flex min-h-[62vh] scroll-mt-16 flex-col justify-center py-14 md:min-h-screen md:scroll-mt-0 md:py-0 md:pt-24 md:pb-24 xl:pt-32 xl:pb-32"
               >
                 {/* El nombre del espacio, con su filete: es lo que ata el
                     texto con lo que la cámara está mirando. Sin esa etiqueta,
@@ -889,7 +894,7 @@ const Casa = () => {
               id="staff"
               data-piso="terraza"
               data-zona="equipo"
-              className="flex min-h-[62vh] flex-col justify-center py-14 md:min-h-screen md:py-0 md:pt-24 md:pb-24 xl:pt-32 xl:pb-32"
+              className="flex min-h-[62vh] scroll-mt-16 flex-col justify-center py-14 md:min-h-screen md:scroll-mt-0 md:py-0 md:pt-24 md:pb-24 xl:pt-32 xl:pb-32"
             >
               <p className="text-[0.7rem] font-semibold uppercase tracking-label text-ink-soft">
                 Quiénes te reciben
@@ -941,7 +946,7 @@ const Casa = () => {
               id="sumate"
               data-piso="todo"
               data-zona="ciudad"
-              className="flex min-h-[62vh] flex-col justify-center py-14 md:min-h-screen md:py-0 md:pt-24 md:pb-24 xl:pt-32 xl:pb-32"
+              className="flex min-h-[62vh] scroll-mt-16 flex-col justify-center py-14 md:min-h-screen md:scroll-mt-0 md:py-0 md:pt-24 md:pb-24 xl:pt-32 xl:pb-32"
             >
               <h2 className="text-[clamp(2rem,4.4vw,3rem)] font-bold uppercase leading-[0.95] tracking-display">
                 {user ? 'Ya sos de la casa' : 'Vení a conocer Malka'}
@@ -994,11 +999,14 @@ const Casa = () => {
                           className="group text-ink transition-colors duration-base hover:text-primary-700"
                         >
                           {c.dato}
+                          {/* El espacio duro pega la flechita a la última
+                              palabra: si no, cuando la dirección se parte en
+                              dos renglones, la flecha se va sola al segundo. */}
                           <span
                             aria-hidden
-                            className="ml-1.5 inline-block text-ink-faint transition-transform duration-base group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary-700"
+                            className="inline-block text-ink-faint transition-transform duration-base group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary-700"
                           >
-                            ↗
+                            {'\u00A0↗'}
                           </span>
                         </a>
                       ) : (

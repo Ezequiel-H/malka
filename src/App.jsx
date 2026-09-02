@@ -215,8 +215,19 @@ function App() {
     </ErrorBoundary>
   );
 
+  /* La vitrina pública no lleva el shell aunque haya sesión: es una página de
+     puertas afuera, con su propia barra y su propio pie. Adentro del shell
+     quedaba con dos cabeceras y con la barra de pestañas de la app tapándole
+     el final. Su barra ya sabe qué mostrarle a alguien logueado —"ir a mi
+     cuenta" en vez de "registrate"—, que es justamente lo que no se veía. */
+  const esVitrina = location.pathname === '/casa';
+
   // Las rutas sin sesión (login, registro, /ds) no llevan el shell.
-  return <div className="App min-h-screen">{user ? <AppShell>{routes}</AppShell> : routes}</div>;
+  return (
+    <div className="App min-h-screen">
+      {user && !esVitrina ? <AppShell>{routes}</AppShell> : routes}
+    </div>
+  );
 }
 
 export default App;
