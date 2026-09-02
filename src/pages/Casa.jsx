@@ -494,28 +494,28 @@ const Casa = () => {
             : 'translate-y-0 border-ink/10 opacity-100'
         }`}
       >
-        <nav className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-5 sm:px-8">
-          <img src={logoMalka} alt="Malka" className="h-6 w-auto shrink-0" />
-          {/* Con sesión iniciada, la barra deja de ofrecer lo que ya tenés: en
-              vez de "registrate" te lleva adentro, que es a lo que venías. */}
-          <div className="ml-auto flex items-center gap-2 sm:gap-3">
-            {/* En el teléfono la casa no está a la vista mientras leés, así que
-                la puerta para verla vive acá arriba y no adentro del texto:
-                está siempre a un toque, en cualquier sección. */}
-            {telefono && (
+        <nav className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-5 sm:gap-4 sm:px-8">
+          <img src={logoMalka} alt="Malka" className="h-5 w-auto shrink-0 sm:h-6" />
+          {/* La puerta a la casa va de este lado, pegada al logo y separada por
+              un filete: es de la página, no de tu cuenta. Con los tres botones
+              juntos a la derecha la barra se leía como un amontonamiento. */}
+          {telefono && (
+            <>
+              <span aria-hidden className="h-5 w-px shrink-0 bg-ink/15" />
               <button
                 type="button"
                 onClick={() => setVisor(true)}
                 aria-label="Ver la casa por dentro"
                 title="Ver la casa por dentro"
-                /* Sólo el ícono: con el logo, "ingresar" y "registrate" no
-                   entran cuatro cosas con texto en 390px, y la que no puede
-                   achicarse es la que te mete adentro. */
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-pill border border-ink/20 text-ink transition-control duration-fast hover:border-ink/40 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ink/25"
+                className="-ml-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-pill text-ink transition-control duration-fast hover:bg-ink/5 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ink/25"
               >
                 <IconoPropuesta nombre="casita" className="h-5 w-5" />
               </button>
-            )}
+            </>
+          )}
+          {/* Con sesión iniciada, la barra deja de ofrecer lo que ya tenés: en
+              vez de "registrate" te lleva adentro, que es a lo que venías. */}
+          <div className="ml-auto flex items-center gap-3 sm:gap-3">
             {user ? (
               <LandingButton to="/dashboard" size="sm" className="whitespace-nowrap">
                 Ir a mi cuenta
@@ -619,7 +619,10 @@ const Casa = () => {
           )}
 
           <div className="md:col-span-6 lg:col-span-7 xl:col-span-6">
-            {SECCIONES.map((p, i) =>
+            {/* En el teléfono el sauna se cae: es un remate de dos líneas que
+                sólo funciona con el dibujo al lado mostrando el baño. Sin la
+                casa, "sí, también hay sauna" es una frase suelta. */}
+            {SECCIONES.filter((p) => !(telefono && p.id === 'sauna')).map((p, i) =>
               p.portada ? (
                 /* La portada es la primera sección de la columna, no una capa
                    flotando encima: así entra y sale con el scroll como todo lo
@@ -633,7 +636,7 @@ const Casa = () => {
                      después de la franja del dibujo, que en mobile ya ocupa su
                      lugar en el flujo. Con el colchón, el wordmark caía fuera
                      de la primera pantalla. */
-                  className="flex min-h-[42vh] flex-col justify-start pb-12 pt-7 md:min-h-screen md:justify-center md:py-24 xl:py-32"
+                  className="flex min-h-[42vh] flex-col justify-start pb-16 pt-7 md:min-h-screen md:justify-center md:py-24 xl:py-32"
                 >
                   {/* En el teléfono la casa aparece una vez, quieta, arriba de
                       todo: es la cara de la página y la puerta al recorrido,
@@ -643,7 +646,7 @@ const Casa = () => {
                       type="button"
                       onClick={() => setVisor(true)}
                       aria-label="Ver la casa por dentro"
-                      className="-mx-5 mb-2 block w-[calc(100%+2.5rem)] animate-fade-in-up [animation-duration:900ms] [animation-fill-mode:backwards]"
+                      className="-mx-5 -mt-[9vh] mb-1 block w-[calc(100%+2.5rem)] animate-fade-in-up [animation-duration:900ms] [animation-fill-mode:backwards]"
                     >
                       <CasaDibujada
                         activo="todo"
