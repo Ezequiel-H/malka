@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import CasaDibujada from '../components/landing/casa/CasaDibujada';
 import LandingButton from '../components/landing/LandingButton';
 import logoMalka from '../assets/logo-malka-positivo.png';
+import { quiereQuietud } from '../components/landing/scrollFx';
 
 /**
  * La landing como plano de la casa.
@@ -76,6 +77,65 @@ const PISOS = [
 
 const Casa = () => {
   const [activo, setActivo] = useState('todo');
+  const columnaRef = useRef(null);
+  const heroRef = useRef(null);
+  const textoRef = useRef(null);
+
+  /**
+   * La portada: la casa arranca centrada, con el wordmark y la frase, y se
+   * corre a su columna cuando empezás a bajar.
+   *
+   * El desplazamiento es una función del scroll —igual que la cámara— así que
+   * la casa acompaña el dedo en vez de animarse sola. Y no hay dos casas: es la
+   * misma, corriéndose. Dibujar una para la portada y otra para el recorrido
+   * habría significado un salto en el medio.
+   */
+  useEffect(() => {
+    const columna = columnaRef.current;
+    const hero = heroRef.current;
+    const texto = textoRef.current;
+    if (!columna || !hero || !texto) return undefined;
+
+    const suave = (t) => t * t * (3 - 2 * t);
+    let pedido = null;
+
+    const pintar = () => {
+      pedido = null;
+      const recorrido = window.innerHeight * 0.75;
+      const p = Math.min(1, Math.max(0, window.scrollY / recorrido));
+      const e = suave(p);
+      const ancho = window.innerWidth >= 1024;
+
+      /* Además de correrse, en la portada la casa sube un poco: es lo que deja
+         el hueco para el wordmark y la frase sin achicar el dibujo del resto de
+         la página. */
+      columna.style.transform = ancho
+        ? `translate(${(1 - e) * 50}%, ${(1 - e) * -7}%) scale(${1 + (1 - e) * 0.04})`
+        : '';
+      hero.style.opacity = `${Math.max(0, 1 - p * 1.7)}`;
+      hero.style.pointerEvents = p > 0.4 ? 'none' : 'auto';
+      texto.style.opacity = ancho ? `${e}` : '1';
+    };
+
+    if (quiereQuietud()) {
+      columna.style.transform = '';
+      hero.style.opacity = '0';
+      texto.style.opacity = '1';
+      return undefined;
+    }
+
+    const alScrollear = () => {
+      if (pedido == null) pedido = requestAnimationFrame(pintar);
+    };
+    pintar();
+    window.addEventListener('scroll', alScrollear, { passive: true });
+    window.addEventListener('resize', alScrollear);
+    return () => {
+      if (pedido != null) cancelAnimationFrame(pedido);
+      window.removeEventListener('scroll', alScrollear);
+      window.removeEventListener('resize', alScrollear);
+    };
+  }, []);
 
   useEffect(() => {
     const obs = new IntersectionObserver(
@@ -117,14 +177,32 @@ const Casa = () => {
       <main className="mx-auto max-w-6xl px-5 sm:px-8">
         <div className="lg:grid lg:grid-cols-12 lg:gap-x-12">
           {/* El dibujo: fijo al costado en escritorio, fijo arriba en mobile. */}
-          <div className="sticky top-16 z-30 -mx-5 bg-surface-page/95 px-5 backdrop-blur sm:-mx-8 sm:px-8 lg:top-16 lg:z-auto lg:col-span-6 lg:mx-0 lg:flex lg:h-[calc(100vh-4rem)] lg:items-center lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
+          <div
+            ref={columnaRef}
+            className="sticky top-16 z-30 -mx-5 bg-surface-page/95 px-5 backdrop-blur will-change-transform sm:-mx-8 sm:px-8 lg:top-16 lg:z-auto lg:col-span-6 lg:mx-0 lg:flex lg:h-[calc(100vh-4rem)] lg:items-center lg:bg-transparent lg:px-0 lg:backdrop-blur-none"
+          >
             <CasaDibujada
               activo={activo}
-              className="mx-auto h-[36vh] w-auto max-w-full py-2 lg:h-auto lg:max-h-[calc(100vh-8rem)] lg:w-full lg:py-0"
+              className="mx-auto h-[36vh] w-auto max-w-full py-2 lg:h-auto lg:max-h-[calc(100vh-9rem)] lg:w-full lg:py-0"
             />
+
+            {/* La portada, encima de la casa centrada. Se va cuando la casa se
+                corre: a partir de ahí manda el texto de cada piso. */}
+            <div
+              ref={heroRef}
+              className="pointer-events-none absolute inset-x-0 bottom-2 hidden flex-col items-center gap-4 text-center lg:flex"
+            >
+              <img src={logoMalka} alt="Malka" className="h-9 w-auto" />
+              <p className="max-w-md font-grotesk text-lg leading-snug text-ink">
+                El punto de encuentro para tu identidad judía.
+              </p>
+              <span className="text-[0.68rem] font-semibold uppercase tracking-label text-ink-muted">
+                Bajá y conocé la casa
+              </span>
+            </div>
           </div>
 
-          <div className="lg:col-span-6">
+          <div ref={textoRef} className="lg:col-span-6">
             {PISOS.map((p, i) => (
               <section
                 key={p.id}

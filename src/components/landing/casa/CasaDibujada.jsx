@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Guirnalda, Humo, Persona, PersonaSentada, PersonaSilla, Planta, Vela } from './piezas';
+import { Guirnalda, Humo, Persona, PersonaSentada, PersonaSilla, Vela } from './piezas';
 import {
   Alacena,
   Arbol,
@@ -33,6 +33,7 @@ import {
   Plato,
   Platillo,
   Parlante,
+  Pileta,
   Piso,
   Jacuzzi,
   Porton,
@@ -96,7 +97,7 @@ const centro = (id) => {
 };
 
 const FOCOS = {
-  todo: { x: 236, y: 268, s: 1 },
+  todo: { x: 236, y: 262, s: 0.92 },
   terraza: centro('terraza'),
   primero: centro('primero'),
   planta: centro('planta'),
@@ -234,12 +235,17 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
     };
   }, []);
 
-  const luz = (id) =>
-    activo === 'todo' || activo === id || (id === 'quincho' && activo === 'salon')
-      ? 'opacity-100'
-      : 'opacity-25';
+  const enFoco = (id) => activo === 'todo' || activo === id;
 
-  const grupo = (id) => `transition-opacity duration-cinematic ease-standard ${luz(id)}`;
+  const grupo = (id) =>
+    `transition-opacity duration-cinematic ease-standard ${enFoco(id) ? 'opacity-100' : 'opacity-45'}`;
+
+  /* El filtro va como atributo y no como clase de Tailwind: es un filtro de
+     SVG, no de CSS. Bajarles la opacidad a los pisos que no estás leyendo no
+     alcanzaba —seguían compitiendo, porque todo el dibujo estaba igual de
+     nítido—; con el desenfoque el ojo entiende cuál es el plano de foco, que es
+     exactamente lo que hace una cámara. */
+  const foco = (id) => (enFoco(id) ? undefined : 'url(#casa-fuera-de-foco)');
 
   /* Atajos: la altura de piso de cada nivel. Todo el interior se cuelga de
      estos tres números, así que mover un piso no obliga a tocar cada mueble. */
@@ -269,7 +275,7 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
       {/* El espesor del muro medianero izquierdo, en el plano del corte. */}
       <path
         d={`M ${x1 - 6} ${piso} L ${x1 - 6} ${techo} L ${x1} ${techo} L ${x1} ${piso} Z`}
-        className="fill-casa-sombra/50"
+        className="fill-casa-sombra"
       />
       <path d={planoPiso(piso, x1, x2)} className="fill-casa-piso" />
       <Piso x1={x1} x2={x2} y={piso} material={material} />
@@ -298,6 +304,14 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
       aria-label="Corte de la casa de Malka: la terraza y la huerta arriba, el estudio, el cowork, el salón con la mesa larga y el quincho con la parrilla."
     >
       <defs>
+        {/* El desenfoque de los pisos que no estás leyendo. Bajarles la
+            opacidad no alcanzaba: seguían compitiendo por la atención porque
+            todo el dibujo estaba igual de nítido. Con dos píxeles y medio de
+            desenfoque el ojo entiende cuál es el plano de foco, que es
+            exactamente lo que hace una cámara. */}
+        <filter id="casa-fuera-de-foco" x="-10%" y="-10%" width="120%" height="120%">
+          <feGaussianBlur stdDeviation="2.4" />
+        </filter>
         <linearGradient id="casa-rincon" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#2c3d34" stopOpacity="0.14" />
           <stop offset="100%" stopColor="#2c3d34" stopOpacity="0" />
@@ -360,7 +374,7 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
         </g>
 
         {/* ================= PRIMER PISO: cowork, charlas y el baño ======= */}
-        <g className={grupo('primero')}>
+        <g className={grupo('primero')} filter={foco('primero')}>
           <Volumen
             {...PISOS.primero}
             ventanas={[
@@ -429,7 +443,7 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
         </g>
 
         {/* ================= PLANTA BAJA: salón, cocina y parrilla ========= */}
-        <g className={grupo('planta')}>
+        <g className={grupo('planta')} filter={foco('planta')}>
           <Volumen
             {...PISOS.planta}
             ventanas={[{ x: 250, y: P0 - 120, ancho: 56, alto: 44 }]}
@@ -462,7 +476,7 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
             <Persona x={CASA.x1 + 44} y={P0} alto={70} kipa delay={200} brazo="saludar" brazoDelay={1400} />
           </g>
 
-          <Alfombra x={84} y={P0 - 3} ancho={170} prof={0.6} color="fill-barro-claro/60" />
+          <Alfombra x={84} y={P0 - 3} ancho={170} prof={0.6} color="fill-barro-claro" />
 
           {/* La menorá de siete brazos sobre el aparador, y un maguen david en
               el vidrio de la ventana del salón. Los dos son de la casa, no
@@ -533,7 +547,7 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
         </g>
 
         {/* ================= SUBSUELO: cochera y sala de movimiento ======== */}
-        <g className={grupo('subsuelo')}>
+        <g className={grupo('subsuelo')} filter={foco('subsuelo')}>
           <Volumen
             {...PISOS.subsuelo}
             material="cemento"
@@ -589,7 +603,7 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
         </g>
 
         {/* ================= TERRAZA: la huerta y el unplugged ============= */}
-        <g className={grupo('terraza')}>
+        <g className={grupo('terraza')} filter={foco('terraza')}>
           <path d={planoPiso(PISOS.terraza.piso)} className="fill-casa-piso stroke-ink/15" strokeWidth="1" />
           <g transform={fuga(0.86)}>
             <Tanque x={CASA.x2 - 16} y={PISOS.terraza.piso - 4} ancho={22} alto={20} />
@@ -601,52 +615,47 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
           </g>
           <Guirnalda x1={CASA.x1 + 12} x2={CASA.x2 + FONDO.x - 12} y={44} caida={13} />
 
-          {/* La huerta, en cantero contra el fondo */}
-          <g transform={fuga(0.8)}>
-            <Caja x={CASA.x1 + 6} y={PISOS.terraza.piso - 10} ancho={84} alto={10} prof={0.26} />
-            {[10, 30, 50, 70].map((dx, i) => (
-              <Planta
-                key={dx}
-                x={CASA.x1 + 6 + dx}
-                y={PISOS.terraza.piso - 10}
-                alto={24 + (i % 3) * 5}
-                delay={i * 700}
-                maceta={false}
-              />
-            ))}
+          {/* La pileta, del lado del sol. Estaba en el texto de Malka desde
+              siempre —"una pileta para disfrutar el verano"— y no estaba
+              dibujada en ningún lado. */}
+          <g transform={fuga(0.34)}>
+            <Pileta x={CASA.x1 + 12} y={PISOS.terraza.piso - 6} ancho={104} fondo={0.42} />
+          </g>
+          <g transform={fuga(0.12)}>
+            <PersonaSentada x={CASA.x1 + 128} y={PISOS.terraza.piso - 2} alto={44} pelo delay={800} />
           </g>
 
           {/* El unplugged: teclado y voz al fondo, cuerdas en el medio,
               percusión adelante. Es el orden real de una banda chica y, de
               paso, el que deja ver a todos. */}
           <g transform={fuga(0.74)}>
-            <Teclado x={168} y={PISOS.terraza.piso} ancho={52} />
-            <Persona x={196} y={PISOS.terraza.piso} alto={52} kipa delay={400} brazo="teclear" ritmo />
+            <Teclado x={182} y={PISOS.terraza.piso} ancho={54} />
+            <Persona x={212} y={PISOS.terraza.piso} alto={52} kipa delay={400} brazo="teclear" ritmo />
           </g>
 
           <g transform={fuga(0.52)}>
-            <Microfono x={236} y={PISOS.terraza.piso} alto={46} ondas />
-            <Persona x={252} y={PISOS.terraza.piso} alto={54} pelo delay={1200} brazo="arco-brazo" ritmo />
-            <Cuerdas x={240} y={PISOS.terraza.piso - 28} tipo="violin" mirando={-1} />
-            <Arco x={230} y={PISOS.terraza.piso - 31} largo={20} />
+            <Microfono x={252} y={PISOS.terraza.piso} alto={46} ondas />
+            <Persona x={268} y={PISOS.terraza.piso} alto={54} pelo delay={1200} brazo="arco-brazo" ritmo />
+            <Cuerdas x={256} y={PISOS.terraza.piso - 28} tipo="violin" mirando={-1} />
+            <Arco x={246} y={PISOS.terraza.piso - 31} largo={20} />
           </g>
 
           <g transform={fuga(0.3)}>
-            <Microfono x={284} y={PISOS.terraza.piso} alto={44} mirando={-1} />
-            <Persona x={300} y={PISOS.terraza.piso} alto={56} kipa delay={2000} brazo="rasgueo" ritmo />
-            <Cuerdas x={310} y={PISOS.terraza.piso - 26} tipo="guitarra" />
-            <Persona x={330} y={PISOS.terraza.piso} alto={54} color="fill-primary-700" delay={800} brazo="rasgueo" brazoDelay={300} ritmo />
-            <Cuerdas x={339} y={PISOS.terraza.piso - 25} tipo="bajo" />
+            <Microfono x={300} y={PISOS.terraza.piso} alto={44} mirando={-1} />
+            <Persona x={316} y={PISOS.terraza.piso} alto={56} kipa delay={2000} brazo="rasgueo" ritmo />
+            <Cuerdas x={326} y={PISOS.terraza.piso - 26} tipo="guitarra" />
+            <Persona x={352} y={PISOS.terraza.piso} alto={54} color="fill-primary-700" delay={800} brazo="rasgueo" brazoDelay={300} ritmo />
+            <Cuerdas x={361} y={PISOS.terraza.piso - 25} tipo="bajo" />
           </g>
 
           <g transform={fuga(0.1)}>
-            <Cajon x={200} y={PISOS.terraza.piso} />
-            <PersonaSilla x={210} y={PISOS.terraza.piso} alto={52} color="fill-primary-700" pelo delay={1600} brazo="golpear" ritmo />
-            <Platillo x={234} y={PISOS.terraza.piso} alto={34} />
+            <Cajon x={222} y={PISOS.terraza.piso} />
+            <PersonaSilla x={232} y={PISOS.terraza.piso} alto={52} color="fill-primary-700" pelo delay={1600} brazo="golpear" ritmo />
+            <Platillo x={256} y={PISOS.terraza.piso} alto={34} />
           </g>
 
-          <Notas x={222} y={PISOS.terraza.piso - 62} cantidad={4} />
-          <Notas x={322} y={PISOS.terraza.piso - 58} cantidad={3} escala={0.9} />
+          <Notas x={240} y={PISOS.terraza.piso - 62} cantidad={4} />
+          <Notas x={338} y={PISOS.terraza.piso - 58} cantidad={3} escala={0.9} />
 
           {/* La baranda va al final: pasa por delante de todos y por eso el
               conjunto se lee arriba de una terraza y no flotando. */}

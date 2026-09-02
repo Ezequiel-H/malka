@@ -54,18 +54,29 @@ export const Mesa = ({ x, y, ancho, piso, prof = 0.3 }) => (
 /** Silla de costado: asiento, respaldo y dos patas. */
 export const Silla = ({ x, y, alto = 34, mirando = 1 }) => {
   const asiento = y - alto * 0.5;
+  const dx = FONDO.x * 0.16;
+  const dy = FONDO.y * 0.16;
   return (
     <g transform={`translate(${x} ${y}) scale(${mirando} 1) translate(${-x} ${-y})`}>
-      <g className={filete} strokeWidth={TRAZO} strokeLinecap="round">
-        <path d={`M ${x - 9} ${y} L ${x - 9} ${asiento}`} className="stroke-ink" />
-        <path d={`M ${x + 9} ${y} L ${x + 9} ${asiento}`} className="stroke-ink" />
-        <path d={`M ${x - 10} ${asiento} L ${x + 10} ${asiento}`} className="stroke-ink" strokeWidth={TRAZO * 2} />
-        <path d={`M ${x + 9} ${asiento} L ${x + 9} ${asiento - alto * 0.44}`} className="stroke-ink" />
-        <path
-          d={`M ${x + 4} ${asiento - alto * 0.44} L ${x + 10} ${asiento - alto * 0.44}`}
-          className="stroke-ink"
-          strokeWidth={TRAZO * 1.6}
-        />
+      {/* El asiento es un plano en fuga y no una línea: una silla dibujada de
+          perfil, en medio de un dibujo axonométrico, es lo que más rápido
+          delata que hay piezas sin la tercera dimensión aplicada. */}
+      <path
+        d={`M ${x - 10} ${asiento} L ${x + 10} ${asiento} L ${x + 10 + dx} ${asiento + dy} L ${x - 10 + dx} ${asiento + dy} Z`}
+        className="fill-barro-claro stroke-ink"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+      <path
+        d={`M ${x + 8} ${asiento} L ${x + 8} ${asiento - alto * 0.46} L ${x + 8 + dx} ${asiento - alto * 0.46 + dy} L ${x + 8 + dx} ${asiento + dy} Z`}
+        className="fill-barro stroke-ink"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+      <g className="stroke-ink" strokeWidth={TRAZO} strokeLinecap="round">
+        <path d={`M ${x - 9} ${y} L ${x - 9} ${asiento}`} />
+        <path d={`M ${x + 8} ${y} L ${x + 8} ${asiento}`} />
+        <path d={`M ${x - 9 + dx} ${y + dy} L ${x - 9 + dx} ${asiento + dy}`} className="stroke-ink/50" />
       </g>
     </g>
   );
@@ -74,6 +85,11 @@ export const Silla = ({ x, y, alto = 34, mirando = 1 }) => {
 /** Sillón de dos cuerpos, de frente. */
 export const Sillon = ({ x, y, ancho = 62 }) => (
   <g className={filete} strokeWidth={TRAZO} strokeLinejoin="round">
+    {/* La tapa del asiento, en fuga */}
+    <path
+      d={`M ${x} ${y - 26} L ${x + ancho} ${y - 26} L ${x + ancho + FONDO.x * 0.2} ${y - 26 + FONDO.y * 0.2} L ${x + FONDO.x * 0.2} ${y - 26 + FONDO.y * 0.2} Z`}
+      className="fill-primary-300"
+    />
     <rect x={x} y={y - 26} width={ancho} height={12} rx="4" className="fill-primary-200" />
     <rect x={x - 4} y={y - 34} width={10} height={26} rx="4" className="fill-primary-300" />
     <rect x={x + ancho - 6} y={y - 34} width={10} height={26} rx="4" className="fill-primary-300" />
@@ -887,6 +903,15 @@ export const Suca = ({ x, y, ancho = 76, alto = 62 }) => (
 export const Sauna = ({ x, y, ancho = 74, alto = 86 }) => (
   <g>
     <g className={filete} strokeWidth={TRAZO} strokeLinejoin="round">
+      {/* El techo de la cabina, en fuga: sin él la sauna es una tabla parada. */}
+      <path
+        d={`M ${x} ${y - alto} L ${x + ancho} ${y - alto} L ${x + ancho + FONDO.x * 0.3} ${y - alto + FONDO.y * 0.3} L ${x + FONDO.x * 0.3} ${y - alto + FONDO.y * 0.3} Z`}
+        className="fill-barro"
+      />
+      <path
+        d={`M ${x + ancho} ${y - alto} L ${x + ancho + FONDO.x * 0.3} ${y - alto + FONDO.y * 0.3} L ${x + ancho + FONDO.x * 0.3} ${y + FONDO.y * 0.3} L ${x + ancho} ${y} Z`}
+        className="fill-barro-oscuro"
+      />
       <rect x={x} y={y - alto} width={ancho} height={alto} className="fill-barro-claro" />
       {Array.from({ length: Math.floor(ancho / 9) }, (_, i) => (
         <path key={i} d={`M ${x + 6 + i * 9} ${y - alto + 3} L ${x + 6 + i * 9} ${y - 3}`} className="stroke-barro/70" strokeWidth="1.2" />
@@ -925,3 +950,43 @@ export const Jacuzzi = ({ x, y, ancho = 66 }) => (
     ))}
   </g>
 );
+
+/**
+ * La pileta: el agua es un plano en fuga con dos reflejos, el borde tiene canto
+ * y la escalerita asoma. El agua se mueve apenas —dos líneas que se desplazan—
+ * porque una pileta perfectamente quieta se lee como un piso azul.
+ */
+export const Pileta = ({ x, y, ancho = 96, fondo = 0.5 }) => {
+  const dx = FONDO.x * fondo;
+  const dy = FONDO.y * fondo;
+  return (
+    <g>
+      <path
+        d={`M ${x} ${y} L ${x + ancho} ${y} L ${x + ancho + dx} ${y + dy} L ${x + dx} ${y + dy} Z`}
+        className="fill-primary-200 stroke-ink/40"
+        strokeWidth={TRAZO}
+        strokeLinejoin="round"
+      />
+      <path
+        d={`M ${x + 8} ${y + dy * 0.6} L ${x + ancho * 0.42} ${y + dy * 0.6}
+            M ${x + ancho * 0.56} ${y + dy * 0.3} L ${x + ancho * 0.9} ${y + dy * 0.3}`}
+        className="animate-arco stroke-surface/70 motion-reduce:animate-none"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+      />
+      {/* El borde de la pileta, con su canto */}
+      <path
+        d={`M ${x - 5} ${y} L ${x + ancho + 5} ${y} L ${x + ancho + 5} ${y + 4} L ${x - 5} ${y + 4} Z`}
+        className="fill-casa-costado stroke-ink/30"
+        strokeWidth="1"
+      />
+      {/* La escalerita */}
+      <path
+        d={`M ${x + ancho - 16} ${y - 12} q 0 -6 5 -6 M ${x + ancho - 8} ${y - 12} q 0 -6 -5 -6`}
+        className="fill-none stroke-ink/60"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </g>
+  );
+};
