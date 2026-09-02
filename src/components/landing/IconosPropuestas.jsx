@@ -75,30 +75,32 @@ const Corcheas = () => (
   </>
 );
 
-/* Los seis espacios de la casa, en el mismo trazo. */
+/* Los seis espacios de la casa, en el mismo trazo. Cada uno es el objeto que
+   uno nombraría si tuviera que describir el ambiente en una palabra: las velas
+   del viernes, la olla, la laptop, el auto, la guitarra y el árbol. Los
+   anteriores eran demasiado abstractos —una mesa vista de frente, una campana
+   de cocina— y a veinte píxeles no se leía ninguno. */
 
-/** El salón: la mesa larga con sus dos velas. */
-const Mesa = () => (
+/** El salón: las dos velas de Shabat. */
+const Velas = () => (
   <>
-    <path d="M3.5 13h17" {...comun} />
-    <path d="M5.5 13v6M18.5 13v6" {...comun} />
-    <path d="M9.5 13V8M14.5 13V8" {...comun} />
-    <path d="M9.5 8c0-1 .8-1.2.8-2.2M14.5 8c0-1 .8-1.2.8-2.2" {...comun} />
+    <path d="M9 20V9.5M15 20V9.5" {...comun} />
+    <path d="M6.5 20h11" {...comun} />
+    <path d="M9 9.5c0-2 1.6-2.2 1.6-4C10.6 4.3 9 4 9 4s-1.6.3-1.6 1.5C7.4 7.3 9 7.5 9 9.5z" {...comun} />
+    <path d="M15 9.5c0-2 1.6-2.2 1.6-4C16.6 4.3 15 4 15 4s-1.6.3-1.6 1.5c0 1.8 1.6 2 1.6 4z" {...comun} />
   </>
 );
 
-/** La cocina: la campana sobre las hornallas. */
-const Campanita = () => (
+/** La cocina: la olla con su vapor. */
+const Olla = () => (
   <>
-    <path d="M5 9.5l2-4h10l2 4z" {...comun} />
-    <path d="M8 5.5V4" {...comun} />
-    <path d="M4.5 14.5h15v5h-15z" {...comun} />
-    <circle cx="8.5" cy="17" r="1.2" {...comun} />
-    <circle cx="15.5" cy="17" r="1.2" {...comun} />
+    <path d="M4.5 11h15v5.5a3 3 0 0 1-3 3h-9a3 3 0 0 1-3-3z" {...comun} />
+    <path d="M3 11h18" {...comun} />
+    <path d="M9 7.5c0-1.4 1.4-1.6 1.4-3M14 7.5c0-1.4 1.4-1.6 1.4-3" {...comun} />
   </>
 );
 
-/** El cowork: la laptop abierta. */
+/** El cowork: la laptop. */
 const Laptopcita = () => (
   <>
     <path d="M6 6.5h12v9H6z" {...comun} />
@@ -107,23 +109,25 @@ const Laptopcita = () => (
   </>
 );
 
-/** La sala de abajo: la colchoneta enrollada. */
-const Colchoneta = () => (
+/** El garage: el auto. */
+const Auto = () => (
   <>
-    <rect x="4.5" y="7" width="15" height="10" rx="5" {...comun} />
-    <ellipse cx="8" cy="12" rx="2.5" ry="4" {...comun} />
-    <path d="M14 9.5h3M14 14.5h3" {...comun} />
+    <path d="M3.5 15v-2.2l2-4.3A2 2 0 0 1 7.3 7.5h9.4a2 2 0 0 1 1.8 1l2 4.3V15" {...comun} />
+    <path d="M3.5 15h17v2.5h-17z" {...comun} />
+    <path d="M5.5 12.5h13" {...comun} />
+    <circle cx="7.5" cy="18.5" r="1.6" {...comun} />
+    <circle cx="16.5" cy="18.5" r="1.6" {...comun} />
   </>
 );
 
-/** La terraza: la guirnalda de luces. */
-const Guirnaldita = () => (
+/** La terraza: la guitarra del unplugged. */
+const Guitarrita = () => (
   <>
-    <path d="M3 6c4 5 14 5 18 0" {...comun} />
-    <path d="M7 8.5v2M12 10.5v2M17 8.5v2" {...comun} />
-    <circle cx="7" cy="12" r="1.4" {...comun} />
-    <circle cx="12" cy="14" r="1.4" {...comun} />
-    <circle cx="17" cy="12" r="1.4" {...comun} />
+    <ellipse cx="9.5" cy="15.5" rx="5.5" ry="5" {...comun} />
+    <ellipse cx="12.5" cy="10.5" rx="3.6" ry="3.2" {...comun} />
+    <circle cx="9.5" cy="15.5" r="1.8" {...comun} />
+    <path d="M14.5 8L19 3.5" {...comun} />
+    <path d="M17.5 2l3 3" {...comun} />
   </>
 );
 
@@ -137,11 +141,11 @@ const Arbolito = () => (
 );
 
 const FIGURAS = {
-  salon: Mesa,
-  cocinita: Campanita,
+  salon: Velas,
+  cocinita: Olla,
   cowork: Laptopcita,
-  sala: Colchoneta,
-  terraza: Guirnaldita,
+  garage: Auto,
+  terraza: Guitarrita,
   fondo: Arbolito,
   judaismo: Tora,
   actividades: Chispa,

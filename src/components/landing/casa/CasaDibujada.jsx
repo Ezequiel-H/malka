@@ -674,12 +674,13 @@ const CasaDibujada = ({ activo = 'todo', zona = 'todo', className = '' }) => {
               que en pantalla queden repartidos parejo. Además todos miran al
               centro: eso es lo que termina de cerrar el círculo. */}
           {[
-            { x: 62, t: 0.12, quien: 'bajo' },
-            { x: 118, t: 0.44, quien: 'teclado' },
-            { x: 174, t: 0.82, quien: 'voz' },
-            { x: 230, t: 0.82, quien: 'violin' },
-            { x: 276, t: 0.44, quien: 'guitarra' },
-            { x: 326, t: 0.12, quien: 'bateria' },
+            { x: 60, t: 0.12, quien: 'bajo' },
+            { x: 110, t: 0.42, quien: 'teclado' },
+            { x: 158, t: 0.8, quien: 'voz' },
+            { x: 206, t: 0.86, quien: 'voz2' },
+            { x: 252, t: 0.6, quien: 'violin' },
+            { x: 296, t: 0.32, quien: 'guitarra' },
+            { x: 318, t: 0.08, quien: 'bateria' },
           ].map(({ x, t, quien }) => {
             /* La fuga corre 44 unidades hacia adentro: se descuentan acá para
                que la separación que se ve en pantalla sea la que se pidió. */
@@ -707,6 +708,12 @@ const CasaDibujada = ({ activo = 'todo', zona = 'todo', className = '' }) => {
                     <Persona x={px} y={piso} alto={57} pelo delay={1200} ritmo mirando={alCentro} />
                   </>
                 )}
+                {quien === 'voz2' && (
+                  <>
+                    <Microfono x={px + 16 * alCentro} y={piso} alto={46} ondas mirando={-alCentro} />
+                    <Persona x={px} y={piso} alto={55} kipa delay={2400} ritmo mirando={alCentro} />
+                  </>
+                )}
                 {quien === 'violin' && (
                   <>
                     <Persona x={px} y={piso} alto={55} delay={1800} brazo="arco-brazo" ritmo mirando={alCentro} />
@@ -720,7 +727,15 @@ const CasaDibujada = ({ activo = 'todo', zona = 'todo', className = '' }) => {
                       mirando={alCentro}
                       giro={-38 * alCentro}
                     />
-                    <Arco x={px + 24 * alCentro} y={piso - 36} largo={22} giro={alCentro > 0 ? 42 : 138} />
+                    {/* El arco va centrado sobre el cuerpo del violín y cruzado
+                        a las cuerdas: el mismo punto que el instrumento, y su
+                        ángulo es el del violín más noventa grados. */}
+                    <Arco
+                      x={px + 11 * alCentro}
+                      y={piso - 30}
+                      largo={24}
+                      giro={alCentro > 0 ? 52 : -52}
+                    />
                   </>
                 )}
                 {quien === 'guitarra' && (

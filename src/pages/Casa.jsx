@@ -59,7 +59,7 @@ const SECCIONES = [
       { nombre: 'El salón', que: 'La mesa larga y el Shabat.', icono: 'salon', zona: 'mesa', piso: 'planta' },
       { nombre: 'La cocina', que: 'Lo que termina en la mesa.', icono: 'cocinita', zona: 'cocina', piso: 'planta' },
       { nombre: 'El cowork', que: 'Wifi, escritorio y café.', icono: 'cowork', zona: 'cowork', piso: 'primero' },
-      { nombre: 'La sala de abajo', que: 'Yoga, cine y talleres.', icono: 'sala', zona: 'clase', piso: 'subsuelo' },
+      { nombre: 'El garage', que: 'Los autos, y también yoga.', icono: 'garage', zona: 'clase', piso: 'subsuelo' },
       { nombre: 'La terraza', que: 'Música y la ciudad abajo.', icono: 'terraza', zona: 'banda', piso: 'terraza' },
       { nombre: 'El fondo', que: 'La pileta y el quincho.', icono: 'fondo', zona: 'parrilla', piso: 'todo' },
     ],
@@ -194,7 +194,7 @@ const Casa = () => {
    * muestra el ambiente equivocado.
    */
   const [manual, setManual] = useState(null);
-  const [pregunta, setPregunta] = useState(null);
+  const [pregunta, setPregunta] = useState(0);
   const manualRef = useRef(null);
   const mirar = (seccionId, espacio) => {
     const elegido = { seccion: seccionId, zona: espacio.zona, piso: espacio.piso };
@@ -556,42 +556,51 @@ const Casa = () => {
                       <span className="h-px w-8 bg-primary/50" />
                       Preguntas frecuentes
                     </p>
-                    <ul className="mt-4 flex flex-wrap gap-2">
-                      {PREGUNTAS.map((q, i) => {
-                        const abierta = pregunta === i;
-                        return (
-                          <li key={q.pregunta}>
-                            <button
-                              type="button"
-                              onClick={() => setPregunta(abierta ? null : i)}
-                              aria-expanded={abierta}
-                              className={`flex items-center gap-2 rounded-pill border px-4 py-2 text-left text-sm transition-all duration-base ease-standard ${
-                                abierta
-                                  ? 'border-primary/40 bg-primary-50 text-primary-700'
-                                  : 'border-ink/12 bg-surface/50 text-ink hover:border-primary/30 hover:bg-surface'
-                              }`}
-                            >
-                              {q.pregunta}
-                              <span
-                                className={`font-grotesk text-xs font-bold uppercase tracking-label transition-colors duration-base ${
-                                  abierta ? 'text-primary-700' : 'text-primary/70'
-                                }`}
+                    {/* Las preguntas a la izquierda y la respuesta al lado, en
+                        el mismo renglón: es la forma de una lista de dudas —se
+                        ven todas de un vistazo y la que abrís se contesta ahí
+                        mismo— sin la pared de siete párrafos ni el ida y vuelta
+                        de un acordeón. Siempre hay una abierta: una respuesta
+                        vacía esperando un clic es un cartel de "faltó algo". */}
+                    <div className="mt-5 grid gap-x-10 gap-y-6 sm:grid-cols-[minmax(0,0.95fr)_minmax(0,1fr)]">
+                      <ul className="-my-1">
+                        {PREGUNTAS.map((q, i) => {
+                          const abierta = pregunta === i;
+                          return (
+                            <li key={q.pregunta}>
+                              <button
+                                type="button"
+                                onClick={() => setPregunta(i)}
+                                aria-pressed={abierta}
+                                className="group flex w-full items-center gap-3 py-2 text-left"
                               >
-                                {q.veredicto}
-                              </span>
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                    <p
-                      className={`mt-5 max-w-lg text-ink-soft transition-all duration-slow ease-entrance ${
-                        pregunta == null ? 'translate-y-1 opacity-0' : 'translate-y-0 opacity-100'
-                      }`}
-                      aria-live="polite"
-                    >
-                      {pregunta == null ? '\u00a0' : PREGUNTAS[pregunta].detalle}
-                    </p>
+                                <span
+                                  className={`h-px shrink-0 transition-all duration-base ${
+                                    abierta ? 'w-7 bg-primary' : 'w-3 bg-ink/20 group-hover:w-5 group-hover:bg-primary/50'
+                                  }`}
+                                />
+                                <span
+                                  className={`text-[0.95rem] leading-snug transition-colors duration-base ${
+                                    abierta ? 'font-semibold text-primary-700' : 'text-ink-soft group-hover:text-ink'
+                                  }`}
+                                >
+                                  {q.pregunta}
+                                </span>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+
+                      <div key={pregunta} className="animate-fade-in-up border-l border-primary/25 pl-6">
+                        <p className="font-grotesk text-2xl font-bold leading-none tracking-tight text-primary-700">
+                          {PREGUNTAS[pregunta].veredicto}
+                        </p>
+                        <p className="mt-3 leading-relaxed text-ink-soft">
+                          {PREGUNTAS[pregunta].detalle}
+                        </p>
+                      </div>
+                    </div>
                   </>
                 )}
 

@@ -215,14 +215,18 @@ export const Cuerdas = ({ x, y, tipo = 'guitarra', mirando = 1, giro = 0 }) => {
 };
 
 /** Arco de violín, yendo y viniendo sobre las cuerdas. */
+/**
+ * El arco. Se dibuja **centrado en el punto donde toca las cuerdas**: apoyarlo
+ * por un extremo lo deja colgando en el aire al costado del violín, que es
+ * justo lo que no se entiende. Va cruzado a las cuerdas, así que su ángulo es
+ * el del violín más noventa grados.
+ */
 export const Arco = ({ x, y, largo = 26, giro = -28 }) => (
   <g transform={`translate(${x} ${y}) rotate(${giro})`}>
     <g className="animate-arco motion-reduce:animate-none">
-      {/* La vara y el pelo, separados: un arco de una sola línea se lee como un
-          palito. Y el talón, que es lo que se agarra. */}
-      <path d={`M 0 0 L ${largo} 0`} className="stroke-barro-oscuro" strokeWidth="2" strokeLinecap="round" />
-      <path d={`M 1 2 L ${largo - 1} 2`} className="stroke-barro-claro" strokeWidth="1.2" strokeLinecap="round" />
-      <rect x={-2} y={-1.6} width="5" height="5.2" rx="1.4" className="fill-ink" />
+      <path d={`M ${-largo / 2} 0 L ${largo / 2} 0`} className="stroke-barro-oscuro" strokeWidth="2" strokeLinecap="round" />
+      <path d={`M ${-largo / 2 + 1} 2 L ${largo / 2 - 1} 2`} className="stroke-barro-claro" strokeWidth="1.2" strokeLinecap="round" />
+      <rect x={-largo / 2 - 2} y={-1.6} width="5" height="5.2" rx="1.4" className="fill-ink" />
     </g>
   </g>
 );
@@ -1315,32 +1319,35 @@ export const Toalla = ({ x, y }) => (
  */
 export const Bateria = ({ x, y, escala = 1 }) => (
   <g transform={`translate(${x} ${y}) scale(${escala})`}>
-    {/* Bombo, de frente */}
+    {/* El bombo, de frente y grande: es la pieza que dice "batería" antes que
+        ninguna otra. Acusa cada golpe con un achatamiento mínimo. */}
     <g
       className="animate-golpe motion-reduce:animate-none"
       style={{ transformBox: 'fill-box', transformOrigin: 'bottom center' }}
     >
-      <ellipse cx="0" cy="-15" rx="17" ry="15" className="fill-barro-claro stroke-ink" strokeWidth={TRAZO} />
-      <ellipse cx="0" cy="-15" rx="12" ry="10.5" className="fill-none stroke-ink/30" strokeWidth="1.2" />
-      <circle cx="0" cy="-15" r="3" className="fill-ink/70" />
-      <path d="M -14 -3 l -4 3 M 14 -3 l 4 3" className="stroke-ink" strokeWidth={TRAZO} strokeLinecap="round" />
+      <circle cx="0" cy="-20" r="20" className="fill-barro-claro stroke-ink" strokeWidth={TRAZO * 1.2} />
+      <circle cx="0" cy="-20" r="14" className="fill-none stroke-ink/25" strokeWidth="1.2" />
+      <circle cx="0" cy="-20" r="3.4" className="fill-ink/70" />
+      {/* Las patas del bombo, que lo apoyan y lo separan del piso */}
+      <path d="M -17 -6 l -5 6 M 17 -6 l 5 6" className="stroke-ink" strokeWidth={TRAZO} strokeLinecap="round" />
     </g>
 
-    {/* Redoblante en su trípode */}
-    <g className={filete} strokeWidth={TRAZO}>
-      <path d="M -30 0 l 5 -16 M -18 0 l -5 -16" className="stroke-ink" strokeLinecap="round" />
-      <rect x={-32} y={-24} width="18" height="8" rx="2" className="fill-surface" />
-      <path d="M -32 -20 l 18 0" className="stroke-ink/30" strokeWidth="1" />
-    </g>
-
-    {/* Platillo en diagonal y hi-hat cerrado */}
+    {/* El redoblante, arriba y a la izquierda, con su trípode */}
     <g className={filete} strokeWidth={TRAZO} strokeLinecap="round">
-      <path d="M 24 0 L 24 -34" className="stroke-ink" />
+      <path d="M -30 0 L -26 -20 M -18 0 L -22 -20" className="stroke-ink" />
+      <rect x={-34} y={-30} width="20" height="10" rx="3" className="fill-surface" />
+      <path d="M -34 -25.5 h 20" className="stroke-ink/25" strokeWidth="1" />
+      <ellipse cx={-24} cy={-30} rx="10" ry="2.6" className="fill-casa-piso" />
+    </g>
+
+    {/* El platillo, en diagonal y bien arriba; el hi-hat, cerrado al costado */}
+    <g className={filete} strokeWidth={TRAZO} strokeLinecap="round">
+      <path d="M 26 -4 L 26 -40" className="stroke-ink" />
       <g className="animate-platillo motion-reduce:animate-none" style={{ transformBox: 'fill-box', transformOrigin: 'center' }}>
-        <path d="M 12 -36 L 36 -32" className="stroke-flame" strokeWidth="3" />
+        <path d="M 12 -44 L 40 -38" className="stroke-flame" strokeWidth="3.4" />
       </g>
-      <path d="M -40 0 L -40 -22" className="stroke-ink" />
-      <path d="M -47 -22 L -33 -22 M -47 -25 L -33 -25" className="stroke-flame/80" strokeWidth="2.4" />
+      <path d="M -44 0 L -44 -30" className="stroke-ink" />
+      <path d="M -52 -30 L -36 -30 M -52 -33.5 L -36 -33.5" className="stroke-flame/85" strokeWidth="2.6" />
     </g>
   </g>
 );
