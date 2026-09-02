@@ -91,14 +91,21 @@ const SSv = PISOS.subsuelo.piso;
  * que agregar un encuadre nuevo es agregar una línea, no tocar la cámara.
  */
 const FOCOS = {
+  /* Cada sección tiene el suyo y ninguno se repite: si dos secciones piden el
+     mismo encuadre, la segunda se siente un déjà vu y el recorrido pierde el
+     hilo. Por eso hay tres planos generales distintos —la ciudad, la fachada y
+     la casa— y no uno usado tres veces. */
   todo: { x: 236, y: 262, s: 0.92 },
-  casa: { x: 236, y: 258, s: 1.22 },
+  ciudad: { x: 232, y: 214, s: 0.78 },
+  fachada: { x: 196, y: 300, s: 1.02 },
+  casa: { x: 250, y: 262, s: 1.28 },
+  vereda: { x: 44, y: P0v - 40, s: 1.44 },
 
   /* El zoom no es el mismo en todas: la puerta y el baño son un objeto y piden
      estar encima; la mesa, el cowork y la clase son un ambiente con gente y se
      entienden de más lejos. Un zoom parejo para todo obliga a elegir entre
      perder el detalle o perder el contexto. */
-  puerta: { x: 108, y: P0v - 48, s: 1.9 },
+  puerta: { x: 96, y: P0v - 50, s: 2.1 },
   mesa: { x: 172, y: P0v - 46, s: 1.5 },
   cocina: { x: 352, y: P0v - 50, s: 1.72 },
 

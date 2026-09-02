@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { Icon } from '../components/ui';
+import Grano from '../components/landing/Grano';
 import { useAuth } from '../contexts/AuthContext';
 import CasaDibujada from '../components/landing/casa/CasaDibujada';
 import LandingButton from '../components/landing/LandingButton';
@@ -41,52 +43,52 @@ const SECCIONES = [
   {
     id: 'intro',
     piso: 'todo',
-    zona: 'casa',
+    zona: 'fachada',
     kicker: 'Casa Malka · Comunidad Amijai',
-    titulo: 'Es una casa.',
-    entrada: 'Con subsuelo, dos plantas, terraza y la puerta abierta.',
+    titulo: 'Esto es Malka',
+    entrada: 'Una casa abierta donde siempre hay un mate esperándote.',
     texto:
-      'Un lugar para jóvenes judíos de 18 a 35 en 3 de Febrero 1325. Abre de lunes a viernes de 14 a 21, no hace falta ser socio y no hay que anotarse para venir.',
+      'Un espacio de reunión, intercambio y actividades para jóvenes judíos de 18 a 35 que buscan un lugar de pertenencia que los identifique.',
   },
   {
     id: 'puerta',
     piso: 'planta',
-    zona: 'puerta',
+    zona: 'vereda',
     kicker: 'La puerta',
-    titulo: 'Se entra sin avisar',
-    entrada: 'De lunes a viernes, de 14 a 21.',
+    titulo: 'Venite darling',
+    entrada: 'Podés caer de lunes a viernes, entre las 14 y las 21.',
     texto:
-      'No hay que ser socio, no hay que anotarse y no hace falta saber nada. Alguien del staff te va a estar esperando con una sonrisa: son cuatro y están siempre.',
+      'No hace falta asociarse ni anotarse: se entra y ya. Eso sí, si es feriado o festividad puede que estemos cerrados o con horarios especiales, ¡así que chill!',
   },
   {
     id: 'salon',
     piso: 'planta',
     zona: 'mesa',
-    kicker: 'El salón',
-    titulo: 'La mesa larga',
-    entrada: 'Acá se hace Shabat y pasan las ceremonias de la casa.',
+    kicker: 'Planta baja',
+    titulo: 'El salón',
+    entrada: 'Acá pasan las mejores ceremonias de Shabat.',
     texto:
-      'Se pone la mesa, se encienden las velas y se canta. Venís sin traer nada; cuándo cae la próxima lo vas a ver en la agenda, adentro.',
+      'Un salón que te recibe con diferentes propuestas: hablamos de Torá y también vivimos experiencias culinarias únicas de la mano de referentes de la gastronomía.',
   },
   {
     id: 'cocina',
     piso: 'planta',
     zona: 'cocina',
-    kicker: 'La cocina y la parrilla',
-    titulo: 'Se come y se discute',
-    entrada: 'Asaditos, experiencias culinarias y sobremesas largas.',
+    kicker: 'Al fondo',
+    titulo: 'El sueño del quincho',
+    entrada: 'Cumplimos el sueño del quincho con parrilla.',
     texto:
-      'Los temas van de judaísmo moderno a economía y emprendedurismo, y siguen hasta que alguien apaga la luz. Acá hay lugar para todo lo que sea aprender y compartir.',
+      'Para comer rico mientras charlamos y debatimos. ¿Los temas? Un hermoso variadito que va desde judaísmo moderno hasta economía y emprendedurismo. Acá hay lugar para todo lo que sea aprendizaje y compartir ideas.',
   },
   {
     id: 'cowork',
     piso: 'primero',
     zona: 'cowork',
-    kicker: 'El cowork',
-    titulo: 'Un martes cualquiera',
-    entrada: 'Traés la compu y te sentás.',
+    kicker: 'Primer piso',
+    titulo: 'El cowork',
+    entrada: 'Trabajá durante la semana como en casa.',
     texto:
-      'Wifi, escritorio y café con cakes. Es el piso mínimo de Malka: no hace falta que haya una actividad para que vengas, y de hecho así es como la mayoría empieza a venir.',
+      'Queremos que te apropies del espacio: nosotros ponemos el wifi, el lugar y el café con cakes, vos traé tu compu y buena energía.',
   },
   {
     id: 'bano',
@@ -96,17 +98,17 @@ const SECCIONES = [
     titulo: 'El sauna y el jacuzzi',
     entrada: 'Sí, la casa también tiene eso.',
     texto:
-      'Un rato de calor y de charla lenta, que es otra forma de encontrarse. Las sessions se anuncian en la agenda.',
+      'Un rato de calor y de charla lenta, que es otra forma de encontrarse. Cuándo cae la próxima session lo vas a ver en la agenda.',
   },
   {
     id: 'terraza',
     piso: 'terraza',
     zona: 'banda',
-    kicker: 'La terraza',
-    titulo: 'La música arriba',
-    entrada: 'Unplugged, algún fueguito y la ciudad abajo.',
+    kicker: 'Arriba de todo',
+    titulo: 'La terraza',
+    entrada: 'Nuestro lugar premium para frenar el tiempo.',
     texto:
-      'El lugar premium para frenar el tiempo, tocar hasta cualquier hora y mirar un rato las estrellas.',
+      'Acá disfrutamos de encuentros, unplugged musicales, algún fueguito y nuevos vínculos. Y de mirar un ratito las estrellas.',
   },
   {
     id: 'suca',
@@ -114,19 +116,19 @@ const SECCIONES = [
     zona: 'suca',
     kicker: 'Las festividades',
     titulo: 'La sucá',
-    entrada: 'En Sucot se arma arriba y no se baja por una semana.',
+    entrada: 'En Sucot se arma arriba y no se baja en toda la semana.',
     texto:
-      'Cada festividad tiene su forma en la casa: las velas del viernes, la sucá de octubre, la januquiá en la ventana. Se vive el calendario, no se lo explica.',
+      'Cada festividad tiene su forma en la casa: las velas del viernes, la sucá de octubre, la januquiá en la ventana.',
   },
   {
     id: 'subsuelo',
     piso: 'subsuelo',
     zona: 'clase',
-    kicker: 'La sala de abajo',
-    titulo: 'Yoga y movimiento',
-    entrada: 'Las clases que piden piso y silencio.',
+    kicker: 'Abajo de todo',
+    titulo: 'La sala',
+    entrada: 'Yoga, escritura, cine y lo que se te ocurra.',
     texto:
-      'Yoga, escritura, cine y talleres que cambian todos los meses. El nivel más callado de la casa, y el que más se usa a la tarde.',
+      'Practicamos talleres y también hay lugar para charlas, bootcamps y diferentes clases. Es el nivel más callado de la casa. Del otro lado entran los autos.',
   },
 ];
 
@@ -140,12 +142,42 @@ const SECCIONES = [
  * un clic.
  */
 const PREGUNTAS = [
-  { veredicto: 'No', pregunta: '¿Hay que ser socio?', detalle: 'Ni socio ni nada. Se entra y ya.' },
-  { veredicto: 'No', pregunta: '¿Hay que anotarse para venir?', detalle: 'Para las actividades sí, para caer al cowork no.' },
-  { veredicto: 'No', pregunta: '¿Tengo que saber de judaísmo?', detalle: 'Se entra sepas lo que sepas y creas lo que creas.' },
-  { veredicto: 'Sí', pregunta: '¿Puedo venir solo?', detalle: 'La mayoría empieza así. Alguien te va a estar esperando.' },
-  { veredicto: 'Sí', pregunta: '¿Puedo proponer una actividad?', detalle: 'Nos encantaría. Traé la idea y la armamos.' },
-  { veredicto: '18 a 35', pregunta: '¿Qué edad hay que tener?', detalle: 'Es la franja de la casa. Movida judía y pluralista.' },
+  {
+    icono: 'user',
+    veredicto: 'No hace falta',
+    pregunta: '¿Necesito ser socio?',
+    detalle: 'No hace falta asociarte para nuestras actividades.',
+  },
+  {
+    icono: 'addToCalendar',
+    veredicto: 'Sólo a veces',
+    pregunta: '¿Tengo que anotarme?',
+    detalle: 'Para venir a malkear, no. Para algunas actividades sí: leé bien el form.',
+  },
+  {
+    icono: 'book',
+    veredicto: 'Nada',
+    pregunta: '¿Cuánto tengo que saber?',
+    detalle: 'Nuestra movida es judía y pluralista, abierta a distintas miradas y experiencias.',
+  },
+  {
+    icono: 'users',
+    veredicto: 'Obvio',
+    pregunta: '¿Puedo venir solo?',
+    detalle: 'Charlá con la pipol que viene por acá. Acá casi todo se puede.',
+  },
+  {
+    icono: 'idea',
+    veredicto: '¡Obvio!',
+    pregunta: '¿Puedo proponer algo?',
+    detalle: 'Nos encantaría escuchar ideas que sumen a la comunidad. Contanos.',
+  },
+  {
+    icono: 'coffee',
+    veredicto: 'Casi siempre no',
+    pregunta: '¿Hay que poner plata?',
+    detalle: 'Algunas actividades tienen un costo para cubrir materiales. Siempre te avisamos antes.',
+  },
 ];
 
 /* Los cuatro que te reciben. Las fotos van acá cuando Malka las mande; hasta
@@ -208,7 +240,13 @@ const Casa = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-surface-page font-grotesk text-ink">
+    <div className="relative min-h-screen bg-surface-page font-grotesk text-ink">
+      {/* El crema plano se leía como un vacío. Estas dos capas no se ven de
+          frente pero se sienten: la primera son tres manchas de luz muy
+          abiertas —las mismas que usa el login de la app— y la segunda es
+          grano de papel. Juntas convierten el fondo en un material. */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 bg-paper-cream" />
+      <Grano />
       {/* La barra no existe en la portada: aparece cuando empezás a recorrer.
           Una casa no te recibe con el cartel de "iniciar sesión" en la cara. */}
       <header
@@ -253,7 +291,7 @@ const Casa = () => {
           <div className="sticky top-16 z-30 -mx-5 bg-surface-page/95 px-5 backdrop-blur sm:-mx-8 sm:px-8 lg:top-16 lg:z-auto lg:col-span-6 lg:mx-0 lg:flex lg:h-[calc(100vh-4rem)] lg:items-center lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
             <div
               className={`relative w-full transition-transform duration-[1100ms] ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none ${
-                enPortada ? 'lg:translate-x-1/2 lg:-translate-y-[22%] lg:scale-[0.6]' : ''
+                enPortada ? 'lg:translate-x-1/2 lg:-translate-y-[5%] lg:scale-[0.72]' : ''
               }`}
             >
             <CasaDibujada
@@ -262,6 +300,21 @@ const Casa = () => {
               className="mx-auto h-[36vh] w-auto max-w-full py-2 lg:h-auto lg:max-h-[calc(100vh-12rem)] lg:w-full lg:py-0"
             />
 
+            </div>
+
+            {/* La portada se reparte arriba y abajo de la casa: el wordmark
+                corona y la frase apoya. Todo junto debajo dejaba media pantalla
+                de crema vacío arriba, que es lo que se sentía. */}
+            <div
+              className={`pointer-events-none absolute inset-x-0 top-3 hidden justify-center transition-opacity duration-700 lg:flex lg:translate-x-1/2 ${
+                enPortada ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              <img
+                src={logoMalka}
+                alt="Malka"
+                className="h-14 w-auto animate-fade-in-up [animation-delay:1250ms] [animation-duration:700ms] [animation-fill-mode:backwards]"
+              />
             </div>
 
             {/* La portada, encima de la casa centrada. Se va cuando la casa se
@@ -277,11 +330,6 @@ const Casa = () => {
               {/* El wordmark y la frase entran cuando la casa terminó de
                   armarse, no antes: si aparecen mientras el edificio todavía se
                   está montando, compiten con él y no se ve ninguno de los dos. */}
-              <img
-                src={logoMalka}
-                alt="Malka"
-                className="h-14 w-auto animate-fade-in-up [animation-delay:1250ms] [animation-duration:700ms] [animation-fill-mode:backwards]"
-              />
               <p className="max-w-xl animate-fade-in-up font-grotesk text-[2rem] font-semibold leading-[1.1] tracking-tight text-ink [animation-delay:1400ms] [animation-duration:700ms] [animation-fill-mode:backwards]">
                 El punto de encuentro para tu identidad judía.
               </p>
@@ -362,23 +410,29 @@ const Casa = () => {
               className="flex min-h-[86vh] flex-col justify-center py-20"
             >
               <p className="text-[0.7rem] font-semibold uppercase tracking-label text-ink-soft">
-                Antes de venir
+                ¿Tenés más preguntas?
               </p>
               <h2 className="mt-4 text-[clamp(2rem,4.4vw,3rem)] font-bold uppercase leading-[0.95] tracking-display">
-                Las dudas, cortas
+                Es por acá
               </h2>
 
               <ul className="mt-10 grid gap-x-6 gap-y-7 sm:grid-cols-2">
                 {PREGUNTAS.map((p) => (
-                  <li key={p.pregunta}>
-                    {/* El veredicto primero y grande: lo que frena a alguien de
-                        venir es la duda, y una duda se despeja mostrando el
-                        "no", no escondiéndolo detrás de un clic. */}
-                    <p className="font-grotesk text-2xl font-bold leading-none tracking-tight text-primary-700">
-                      {p.veredicto}
-                    </p>
-                    <p className="mt-2 font-semibold leading-snug text-ink">{p.pregunta}</p>
-                    <p className="mt-1 text-sm leading-relaxed text-ink-soft">{p.detalle}</p>
+                  <li key={p.pregunta} className="flex gap-4">
+                    {/* El iconito de línea es el mismo lenguaje que usa Malka
+                        hoy en su sitio para las tres columnas de "cuándo, qué,
+                        dónde". Acá cumple además una función: da entrada a la
+                        respuesta, que es lo que se lee primero. */}
+                    <span className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-pill border border-primary/25 text-primary-700">
+                      <Icon name={p.icono} size="md" />
+                    </span>
+                    <div>
+                      <p className="font-grotesk text-lg font-bold leading-tight tracking-tight text-primary-700">
+                        {p.veredicto}
+                      </p>
+                      <p className="mt-1 font-semibold leading-snug text-ink">{p.pregunta}</p>
+                      <p className="mt-1 text-sm leading-relaxed text-ink-soft">{p.detalle}</p>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -395,11 +449,11 @@ const Casa = () => {
                 Quiénes te reciben
               </p>
               <h2 className="mt-4 text-[clamp(2rem,4.4vw,3rem)] font-bold uppercase leading-[0.95] tracking-display">
-                Son cuatro y están siempre
+                Te esperamos con una sonrisa
               </h2>
               <p className="mt-6 max-w-xl leading-relaxed text-ink-soft sm:text-lg">
-                Alguien del staff te va a estar esperando con una sonrisa. Si es tu primera vez,
-                buscá a cualquiera de ellos y decíselo: de eso se trata la casa.
+                Alguien de nuestro staff te va a estar esperando en la puerta. Si es tu primera vez,
+                decíselo: de eso se trata.
               </p>
 
               <ul className="mt-10 grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-4">
@@ -423,19 +477,21 @@ const Casa = () => {
                 portada vuelve a aparecer encima del texto. */}
             <section
               data-piso="todo"
-              data-zona="casa"
+              data-zona="ciudad"
               className="flex min-h-[86vh] flex-col justify-center py-20"
             >
               <h2 className="text-[clamp(2rem,4.4vw,3rem)] font-bold uppercase leading-[0.95] tracking-display">
-                {user ? 'Ya sos de la casa' : 'Sumate'}
+                {user ? 'Ya sos de la casa' : 'Vení a conocer Malka'}
               </h2>
               <p className="mt-6 text-2xl leading-snug sm:text-3xl">
-                {user ? 'La agenda te está esperando.' : 'Te registrás y ves la agenda.'}
+                {user
+                  ? 'La agenda te está esperando.'
+                  : 'Te esperamos para que abras la puerta que elijas.'}
               </p>
               <p className="mt-5 max-w-xl leading-relaxed text-ink-soft sm:text-lg">
                 {user
                   ? 'Todo lo que pasa cada semana está adentro, y te inscribís en un toque.'
-                  : 'Adentro está todo lo que pasa cada semana y te inscribís en un toque. Para caer al cowork un martes no hace falta ni eso: la puerta está abierta de 14 a 21.'}
+                  : 'La agenda con todas las actividades vive adentro, y desde ahí mismo te inscribís. Para venir a malkear un martes no hace falta ni eso: la puerta está abierta de 14 a 21.'}
               </p>
 
               <div className="mt-9">
