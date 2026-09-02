@@ -620,3 +620,171 @@ export const Parlante = ({ x, y, alto = 44 }) => (
     <circle cx={x} cy={y - alto + 10} r="4" className="fill-casa-piso" />
   </g>
 );
+
+/* ------------------------------------------------------------------ */
+/* Terminaciones: lo que convierte un rectángulo en una habitación      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * El piso, con su material a la vista.
+ *
+ * Un plano de color es una superficie; un plano con juntas es un piso. Las
+ * tablas van en la dirección de la fuga —igual que las de un parquet mirado en
+ * diagonal— y las baldosas cruzan en las dos direcciones. Es de las cosas más
+ * baratas de dibujar y de las que más suben el nivel: sin juntas, cualquier
+ * ambiente se ve como una maqueta de cartón.
+ */
+export const Piso = ({ x1, x2, y, material = 'madera' }) => {
+  const dx = FONDO.x;
+  const dy = FONDO.y;
+  const tablas = [];
+
+  if (material === 'madera') {
+    for (let x = x1 + 16; x < x2; x += 16) {
+      tablas.push(`M ${x} ${y} L ${x + dx} ${y + dy}`);
+    }
+    for (let f = 0.34; f < 1; f += 0.33) {
+      tablas.push(`M ${x1 + dx * f} ${y + dy * f} L ${x2 + dx * f} ${y + dy * f}`);
+    }
+  } else if (material === 'baldosa') {
+    for (let x = x1 + 22; x < x2; x += 22) tablas.push(`M ${x} ${y} L ${x + dx} ${y + dy}`);
+    for (let f = 0.25; f < 1; f += 0.25) {
+      tablas.push(`M ${x1 + dx * f} ${y + dy * f} L ${x2 + dx * f} ${y + dy * f}`);
+    }
+  } else {
+    /* Cemento alisado: dos juntas de dilatación y nada más. */
+    tablas.push(`M ${x1 + (x2 - x1) * 0.36} ${y} L ${x1 + (x2 - x1) * 0.36 + dx} ${y + dy}`);
+    tablas.push(`M ${x1 + dx * 0.5} ${y + dy * 0.5} L ${x2 + dx * 0.5} ${y + dy * 0.5}`);
+  }
+
+  return (
+    <g className="stroke-ink/12" strokeWidth="1">
+      {tablas.map((d) => (
+        <path key={d} d={d} />
+      ))}
+    </g>
+  );
+};
+
+/** El zócalo contra la pared del fondo. Un detalle de dos píxeles que ningún
+    ambiente real deja de tener. */
+export const Zocalo = ({ x1, x2, y }) => (
+  <path
+    d={`M ${x1 + FONDO.x} ${y + FONDO.y} L ${x2 + FONDO.x} ${y + FONDO.y}`}
+    className="stroke-casa-costado"
+    strokeWidth="5"
+  />
+);
+
+/**
+ * Ventana en la pared del fondo, con la luz de afuera entrando.
+ *
+ * Es lo que más rápido convierte un cuarto en un cuarto: sin ventanas, todos
+ * los ambientes parecen sótanos. El paño va apenas más claro que la pared y el
+ * marco en tinta suave; la cruz del medio hace el resto.
+ */
+export const Ventana = ({ x, y, ancho = 52, alto = 40 }) => (
+  <g>
+    <rect x={x} y={y} width={ancho} height={alto} rx="2" className="fill-primary-100/70 stroke-ink/45" strokeWidth={TRAZO} />
+    <path
+      d={`M ${x + ancho / 2} ${y} L ${x + ancho / 2} ${y + alto} M ${x} ${y + alto * 0.44} L ${x + ancho} ${y + alto * 0.44}`}
+      className="stroke-ink/35"
+      strokeWidth="1.4"
+    />
+    {/* El alféizar */}
+    <rect x={x - 3} y={y + alto} width={ancho + 6} height="3.5" className="fill-casa-costado stroke-ink/30" strokeWidth="1" />
+  </g>
+);
+
+/* ------------------------------------------------------------------ */
+/* La entrada y la calle                                               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * La puerta de entrada, de una casa vieja de Buenos Aires: hoja alta de dos
+ * paneles, banderola arriba, marco con dintel, escalón de granito y portero
+ * eléctrico al costado. La hoja va abierta hacia adentro —la casa está
+ * abierta y una hoja cerrada diría exactamente lo contrario.
+ */
+export const PuertaEntrada = ({ x, y, ancho = 30, alto = 80 }) => (
+  <g>
+    {/* El vano, el dintel y la banderola */}
+    <rect x={x - 3} y={y - alto - 20} width={ancho + 6} height="6" className="fill-casa-costado stroke-ink" strokeWidth={TRAZO} />
+    <rect x={x} y={y - alto - 14} width={ancho} height="12" className="fill-primary-100/70 stroke-ink/50" strokeWidth="1.4" />
+    <path d={`M ${x + ancho / 2} ${y - alto - 14} L ${x + ancho / 2} ${y - alto - 2}`} className="stroke-ink/40" strokeWidth="1.2" />
+
+    {/* La hoja, abierta hacia adentro: se ve de canto y en escorzo */}
+    <path
+      d={`M ${x + ancho} ${y} L ${x + ancho} ${y - alto} L ${x + ancho + FONDO.x * 0.26} ${y - alto + FONDO.y * 0.26} L ${x + ancho + FONDO.x * 0.26} ${y + FONDO.y * 0.26} Z`}
+      className="fill-barro-claro stroke-ink"
+      strokeWidth={TRAZO}
+    />
+    {/* Los dos paneles de la hoja, en escorzo */}
+    {[0.28, 0.62].map((f) => (
+      <path
+        key={f}
+        d={`M ${x + ancho + 3} ${y - alto * (1 - f) - 6} L ${x + ancho + FONDO.x * 0.2} ${y - alto * (1 - f) - 6 + FONDO.y * 0.2}`}
+        className="stroke-barro-oscuro/60"
+        strokeWidth="1.4"
+      />
+    ))}
+    <circle cx={x + ancho + 3.5} cy={y - alto * 0.46} r="1.7" className="fill-flame" />
+
+    {/* El escalón de granito y el portero */}
+    <rect x={x - 12} y={y - 5} width={ancho + 20} height="5" className="fill-casa-costado stroke-ink/40" strokeWidth="1" />
+    <rect x={x - 12} y={y - alto * 0.58} width="6" height="12" rx="1.5" className="fill-ink/70" />
+  </g>
+);
+
+/** El árbol de la vereda: un plátano, que es lo que hay en esa cuadra. */
+export const Arbol = ({ x, y, alto = 120 }) => (
+  <g>
+    <path
+      d={`M ${x} ${y} L ${x - 3} ${y - alto * 0.55} M ${x - 2} ${y - alto * 0.42} L ${x - 14} ${y - alto * 0.62} M ${x - 2.6} ${y - alto * 0.5} L ${x + 10} ${y - alto * 0.68}`}
+      className="stroke-barro-oscuro"
+      strokeWidth="5"
+      strokeLinecap="round"
+    />
+    <g className="origin-bottom animate-mecer motion-reduce:animate-none" style={{ transformBox: 'fill-box', transformOrigin: 'bottom center' }}>
+      <ellipse cx={x - 4} cy={y - alto * 0.76} rx={alto * 0.3} ry={alto * 0.24} className="fill-primary-400" />
+      <ellipse cx={x + 14} cy={y - alto * 0.66} rx={alto * 0.19} ry={alto * 0.16} className="fill-primary" />
+      <ellipse cx={x - 24} cy={y - alto * 0.64} rx={alto * 0.17} ry={alto * 0.14} className="fill-primary-600" />
+    </g>
+    {/* La cazuela del árbol en la vereda */}
+    <rect x={x - 16} y={y - 3} width="32" height="3" className="fill-barro-oscuro/60" />
+  </g>
+);
+
+/** Farol de alumbrado. */
+export const Farol = ({ x, y, alto = 92 }) => (
+  <g className={filete} strokeWidth={TRAZO}>
+    <path d={`M ${x} ${y} L ${x} ${y - alto} q 0 -10 12 -10 l 8 0`} className="fill-none stroke-ink/70" strokeWidth="3" />
+    <path d={`M ${x + 16} ${y - alto - 10} l 12 0 l -3 9 l -6 0 Z`} className="fill-flame/70 stroke-ink/60" />
+    <ellipse cx={x} cy={y} rx="6" ry="2.4" className="fill-ink/60" />
+  </g>
+);
+
+/** El horizonte de la ciudad, muy atrás: sólo siluetas. */
+export const Ciudad = ({ x1, x2, y }) => {
+  const torres = [];
+  let x = x1;
+  let i = 0;
+  while (x < x2) {
+    const ancho = 22 + ((i * 13) % 26);
+    const alto = 40 + ((i * 37) % 90);
+    torres.push({ x, ancho, alto, i });
+    x += ancho + 8;
+    i += 1;
+  }
+  return (
+    <g className="fill-casa-sombra/30">
+      {torres.map((t) => (
+        <g key={t.i}>
+          <rect x={t.x} y={y - t.alto} width={t.ancho} height={t.alto} />
+          {/* Un par de ventanas encendidas por torre, siempre las mismas. */}
+          {t.i % 2 === 0 && <rect x={t.x + 5} y={y - t.alto + 10} width="4" height="6" className="fill-flame/40" />}
+        </g>
+      ))}
+    </g>
+  );
+};

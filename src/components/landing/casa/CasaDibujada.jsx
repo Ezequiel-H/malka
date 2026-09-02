@@ -2,13 +2,14 @@ import { useEffect, useRef } from 'react';
 import { Guirnalda, Humo, Persona, PersonaSentada, PersonaSilla, Planta, Vela } from './piezas';
 import {
   Alacena,
+  Arbol,
   Alfombra,
   Auto,
   Arco,
   Botella,
   Caja,
-  Caracol,
   Cartel,
+  Ciudad,
   Chispas,
   Cajon,
   Candelabro,
@@ -21,6 +22,7 @@ import {
   Mesada,
   Campana,
   Espejo,
+  Farol,
   Microfono,
   Notas,
   Parrilla,
@@ -28,13 +30,17 @@ import {
   Plato,
   Platillo,
   Parlante,
+  Piso,
   Porton,
+  PuertaEntrada,
   RinconCafe,
   Silla,
   Sillon,
   Tanque,
   Taza,
   Teclado,
+  Ventana,
+  Zocalo,
 } from './muebles';
 import { CASA, FONDO, PISOS, SERVICIO, SUELO, TRAZO, costado, planoPiso, paredFondo } from './geometria';
 import { quiereQuietud } from '../scrollFx';
@@ -60,13 +66,12 @@ import { quiereQuietud } from '../scrollFx';
  * axonométrica las paralelas siguen paralelas y el dibujo se sostiene como
  * dibujo, mientras que una perspectiva empieza a pedir realismo.
  *
- * **La cámara** es el otro cambio: al pasar de piso no se enciende y apaga
- * nada de golpe, la vista viaja. El encuadre se interpola con una duración
- * propia y una curva suave en las dos puntas, y —lo que de verdad hace la
- * diferencia— **se abre mientras viaja y se cierra al llegar**, que es lo que
- * hace un camarógrafo cuando cambia de encuadre: abre para no perder el
- * contexto en el camino. Sin eso hay un desplazamiento; con eso hay un viaje,
- * y de paso se entiende que los pisos son parte de la misma casa.
+ * **La cámara va atada al scroll**, no a un cambio de sección: el encuadre es
+ * una función de dónde está la página en este instante, así que frenás a la
+ * mitad y la cámara queda a la mitad. Y en el medio del viaje se abre y vuelve
+ * a cerrarse, que es lo que hace un camarógrafo para no perder el contexto
+ * mientras cambia de encuadre — y acá además cuenta algo: mientras pasás de un
+ * piso a otro, ves la casa entera.
  */
 
 /* Dónde mira la cámara en cada piso, y cuánto se acerca. El centro se corre
@@ -124,10 +129,6 @@ const encuadrar = ({ x, y, s }) => {
  */
 const CENTRO = { x: (CASA.x1 + CASA.x2) / 2, y: 300 };
 
-/* La caracol va contra la pared derecha: es donde no le roba lugar a ninguna
-   escena y donde estaría en una casa angosta de verdad. */
-const ESCALERA = { x: 276 };
-
 const fuga = (t) => {
   /* El achique de lo lejano se hace alrededor del centro del dibujo y no del
      origen del SVG. Escalar desde el origen arrastra todo hacia arriba y a la
@@ -141,14 +142,10 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
   const camaraRef = useRef(null);
   const poseRef = useRef({ ...FOCOS.todo });
 
-  /* El quincho es planta baja: mirar el salón es mirar los dos. */
-  const foco = activo;
-
   useEffect(() => {
     const g = camaraRef.current;
     if (!g) return undefined;
 
-    const destino = encuadrar(FOCOS[foco] ?? FOCOS.todo);
     const aplicar = ({ x, y, s }) => {
       g.setAttribute(
         'transform',
@@ -156,50 +153,80 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
       );
     };
 
-    /* Quien pidió menos movimiento no recibe un viaje de cámara: se le pone el
-       encuadre nuevo y listo. */
+    const secciones = [...document.querySelectorAll('[data-piso]')];
+    if (!secciones.length) return undefined;
+
+    const suave = (t) => t * t * (3 - 2 * t);
+
+    /**
+     * La cámara es una función del scroll, no una animación disparada por un
+     * cambio de sección.
+     *
+     * Antes viajaba de un piso al siguiente cuando un observer avisaba que
+     * habías llegado: el movimiento arrancaba tarde y terminaba solo, y por eso
+     * se sentía despegado de la mano. Ahora el encuadre se interpola entre el
+     * piso que dejás y el que viene según **dónde está el scroll en este
+     * instante**: frenás a la mitad y la cámara queda a la mitad. Nada corre
+     * por su cuenta.
+     *
+     * Y en el medio del viaje se abre —el zoom baja hasta un tercio y vuelve a
+     * subir— que es lo que hace un camarógrafo para no perder el contexto
+     * mientras cambia de encuadre. Acá además cuenta algo: mientras pasás de un
+     * piso a otro, ves la casa entera.
+     */
+    const encuadreDelScroll = () => {
+      const centro = window.innerHeight / 2;
+      const marcas = secciones.map((n) => {
+        const r = n.getBoundingClientRect();
+        return { piso: n.dataset.piso, y: r.top + r.height / 2 };
+      });
+
+      if (centro >= marcas[0].y) return { ...encuadrar(FOCOS[marcas[0].piso] ?? FOCOS.todo) };
+      const ultima = marcas[marcas.length - 1];
+      if (centro <= ultima.y) return { ...encuadrar(FOCOS[ultima.piso] ?? FOCOS.todo) };
+
+      const i = marcas.findIndex((m, k) => k < marcas.length - 1 && m.y > centro && marcas[k + 1].y <= centro);
+      const a = encuadrar(FOCOS[marcas[i].piso] ?? FOCOS.todo);
+      const b = encuadrar(FOCOS[marcas[i + 1].piso] ?? FOCOS.todo);
+      const t = suave((marcas[i].y - centro) / Math.max(1, marcas[i].y - marcas[i + 1].y));
+
+      const salto = Math.hypot(b.x - a.x, b.y - a.y);
+      const apertura = Math.min(0.32, salto / 820);
+
+      return {
+        x: a.x + (b.x - a.x) * t,
+        y: a.y + (b.y - a.y) * t,
+        s: (a.s + (b.s - a.s) * t) * (1 - apertura * Math.sin(Math.PI * t)),
+      };
+    };
+
+    /* Si el sistema pide menos movimiento, la cámara se queda mostrando la casa
+       entera y no se mueve nunca. */
     if (quiereQuietud()) {
-      poseRef.current = { ...destino };
-      aplicar(destino);
+      aplicar(encuadrar(FOCOS.todo));
       return undefined;
     }
 
-    const desde = { ...poseRef.current };
-    const salto = Math.hypot(destino.x - desde.x, destino.y - desde.y);
-    if (salto < 0.5 && Math.abs(destino.s - desde.s) < 0.01) return undefined;
-
-    /* Viajes largos tardan más, pero no proporcionalmente: si la duración
-       creciera con la distancia, ir del subsuelo a la terraza se sentiría
-       eterno. */
-    const duracion = Math.min(1500, 620 + salto * 1.1);
-
-    /* La cámara se aleja mientras viaja y vuelve a acercarse al llegar. Es lo
-       que hace un camarógrafo cuando tiene que cambiar de encuadre: abre para
-       no perder el contexto en el camino. Sin esto el movimiento es un
-       desplazamiento; con esto es un viaje, y además se entiende que los pisos
-       son parte de la misma casa. */
-    const apertura = Math.min(0.3, salto / 900);
-
-    let id;
-    const suave = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
-    const arranque = performance.now();
-
-    const paso = (ahora) => {
-      const t = Math.min(1, (ahora - arranque) / duracion);
-      const e = suave(t);
-      const pose = {
-        x: desde.x + (destino.x - desde.x) * e,
-        y: desde.y + (destino.y - desde.y) * e,
-        s: (desde.s + (destino.s - desde.s) * e) * (1 - apertura * Math.sin(Math.PI * e)),
-      };
+    let pedido = null;
+    const actualizar = () => {
+      pedido = null;
+      const pose = encuadreDelScroll();
       poseRef.current = pose;
       aplicar(pose);
-      if (t < 1) id = requestAnimationFrame(paso);
+    };
+    const alScrollear = () => {
+      if (pedido == null) pedido = requestAnimationFrame(actualizar);
     };
 
-    id = requestAnimationFrame(paso);
-    return () => cancelAnimationFrame(id);
-  }, [foco]);
+    actualizar();
+    window.addEventListener('scroll', alScrollear, { passive: true });
+    window.addEventListener('resize', alScrollear);
+    return () => {
+      if (pedido != null) cancelAnimationFrame(pedido);
+      window.removeEventListener('scroll', alScrollear);
+      window.removeEventListener('resize', alScrollear);
+    };
+  }, []);
 
   const luz = (id) =>
     activo === 'todo' || activo === id || (id === 'quincho' && activo === 'salon')
@@ -214,15 +241,29 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
   const P0 = PISOS.planta.piso;
   const SS = PISOS.subsuelo.piso;
 
-  /** El volumen vacío de un piso: fondo, canto y piso, en ese orden. */
-  const Volumen = ({ techo, piso, x1 = CASA.x1, x2 = CASA.x2 }) => (
+  /**
+   * El volumen de un piso: fondo, canto, piso y terminaciones.
+   *
+   * Las terminaciones no son adorno. El material del piso a la vista, el zócalo
+   * contra la pared y las ventanas son las tres cosas que convierten un
+   * rectángulo de color en una habitación; sin ellas, cualquier ambiente se ve
+   * como una maqueta de cartón.
+   */
+  const Volumen = ({ techo, piso, x1 = CASA.x1, x2 = CASA.x2, material = 'madera', ventanas = [] }) => (
     <g>
       <path d={paredFondo(techo, piso, x1, x2)} className="fill-casa-fondo" />
       {/* Oscurecimiento en el encuentro de la pared con el techo. Es el truco
           más barato que hay para que un plano se lea cóncavo. */}
       <path d={paredFondo(techo, techo + 46, x1, x2)} fill="url(#casa-rincon)" />
       <path d={costado(techo, piso, x2)} className="fill-casa-costado" />
-      <path d={planoPiso(piso, x1, x2)} className="fill-casa-piso stroke-ink/15" strokeWidth="1" />
+      <path d={planoPiso(piso, x1, x2)} className="fill-casa-piso" />
+      <Piso x1={x1} x2={x2} y={piso} material={material} />
+      <Zocalo x1={x1} x2={x2} y={piso} />
+      <g transform={fuga(1)}>
+        {ventanas.map((v) => (
+          <Ventana key={v.x} x={v.x} y={v.y} ancho={v.ancho} alto={v.alto} />
+        ))}
+      </g>
     </g>
   );
 
@@ -256,17 +297,41 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
           className="fill-casa-sombra/25"
         />
 
+        {/* ---- la ciudad, atrás de todo ---- */}
+        <Ciudad x1={VISTA.x} x2={VISTA.x + VISTA.ancho} y={PISOS.terraza.piso + 4} />
+
         {/* ---- la vereda ---- */}
-        <path
-          d={`M ${VISTA.x + 8} ${SUELO} L ${CASA.x2 + FONDO.x + 14} ${SUELO}`}
-          className="stroke-ink/70"
-          strokeWidth={TRAZO * 1.2}
-          strokeLinecap="round"
-        />
+        <g>
+          <path
+            d={`M ${VISTA.x + 8} ${SUELO} L ${CASA.x2 + FONDO.x + 14} ${SUELO}`}
+            className="stroke-ink/70"
+            strokeWidth={TRAZO * 1.2}
+            strokeLinecap="round"
+          />
+          {/* El cordón: dos líneas y la vereda deja de ser una raya para pasar
+              a ser una vereda. */}
+          <path
+            d={`M ${VISTA.x + 8} ${SUELO + 7} L ${CASA.x1 - 6} ${SUELO + 7}`}
+            className="stroke-ink/25"
+            strokeWidth="2"
+          />
+          {/* Las juntas de las baldosas de la vereda */}
+          {Array.from({ length: 6 }, (_, i) => VISTA.x + 20 + i * 20).map((x) => (
+            <path key={x} d={`M ${x} ${SUELO} L ${x} ${SUELO + 7}`} className="stroke-ink/15" strokeWidth="1" />
+          ))}
+          <Arbol x={VISTA.x + 26} y={SUELO} alto={132} />
+          <Farol x={CASA.x1 - 40} y={SUELO} alto={100} />
+        </g>
 
         {/* ================= PRIMER PISO: cowork y charlas ================ */}
         <g className={grupo('primero')}>
-          <Volumen {...PISOS.primero} />
+          <Volumen
+            {...PISOS.primero}
+            ventanas={[
+              { x: 268, y: P1 - 116, ancho: 54, alto: 42 },
+              { x: 340, y: P1 - 116, ancho: 44, alto: 42 },
+            ]}
+          />
 
           <g transform={fuga(0.86)}>
             <Pizarra x={168} y={P1 - 126} ancho={74} alto={46} />
@@ -316,7 +381,10 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
 
         {/* ================= PLANTA BAJA: salón, cocina y parrilla ========= */}
         <g className={grupo('planta')}>
-          <Volumen {...PISOS.planta} />
+          <Volumen
+            {...PISOS.planta}
+            ventanas={[{ x: 250, y: P0 - 120, ancho: 56, alto: 44 }]}
+          />
 
           {/* La lámpara y su charco de luz sobre la mesa */}
           <path d={`M 176 ${PISOS.planta.techo} L 176 ${P0 - 92}`} className="stroke-ink/50" strokeWidth={TRAZO} />
@@ -326,11 +394,11 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
           {/* La puerta: un hueco en la pared, sin hoja. La casa está abierta y
               dibujar una hoja cerrada diría lo contrario. */}
           <path
-            d={`M ${CASA.x1} ${P0} L ${CASA.x1} ${P0 - 74} L ${CASA.x1 + FONDO.x * 0.5} ${P0 - 74 + FONDO.y * 0.5} L ${CASA.x1 + FONDO.x * 0.5} ${P0 + FONDO.y * 0.5} Z`}
+            d={`M ${CASA.x1} ${P0} L ${CASA.x1} ${P0 - 84} L ${CASA.x1 + FONDO.x * 0.5} ${P0 - 84 + FONDO.y * 0.5} L ${CASA.x1 + FONDO.x * 0.5} ${P0 + FONDO.y * 0.5} Z`}
             className="fill-casa-costado"
           />
-          <rect x={CASA.x1 - 24} y={P0 - 4} width={24} height="4" className="fill-barro" />
-          <Cartel x={CASA.x1 + 8} y={P0 - 68} />
+          <PuertaEntrada x={CASA.x1 - 2} y={P0} ancho={30} alto={84} />
+          <Cartel x={CASA.x1 - 2} y={P0 - 118} ancho={30} />
 
           <g className="animate-caminar motion-reduce:animate-none">
             <g
@@ -401,7 +469,17 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
 
         {/* ================= SUBSUELO: cochera y sala de movimiento ======== */}
         <g className={grupo('subsuelo')}>
-          <Volumen {...PISOS.subsuelo} />
+          <Volumen
+            {...PISOS.subsuelo}
+            material="cemento"
+            /* Ventanucos a ras del techo: es toda la luz natural que puede
+               tener un subsuelo, y decirlo es más honesto que dibujar
+               ventanales que no existen. */
+            ventanas={[
+              { x: 120, y: SS - 118, ancho: 40, alto: 16 },
+              { x: 300, y: SS - 118, ancho: 40, alto: 16 },
+            ]}
+          />
 
           {/* La cochera, a la izquierda */}
           <g transform={fuga(0.82)}>
@@ -508,22 +586,6 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
               <path key={x} d={`M ${x} 98 L ${x} ${PISOS.terraza.piso - 4}`} />
             ))}
           </g>
-        </g>
-
-        {/* ================= LA ESCALERA ================================== */}
-        {/* Va después de los pisos porque los atraviesa: en un corte, la
-            escalera es lo único que se ve entero de arriba abajo. El hueco de
-            cada losa se sugiere con un plano más oscuro por donde pasa. */}
-        <g className="transition-opacity duration-cinematic ease-standard opacity-100">
-          {[PISOS.primero.piso, PISOS.planta.piso].map((y) => (
-            <path key={y} d={planoPiso(y, ESCALERA.x - 30, ESCALERA.x + 30)} className="fill-casa-fondo" />
-          ))}
-          <Caracol
-            x={ESCALERA.x}
-            base={PISOS.subsuelo.piso}
-            alto={PISOS.subsuelo.piso - PISOS.terraza.piso}
-            radio={27}
-          />
         </g>
 
         {/* ---- las líneas del corte, siempre encima ---- */}
