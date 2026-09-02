@@ -573,7 +573,11 @@ const CasaDibujada = ({ activo = 'todo', zona = 'todo', className = '' }) => {
         </g>
 
         {/* ================= EL PATIO DEL FONDO =========================== */}
-        <g className={grupo('patio')} filter={foco('patio')}>
+        <g
+          className={`${grupo('patio')} animate-armar motion-reduce:animate-none`}
+          style={{ animationDelay: '560ms' }}
+          filter={foco('patio')}
+        >
           {/* El suelo del patio, con baldosa en vez de madera, y las paredes
               del lote. Un patio sin paredes se lee como un descampado; y sin
               cambiar el material del piso, como una habitación sin techo. */}

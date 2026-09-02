@@ -15,7 +15,10 @@ const RUIDO =
 const Grano = () => (
   <span
     aria-hidden
-    className="pointer-events-none fixed inset-0 z-[60] opacity-[0.05] mix-blend-multiply"
+    /* Detrás del contenido y no encima: con `mix-blend-multiply` sobre el texto,
+       el grano le come el contraste y las bajadas se ven sucias, como
+       desenfocadas. */
+    className="pointer-events-none fixed inset-0 z-0 opacity-[0.05] mix-blend-multiply"
     style={{ backgroundImage: RUIDO }}
   />
 );

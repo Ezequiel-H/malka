@@ -354,13 +354,13 @@ const Casa = () => {
         </nav>
       </header>
 
-      <main className="mx-auto max-w-6xl px-5 sm:px-8">
+      <main className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
         <div className="lg:grid lg:grid-cols-12 lg:gap-x-12">
           {/* El dibujo: fijo al costado en escritorio, fijo arriba en mobile. */}
           <div className="sticky top-16 z-30 -mx-5 bg-surface-page/95 px-5 backdrop-blur sm:-mx-8 sm:px-8 lg:top-16 lg:z-auto lg:col-span-6 lg:mx-0 lg:flex lg:h-[calc(100vh-4rem)] lg:items-center lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
             <div
               className={`relative w-full transition-transform duration-[1100ms] ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none ${
-                enPortada ? 'lg:translate-x-1/2 lg:-translate-y-[2%] lg:scale-[1.06]' : ''
+                enPortada ? 'lg:translate-x-1/2 lg:-translate-y-[7%] lg:scale-[0.94]' : ''
               }`}
             >
             <CasaDibujada
@@ -375,7 +375,7 @@ const Casa = () => {
                 corona y la frase apoya. Todo junto debajo dejaba media pantalla
                 de crema vacío arriba, que es lo que se sentía. */}
             <div
-              className={`pointer-events-none absolute inset-x-0 top-3 hidden justify-center transition-opacity duration-700 lg:flex lg:translate-x-1/2 ${
+              className={`pointer-events-none absolute inset-x-0 top-[6%] hidden justify-center transition-opacity duration-700 lg:flex lg:translate-x-1/2 ${
                 enPortada ? 'opacity-100' : 'opacity-0'
               }`}
             >
@@ -392,7 +392,7 @@ const Casa = () => {
               /* La portada vive fuera del envoltorio que se transforma —si no,
                  el texto se achica y se mueve con la casa— y se corre al centro
                  por su cuenta, porque la columna ocupa media pantalla. */
-              className={`pointer-events-none absolute inset-x-0 bottom-4 hidden flex-col items-center gap-5 text-center transition-opacity duration-700 lg:flex lg:translate-x-1/2 lg:gap-4 ${
+              className={`pointer-events-none absolute inset-x-0 bottom-[7%] hidden flex-col items-center gap-5 text-center transition-opacity duration-700 lg:flex lg:translate-x-1/2 lg:gap-4 ${
                 enPortada ? 'opacity-100' : 'opacity-0'
               }`}
             >

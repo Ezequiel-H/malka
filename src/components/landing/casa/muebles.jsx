@@ -1015,21 +1015,33 @@ export const Jacuzzi = ({ x, y, ancho = 66 }) => (
 export const Pileta = ({ x, y, ancho = 96, fondo = 0.5 }) => {
   const dx = FONDO.x * fondo;
   const dy = FONDO.y * fondo;
+  const id = `pileta-${Math.round(x)}-${Math.round(y)}`;
+  const agua = `M ${x} ${y} L ${x + ancho} ${y} L ${x + ancho + dx} ${y + dy} L ${x + dx} ${y + dy} Z`;
   return (
     <g>
-      <path
-        d={`M ${x} ${y} L ${x + ancho} ${y} L ${x + ancho + dx} ${y + dy} L ${x + dx} ${y + dy} Z`}
-        className="fill-primary-300 stroke-ink/45"
-        strokeWidth={TRAZO}
-        strokeLinejoin="round"
-      />
-      <path
-        d={`M ${x + 8} ${y + dy * 0.6} L ${x + ancho * 0.42} ${y + dy * 0.6}
-            M ${x + ancho * 0.56} ${y + dy * 0.3} L ${x + ancho * 0.9} ${y + dy * 0.3}`}
-        className="animate-arco stroke-surface/70 motion-reduce:animate-none"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-      />
+      {/* Las olas se recortan contra el agua: sin esto, la animación las saca
+          del borde y quedan dos rayas flotando sobre las baldosas. */}
+      <defs>
+        <clipPath id={id}>
+          <path d={agua} />
+        </clipPath>
+      </defs>
+      <path d={agua} className="fill-primary-300 stroke-ink/45" strokeWidth={TRAZO} strokeLinejoin="round" />
+      {/* Cada ola va corrida en x lo que le corresponde por su profundidad: el
+          agua es un paralelogramo, así que una raya horizontal a media altura
+          arranca más adentro que una de adelante. */}
+      <g clipPath={`url(#${id})`}>
+        {[0.3, 0.62].map((f, i) => (
+          <path
+            key={f}
+            d={`M ${x + dx * f + ancho * (i ? 0.42 : 0.12)} ${y + dy * f} l ${ancho * 0.3} 0`}
+            className="animate-arco stroke-surface/75 motion-reduce:animate-none"
+            style={{ animationDelay: `${i * 600}ms` }}
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+        ))}
+      </g>
       {/* El borde de la pileta, con su canto */}
       <path
         d={`M ${x - 5} ${y} L ${x + ancho + 5} ${y} L ${x + ancho + 5} ${y + 4} L ${x - 5} ${y + 4} Z`}
