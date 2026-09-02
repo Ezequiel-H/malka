@@ -284,6 +284,23 @@ const CasaDibujada = ({
         <filter id="casa-fuera-de-foco" x="-10%" y="-10%" width="120%" height="120%">
           <feGaussianBlur stdDeviation="1.9" />
         </filter>
+        {/* La tierra y la vereda son rectángulos pintados: si terminan de
+            golpe, el dibujo se lee metido en una caja. Estos dos degradados los
+            desvanecen hacia los costados y hacia abajo, así el suelo se pierde
+            en el papel en vez de cortarse. */}
+        <linearGradient id="casa-tierra" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#c9bda9" stopOpacity="0" />
+          <stop offset="16%" stopColor="#c9bda9" stopOpacity="0.25" />
+          <stop offset="80%" stopColor="#c9bda9" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="#c9bda9" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient id="casa-tierra-hondo" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#c9bda9" stopOpacity="0.28" />
+          <stop offset="100%" stopColor="#c9bda9" stopOpacity="0" />
+        </linearGradient>
+        <mask id="casa-suelo">
+          <rect x={VISTA.x} y={SUELO - 10} width={VISTA.ancho} height={260} fill="url(#casa-tierra)" />
+        </mask>
         <linearGradient id="casa-rincon" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#2c3d34" stopOpacity="0.14" />
           <stop offset="100%" stopColor="#2c3d34" stopOpacity="0" />
@@ -301,9 +318,13 @@ const CasaDibujada = ({
         {/* La tierra en la que está enterrado el subsuelo. Sin este tono
             alrededor, el nivel de abajo se lee como un piso más de un edificio
             flotando, y no como lo que es. */}
-        <path
-          d={`M ${VISTA.x} ${SUELO} L ${VISTA.x + VISTA.ancho} ${SUELO} L ${VISTA.x + VISTA.ancho} ${PISOS.subsuelo.piso + 26} L ${VISTA.x} ${PISOS.subsuelo.piso + 26} Z`}
-          className="fill-casa-sombra/25"
+        <rect
+          x={VISTA.x}
+          y={SUELO}
+          width={VISTA.ancho}
+          height={PISOS.subsuelo.piso + 60 - SUELO}
+          fill="url(#casa-tierra-hondo)"
+          mask="url(#casa-suelo)"
         />
 
         {/* ---- la ciudad, atrás de todo ---- */}
@@ -314,11 +335,9 @@ const CasaDibujada = ({
           {/* La vereda es un plano en fuga como todos los demás, no una raya.
               Con una línea sola el edificio flotaba: no se entendía sobre qué
               está apoyado ni hacia dónde sigue el suelo. */}
-          <path
-            d={planoPiso(SUELO, VISTA.x + 8, CASA.x2 + 24)}
-            className="fill-casa-piso stroke-ink/25"
-            strokeWidth="1"
-          />
+          <g mask="url(#casa-suelo)">
+            <path d={planoPiso(SUELO, VISTA.x + 8, CASA.x2 + 24)} className="fill-casa-piso" />
+          </g>
           <path
             d={`M ${VISTA.x + 8} ${SUELO} L ${CASA.x2 + 24} ${SUELO}`}
             className="stroke-ink/70"

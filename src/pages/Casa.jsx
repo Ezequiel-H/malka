@@ -199,10 +199,10 @@ const Casa = () => {
   /* Si la pantalla es angosta, el dibujo va arriba y en chico: la cámara se
      acerca más para compensar. */
   const [compacto, setCompacto] = useState(
-    typeof window !== 'undefined' ? window.innerWidth < 1024 : false
+    typeof window !== 'undefined' ? window.innerWidth < 1280 : false
   );
   useEffect(() => {
-    const medir = () => setCompacto(window.innerWidth < 1024);
+    const medir = () => setCompacto(window.innerWidth < 1280);
     window.addEventListener('resize', medir);
     return () => window.removeEventListener('resize', medir);
   }, []);
@@ -355,7 +355,7 @@ const Casa = () => {
           seis renglones, no más animación. */}
       <nav
         aria-label="Secciones"
-        className={`fixed right-7 top-1/2 z-40 hidden -translate-y-1/2 flex-col items-end gap-3 transition-opacity duration-500 xl:flex ${
+        className={`fixed right-7 top-1/2 z-40 hidden -translate-y-1/2 flex-col items-end gap-3 transition-opacity duration-500 2xl:flex ${
           enPortada ? 'pointer-events-none opacity-0' : 'opacity-100'
         }`}
       >
@@ -390,13 +390,13 @@ const Casa = () => {
       </nav>
 
       <main className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
-        <div className="lg:grid lg:grid-cols-12 lg:gap-x-12">
+        <div className="xl:grid xl:grid-cols-12 xl:gap-x-12">
           {/* El dibujo: fijo al costado en escritorio, fijo arriba en mobile. */}
           {/* En mobile la casa vive en una franja pegada arriba y **opaca**: el
               texto pasa por detrás, y si la franja deja ver a través se
               superponen los dos y no se lee ninguno. El borde de abajo se
               desvanece para que el texto no aparezca cortado por una línea. */}
-          <div className="sticky top-16 z-30 -mx-5 bg-surface-page px-5 pb-3 shadow-[0_18px_18px_-18px_rgba(44,61,52,0.25)] sm:-mx-8 sm:px-8 lg:top-16 lg:z-auto lg:col-span-6 lg:mx-0 lg:flex lg:h-[calc(100vh-4rem)] lg:items-center lg:bg-transparent lg:px-0 lg:pb-0 lg:shadow-none">
+          <div className="sticky top-16 z-30 -mx-5 bg-surface-page px-5 pb-3 shadow-[0_18px_18px_-18px_rgba(44,61,52,0.25)] sm:-mx-8 sm:px-8 xl:top-16 xl:z-auto xl:col-span-6 xl:mx-0 xl:flex xl:h-[calc(100vh-4rem)] xl:items-center xl:bg-transparent xl:px-0 xl:pb-0 xl:shadow-none">
             {/* La casa no se mueve nunca de su columna. Antes se corría al
                 centro en la portada y volvía al scrollear: ese viaje lateral, con
                 el texto cortándose al mismo tiempo, era el momento más brusco de
@@ -412,14 +412,14 @@ const Casa = () => {
               activo={manual?.piso ?? activo}
               zona={manual?.zona ?? zona}
               compacto={compacto}
-              className="mx-auto h-[34vh] w-auto max-w-none py-1 lg:h-auto lg:max-h-[calc(100vh-5rem)] lg:w-[118%] lg:-ml-[18%] lg:py-0 [mask-image:radial-gradient(125%_105%_at_54%_46%,#000_62%,transparent_100%)]"
+              className="mx-auto h-[34vh] w-auto max-w-none py-1 sm:h-[38vh] xl:h-auto xl:max-h-[calc(100vh-5rem)] xl:w-[108%] xl:-ml-[8%] 2xl:w-[116%] 2xl:-ml-[16%] xl:py-0 [mask-image:radial-gradient(100%_86%_at_50%_46%,#000_30%,transparent_84%)] xl:[mask-image:radial-gradient(106%_94%_at_53%_45%,#000_50%,transparent_90%)]"
             />
 
             </div>
 
                       </div>
 
-          <div className="lg:col-span-6">
+          <div className="xl:col-span-6">
             {SECCIONES.map((p, i) =>
               p.portada ? (
                 /* La portada es la primera sección de la columna, no una capa
@@ -434,7 +434,7 @@ const Casa = () => {
                      después de la franja del dibujo, que en mobile ya ocupa su
                      lugar en el flujo. Con el colchón, el wordmark caía fuera
                      de la primera pantalla. */
-                  className="flex min-h-[46vh] flex-col justify-start pb-12 pt-7 lg:min-h-screen lg:justify-center lg:py-32"
+                  className="flex min-h-[46vh] flex-col justify-start pb-12 pt-7 xl:min-h-screen xl:justify-center xl:py-32"
                 >
                   <img
                     src={logoMalka}
@@ -471,7 +471,7 @@ const Casa = () => {
                    debajo de él: sin este colchón, el título de cada sección
                    nace tapado. En escritorio el dibujo está al costado y el
                    colchón sobra. */
-                className="flex min-h-[86vh] flex-col justify-start pb-14 pt-[38vh] lg:min-h-screen lg:justify-center lg:py-32"
+                className="flex min-h-[86vh] flex-col justify-start pb-14 pt-[calc(34vh+5rem)] sm:pt-[calc(38vh+5rem)] xl:min-h-screen xl:justify-center xl:py-0 xl:pt-32 xl:pb-32"
               >
                 {/* El nombre del espacio, con su filete: es lo que ata el
                     texto con lo que la cámara está mirando. Sin esa etiqueta,
@@ -647,7 +647,7 @@ const Casa = () => {
               id="staff"
               data-piso="terraza"
               data-zona="equipo"
-              className="flex min-h-[86vh] flex-col justify-start pb-14 pt-[38vh] lg:min-h-screen lg:justify-center lg:py-32"
+              className="flex min-h-[86vh] flex-col justify-start pb-14 pt-[calc(34vh+5rem)] sm:pt-[calc(38vh+5rem)] xl:min-h-screen xl:justify-center xl:py-0 xl:pt-32 xl:pb-32"
             >
               <p className="text-[0.7rem] font-semibold uppercase tracking-label text-ink-soft">
                 Quiénes te reciben
@@ -699,7 +699,7 @@ const Casa = () => {
               id="sumate"
               data-piso="todo"
               data-zona="ciudad"
-              className="flex min-h-[86vh] flex-col justify-start pb-14 pt-[38vh] lg:min-h-screen lg:justify-center lg:py-32"
+              className="flex min-h-[86vh] flex-col justify-start pb-14 pt-[calc(34vh+5rem)] sm:pt-[calc(38vh+5rem)] xl:min-h-screen xl:justify-center xl:py-0 xl:pt-32 xl:pb-32"
             >
               <h2 className="text-[clamp(2rem,4.4vw,3rem)] font-bold uppercase leading-[0.95] tracking-display">
                 {user ? 'Ya sos de la casa' : 'Vení a conocer Malka'}
