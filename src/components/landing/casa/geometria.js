@@ -19,7 +19,7 @@
 export const FONDO = { x: 44, y: -26 };
 
 export const CASA = { x1: 58, x2: 314 };
-export const QUINCHO = { x1: 322, x2: 416 };
+export const QUINCHO = { x1: 322, x2: 416, techo: 322 };
 
 /* Un solo grosor de trazo para todo el dibujo. Es lo que separa una
    ilustración de un collage: si cada objeto trae su propio filete, el ojo lee
@@ -28,14 +28,19 @@ export const TRAZO = 1.6;
 
 /* Los pisos, de arriba hacia abajo. `techo` y `piso` son las dos alturas que
    definen el volumen de cada uno; el resto del dibujo se cuelga de ahí. */
+/**
+ * Los cuatro niveles reales de la casa, de arriba hacia abajo. La planta baja
+ * es la que apoya en la vereda (`SUELO`), y el subsuelo va enterrado debajo.
+ */
 export const PISOS = {
   terraza: { techo: 40, piso: 130 },
-  estudio: { techo: 136, piso: 270 },
-  cowork: { techo: 276, piso: 410 },
-  salon: { techo: 416, piso: 560 },
+  primero: { techo: 136, piso: 280 },
+  planta: { techo: 286, piso: 430 },
+  subsuelo: { techo: 436, piso: 574 },
 };
 
-export const SUELO = 560;
+/** El nivel de la calle: donde termina la planta baja y empieza la tierra. */
+export const SUELO = 430;
 
 /** Un punto llevado a la profundidad `t` (0 = borde del corte, 1 = fondo). */
 export const hondo = (x, y, t = 0) => ({ x: x + FONDO.x * t, y: y + FONDO.y * t });

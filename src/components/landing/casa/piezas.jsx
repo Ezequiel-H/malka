@@ -90,16 +90,23 @@ export const PersonaSentada = ({ x, y, alto = 26, color = 'fill-ink', delay = 0 
       className={`${color} animate-respirar motion-reduce:animate-none`}
       style={{ animationDelay: `${delay}ms` }}
     >
-      <circle cx="0" cy={-alto + alto * 0.17} r={alto * 0.17} />
-      {/* El tronco es un trapecio angosto y las piernas cruzadas, la base
-          ancha. Un triángulo entero se lee como un cono. */}
+      <circle cx="0" cy={-alto * 0.82} r={alto * 0.16} />
+      {/* Torso y piernas cruzadas de una sola pieza. Dibujarlos separados deja
+          un aire entre el cuerpo y las piernas, y a este tamaño ese aire se ve
+          como una cabeza flotando sobre un montículo. */}
       <path
-        d={`M ${-alto * 0.19} ${-alto * 0.42}
-            L ${-alto * 0.14} ${-alto + alto * 0.36}
-            L ${alto * 0.14} ${-alto + alto * 0.36}
-            L ${alto * 0.19} ${-alto * 0.42} Z`}
+        d={`M ${-alto * 0.15} ${-alto * 0.22}
+            L ${-alto * 0.16} ${-alto * 0.52}
+            Q ${-alto * 0.13} ${-alto * 0.64} 0 ${-alto * 0.65}
+            Q ${alto * 0.14} ${-alto * 0.64} ${alto * 0.17} ${-alto * 0.52}
+            L ${alto * 0.16} ${-alto * 0.22} Z`}
       />
-      <path d={`M ${-alto * 0.52} 0 Q 0 ${-alto * 0.58} ${alto * 0.52} 0 Z`} />
+      <path
+        d={`M ${-alto * 0.42} 0
+            L ${-alto * 0.3} ${-alto * 0.2}
+            Q 0 ${-alto * 0.3} ${alto * 0.3} ${-alto * 0.2}
+            L ${alto * 0.42} 0 Z`}
+      />
     </g>
   </g>
 );

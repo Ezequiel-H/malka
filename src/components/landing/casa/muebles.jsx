@@ -295,3 +295,49 @@ export const Parrilla = ({ x, y, piso, ancho = 58 }) => (
     ))}
   </g>
 );
+
+/* ------------------------------------------------------------------ */
+/* El subsuelo                                                         */
+/* ------------------------------------------------------------------ */
+
+/** Un auto de costado, para la cochera. */
+export const Auto = ({ x, y, largo = 76, mirando = 1 }) => {
+  const alto = largo * 0.3;
+  return (
+    <g transform={`translate(${x} ${y}) scale(${mirando} 1)`} className={filete} strokeWidth={TRAZO} strokeLinejoin="round">
+      <path
+        d={`M 0 ${-alto * 0.42} Q 0 ${-alto * 0.72} ${largo * 0.14} ${-alto * 0.74}
+            L ${largo * 0.3} ${-alto * 1.28} Q ${largo * 0.36} ${-alto * 1.5} ${largo * 0.52} ${-alto * 1.5}
+            L ${largo * 0.72} ${-alto * 1.5} Q ${largo * 0.84} ${-alto * 1.48} ${largo * 0.88} ${-alto * 1.2}
+            L ${largo * 0.96} ${-alto * 0.78} Q ${largo} ${-alto * 0.7} ${largo} ${-alto * 0.42}
+            L ${largo} ${-alto * 0.2} L 0 ${-alto * 0.2} Z`}
+        className="fill-primary-300"
+      />
+      {/* Ventanillas: dos trapecios separados por el parante. */}
+      <path
+        d={`M ${largo * 0.34} ${-alto * 0.8} L ${largo * 0.44} ${-alto * 1.34} L ${largo * 0.58} ${-alto * 1.34} L ${largo * 0.58} ${-alto * 0.8} Z`}
+        className="fill-primary-100"
+      />
+      <path
+        d={`M ${largo * 0.63} ${-alto * 0.8} L ${largo * 0.63} ${-alto * 1.34} L ${largo * 0.76} ${-alto * 1.34} L ${largo * 0.84} ${-alto * 0.8} Z`}
+        className="fill-primary-100"
+      />
+      {[largo * 0.24, largo * 0.78].map((cx) => (
+        <g key={cx}>
+          <circle cx={cx} cy={-alto * 0.2} r={alto * 0.3} className="fill-ink" />
+          <circle cx={cx} cy={-alto * 0.2} r={alto * 0.12} className="fill-casa-piso" />
+        </g>
+      ))}
+    </g>
+  );
+};
+
+/** El portón de la cochera, con su rampa hacia la calle. */
+export const Porton = ({ x, y, ancho = 52, alto = 60 }) => (
+  <g className={filete} strokeWidth={TRAZO}>
+    <rect x={x} y={y - alto} width={ancho} height={alto} className="fill-casa-costado" />
+    {Array.from({ length: 5 }, (_, i) => (
+      <path key={i} d={`M ${x} ${y - alto + 10 + i * 11} L ${x + ancho} ${y - alto + 10 + i * 11}`} className="stroke-ink/40" />
+    ))}
+  </g>
+);

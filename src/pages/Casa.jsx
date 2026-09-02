@@ -31,13 +31,13 @@ const PISOS = [
     piso: 'todo',
     kicker: 'Casa Malka · Comunidad Amijai',
     titulo: 'Es una casa.',
-    entrada: 'Con cuatro pisos, una parrilla y la puerta abierta.',
+    entrada: 'Con subsuelo, dos plantas, terraza y la puerta abierta.',
     texto:
       'Un lugar para jóvenes judíos de 18 a 35 en 3 de Febrero 1325. Abre de lunes a viernes de 14 a 21, no hace falta ser socio y no hay que anotarse para venir.',
   },
   {
-    id: 'salon',
-    piso: 'salon',
+    id: 'planta',
+    piso: 'planta',
     kicker: 'Planta baja',
     titulo: 'El salón',
     entrada: 'Acá se pone la mesa larga y se hace Shabat.',
@@ -45,33 +45,34 @@ const PISOS = [
       'Es el primer lugar en el que entrás y donde pasan las ceremonias de la casa. Al fondo está el quincho con parrilla: se come, se discute de todo un poco y se sigue hasta que alguien apaga la luz.',
   },
   {
-    id: 'cowork',
-    piso: 'cowork',
+    id: 'primero',
+    piso: 'primero',
     kicker: 'Primer piso',
     titulo: 'El cowork',
     entrada: 'Un martes cualquiera, traés la compu y te sentás.',
     texto:
-      'Wifi, escritorio y café con cakes. Es el piso mínimo de Malka: no hace falta que haya una actividad para que vengas, y de hecho así es como la mayoría empieza a venir.',
-  },
-  {
-    id: 'estudio',
-    piso: 'estudio',
-    kicker: 'Segundo piso',
-    titulo: 'El estudio',
-    entrada: 'Talleres, charlas y La Ieshive.',
-    texto:
-      'Yoga, escritura, cine, bootcamps, y el espacio de estudio de Torá con los rabinos más copados del país. Abierto y plural: se entra sepas lo que sepas.',
+      'Wifi, escritorio y café con cakes. Es el piso mínimo de Malka: no hace falta que haya una actividad para que vengas, y de hecho así es como la mayoría empieza a venir. En el mismo piso se dan las charlas y los cursos.',
   },
   {
     id: 'terraza',
     piso: 'terraza',
     kicker: 'Arriba de todo',
     titulo: 'La terraza y la huerta',
-    entrada: 'El lugar premium para frenar el tiempo.',
+    entrada: 'Unplugged, algún fueguito y la ciudad abajo.',
     texto:
-      'Una huerta que conecta con la tierra y, pegadita, la terraza: unplugged, algún fueguito, la ciudad abajo y las estrellas arriba.',
+      'Una huerta que conecta con la tierra y, pegadita, la terraza: el lugar premium para frenar el tiempo, tocar hasta cualquier hora y mirar un rato las estrellas.',
+  },
+  {
+    id: 'subsuelo',
+    piso: 'subsuelo',
+    kicker: 'Y abajo de todo',
+    titulo: 'El subsuelo',
+    entrada: 'Yoga, movimiento y la cochera.',
+    texto:
+      'El nivel de abajo es el más callado de la casa: se usa para las clases que piden piso y silencio, y es por donde entran los autos.',
   },
 ];
+
 
 const Casa = () => {
   const [activo, setActivo] = useState('todo');

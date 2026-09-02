@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { Guirnalda, Humo, Persona, PersonaSilla, Planta, Vela } from './piezas';
+import { Guirnalda, Humo, Persona, PersonaSentada, PersonaSilla, Planta, Vela } from './piezas';
 import {
   Alfombra,
+  Auto,
   Arco,
-  Atril,
   Botella,
   Caja,
   Cajon,
@@ -19,6 +19,7 @@ import {
   Pizarra,
   Plato,
   Platillo,
+  Porton,
   Rollo,
   Silla,
   Sillon,
@@ -61,24 +62,24 @@ import { quiereQuietud } from '../scrollFx';
 const centro = (id) => {
   const p = PISOS[id];
   return {
-    x: (CASA.x1 + CASA.x2) / 2 + FONDO.x * 0.35 + (id === 'salon' ? 16 : 0),
+    x: (CASA.x1 + CASA.x2) / 2 + FONDO.x * 0.35 + (id === 'planta' ? 16 : 0),
     y: (p.techo + p.piso) / 2 + FONDO.y * 0.35,
     s: 1.45,
   };
 };
 
 const FOCOS = {
-  todo: { x: 236, y: 300, s: 1 },
+  todo: { x: 236, y: 268, s: 1 },
   terraza: centro('terraza'),
-  estudio: centro('estudio'),
-  cowork: centro('cowork'),
-  salon: centro('salon'),
+  primero: centro('primero'),
+  planta: centro('planta'),
+  subsuelo: centro('subsuelo'),
 };
 
 /* La lámina tiene cielo de más arriba de la terraza. No es decorativo: sin ese
    aire, la cámara no puede centrarse en el último piso sin salirse del dibujo,
    y el encuadre queda siempre corrido hacia abajo. */
-const VISTA = { x: 0, y: -110, ancho: 480, alto: 752 };
+const VISTA = { x: 0, y: -110, ancho: 480, alto: 760 };
 
 /**
  * El encuadre, atado a los bordes del dibujo.
@@ -105,7 +106,7 @@ const encuadrar = ({ x, y, s }) => {
  * coordenadas del frente y este transform lo manda al fondo: corrido, subido y
  * un poco más chico. Es lo que evita tener que recalcular a mano cada mueble.
  */
-const CENTRO = { x: (CASA.x1 + CASA.x2) / 2, y: 380 };
+const CENTRO = { x: (CASA.x1 + CASA.x2) / 2, y: 300 };
 
 const fuga = (t) => {
   /* El achique de lo lejano se hace alrededor del centro del dibujo y no del
@@ -121,7 +122,7 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
   const poseRef = useRef({ ...FOCOS.todo });
 
   /* El quincho es planta baja: mirar el salón es mirar los dos. */
-  const foco = activo === 'quincho' ? 'salon' : activo;
+  const foco = activo === 'quincho' ? 'planta' : activo;
 
   useEffect(() => {
     const g = camaraRef.current;
@@ -168,6 +169,12 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
 
   const grupo = (id) => `transition-opacity duration-cinematic ease-standard ${luz(id)}`;
 
+  /* Atajos: la altura de piso de cada nivel. Todo el interior se cuelga de
+     estos tres números, así que mover un piso no obliga a tocar cada mueble. */
+  const P1 = PISOS.primero.piso;
+  const P0 = PISOS.planta.piso;
+  const SS = PISOS.subsuelo.piso;
+
   /** El volumen vacío de un piso: fondo, canto y piso, en ese orden. */
   const Volumen = ({ techo, piso, x1 = CASA.x1, x2 = CASA.x2 }) => (
     <g>
@@ -202,6 +209,14 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
       </defs>
 
       <g ref={camaraRef}>
+        {/* La tierra en la que está enterrado el subsuelo. Sin este tono
+            alrededor, el nivel de abajo se lee como un piso más de un edificio
+            flotando, y no como lo que es. */}
+        <path
+          d={`M 0 ${SUELO} L ${VISTA.ancho} ${SUELO} L ${VISTA.ancho} ${PISOS.subsuelo.piso + 26} L 0 ${PISOS.subsuelo.piso + 26} Z`}
+          className="fill-casa-sombra/25"
+        />
+
         {/* ---- la vereda ---- */}
         <path
           d={`M 8 ${SUELO} L ${QUINCHO.x2 + FONDO.x + 14} ${SUELO}`}
@@ -210,160 +225,148 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
           strokeLinecap="round"
         />
 
-        {/* ================= ESTUDIO: La Ieshive y los talleres ============ */}
-        <g className={grupo('estudio')}>
-          <Volumen {...PISOS.estudio} />
+        {/* ================= PRIMER PISO: cowork y charlas ================ */}
+        <g className={grupo('primero')}>
+          <Volumen {...PISOS.primero} />
 
           <g transform={fuga(0.85)}>
-            <Pizarra x={232} y={158} ancho={72} alto={46} />
-            <Estante x={72} y={208} ancho={78} />
-          </g>
-
-          {/* Las colchonetas de yoga, enrolladas contra la pared. La sala es la
-              misma para el shiur y para el taller; que convivan los dos objetos
-              cuenta eso mejor que cualquier bajada. */}
-          <g transform={fuga(0.72)}>
-            <Rollo x={68} y={PISOS.estudio.piso} alto={30} />
-            <Rollo x={82} y={PISOS.estudio.piso} alto={26} />
-          </g>
-
-          {/* La mesa de estudio, con gente de los dos lados */}
-          <g transform={fuga(0.55)}>
-            <Mesa x={108} y={230} ancho={112} piso={PISOS.estudio.piso} />
-          </g>
-          <g transform={fuga(0.72)}>
-            <Silla x={132} y={PISOS.estudio.piso} alto={40} mirando={-1} />
-            <Silla x={186} y={PISOS.estudio.piso} alto={40} mirando={-1} />
-            <PersonaSilla x={132} y={PISOS.estudio.piso} alto={62} mirando={-1} kipa delay={200} />
-            <PersonaSilla x={186} y={PISOS.estudio.piso} alto={60} mirando={-1} color="fill-primary-700" pelo delay={1400} />
-          </g>
-          <g transform={fuga(0.14)}>
-            <Silla x={148} y={PISOS.estudio.piso} alto={40} />
-            <Silla x={202} y={PISOS.estudio.piso} alto={40} />
-            <PersonaSilla x={148} y={PISOS.estudio.piso} alto={64} pelo delay={800} />
-            <PersonaSilla x={202} y={PISOS.estudio.piso} alto={62} color="fill-primary-700" kipa delay={2000} />
-          </g>
-
-          {/* Quien da la clase, de pie junto al atril */}
-          <g transform={fuga(0.4)}>
-            <Atril x={258} y={PISOS.estudio.piso} alto={44} />
-            <Persona x={278} y={PISOS.estudio.piso} alto={66} mirando={-1} kipa delay={600} />
-          </g>
-          <g transform={fuga(0.16)}>
-            <Planta x={300} y={PISOS.estudio.piso - 2} alto={30} delay={400} />
-          </g>
-        </g>
-
-        {/* ================= COWORK ======================================== */}
-        <g className={grupo('cowork')}>
-          <Volumen {...PISOS.cowork} />
-
-          <g transform={fuga(0.85)}>
-            <Estante x={150} y={318} ancho={86} />
+            <Estante x={146} y={P1 - 92} ancho={86} />
+            <Pizarra x={240} y={P1 - 130} ancho={64} alto={42} />
           </g>
 
           {/* El sillón del cowork, que en la casa real existe y es donde la
               gente termina sentada */}
           <g transform={fuga(0.66)}>
-            <Sillon x={68} y={PISOS.cowork.piso} ancho={64} />
-            <PersonaSilla x={98} y={PISOS.cowork.piso} alto={58} color="fill-primary-700" pelo delay={900} />
+            <Sillon x={68} y={P1} ancho={64} />
+            <PersonaSilla x={98} y={P1} alto={58} color="fill-primary-700" pelo delay={900} />
           </g>
 
           {/* Dos escritorios con sus sillas */}
           <g transform={fuga(0.55)}>
-            <Mesa x={152} y={362} ancho={78} piso={PISOS.cowork.piso} />
-            <Laptop x={170} y={362} />
-            <Taza x={212} y={362} />
-          </g>
-          <g transform={fuga(0.55)}>
-            <Humo x={217} y={350} escala={0.6} />
+            <Mesa x={150} y={P1 - 48} ancho={78} piso={P1} />
+            <Laptop x={168} y={P1 - 48} />
+            <Taza x={210} y={P1 - 48} />
+            <Humo x={215} y={P1 - 60} escala={0.6} />
           </g>
           <g transform={fuga(0.2)}>
-            <Silla x={184} y={PISOS.cowork.piso} alto={42} />
-            <PersonaSilla x={184} y={PISOS.cowork.piso} alto={64} kipa delay={300} />
+            <Silla x={182} y={P1} alto={42} />
+            <PersonaSilla x={182} y={P1} alto={64} kipa delay={300} />
           </g>
 
           <g transform={fuga(0.34)}>
-            <Mesa x={244} y={362} ancho={78} piso={PISOS.cowork.piso} />
-            <Laptop x={262} y={362} />
+            <Mesa x={242} y={P1 - 48} ancho={78} piso={P1} />
+            <Laptop x={260} y={P1 - 48} />
           </g>
           <g transform={fuga(0.04)}>
-            <Silla x={276} y={PISOS.cowork.piso} alto={42} />
-            <PersonaSilla x={276} y={PISOS.cowork.piso} alto={62} color="fill-primary-700" pelo delay={1600} />
+            <Silla x={274} y={P1} alto={42} />
+            <PersonaSilla x={274} y={P1} alto={62} color="fill-primary-700" pelo delay={1600} />
           </g>
 
           <g transform={fuga(0.12)}>
-            <Planta x={302} y={PISOS.cowork.piso - 2} alto={34} delay={1100} />
+            <Planta x={302} y={P1 - 2} alto={34} delay={1100} />
           </g>
         </g>
 
-        {/* ================= SALÓN: la mesa de Shabat ====================== */}
-        <g className={grupo('salon')}>
-          <Volumen {...PISOS.salon} />
+        {/* ================= PLANTA BAJA: el salón y la mesa de Shabat ===== */}
+        <g className={grupo('planta')}>
+          <Volumen {...PISOS.planta} />
 
           {/* La lámpara y su charco de luz */}
-          <path d={`M 196 ${PISOS.salon.techo} L 196 468`} className="stroke-ink/50" strokeWidth={TRAZO} />
-          <path d="M 180 486 L 212 486 L 204 468 L 188 468 Z" className="fill-ink" />
-          <ellipse cx={200} cy={528} rx={96} ry={44} fill="url(#casa-luz)" className="animate-latir motion-reduce:animate-none" />
+          <path d={`M 196 ${PISOS.planta.techo} L 196 ${P0 - 92}`} className="stroke-ink/50" strokeWidth={TRAZO} />
+          <path d={`M 180 ${P0 - 74} L 212 ${P0 - 74} L 204 ${P0 - 92} L 188 ${P0 - 92} Z`} className="fill-ink" />
+          <ellipse cx={200} cy={P0 - 32} rx={96} ry={44} fill="url(#casa-luz)" className="animate-latir motion-reduce:animate-none" />
 
           {/* La puerta: un hueco en la pared, sin hoja. La casa está abierta y
               dibujar una hoja cerrada diría lo contrario. */}
           <path
-            d={`M ${CASA.x1} ${SUELO} L ${CASA.x1} 486 L ${CASA.x1 + FONDO.x * 0.5} ${486 + FONDO.y * 0.5} L ${CASA.x1 + FONDO.x * 0.5} ${SUELO + FONDO.y * 0.5} Z`}
+            d={`M ${CASA.x1} ${P0} L ${CASA.x1} ${P0 - 74} L ${CASA.x1 + FONDO.x * 0.5} ${P0 - 74 + FONDO.y * 0.5} L ${CASA.x1 + FONDO.x * 0.5} ${P0 + FONDO.y * 0.5} Z`}
             className="fill-casa-costado"
           />
-          <rect x={CASA.x1 - 24} y={SUELO - 4} width={24} height="4" className="fill-barro" />
-          <Persona x={38} y={SUELO} alto={66} color="fill-primary-700" pelo delay={600} />
+          <rect x={CASA.x1 - 24} y={P0 - 4} width={24} height="4" className="fill-barro" />
+          <Persona x={38} y={P0} alto={66} color="fill-primary-700" pelo delay={600} />
 
-          <Alfombra x={96} y={SUELO - 3} ancho={186} prof={0.6} color="fill-barro-claro/60" />
+          <Alfombra x={96} y={P0 - 3} ancho={186} prof={0.6} color="fill-barro-claro/60" />
 
           {/* La mesa puesta: velas, kidush, vino y las dos jalot bajo el paño */}
           <g transform={fuga(0.5)}>
-            <Mesa x={94} y={510} ancho={182} piso={SUELO} prof={0.36} />
-            <Candelabro x={140} y={510} />
-            <Candelabro x={158} y={510} />
-            <Jalot x={200} y={510} />
-            <Copa x={228} y={510} />
-            <Botella x={244} y={510} />
-            <Plato x={116} y={508} />
-            <Plato x={178} y={508} />
-            <Plato x={262} y={508} />
-          </g>
-          <g transform={fuga(0.5)}>
-            <Vela x={140} y={498} alto={14} />
-            <Vela x={158} y={498} alto={14} delay={700} />
+            <Mesa x={94} y={P0 - 50} ancho={182} piso={P0} prof={0.36} />
+            <Candelabro x={140} y={P0 - 50} />
+            <Candelabro x={158} y={P0 - 50} />
+            <Jalot x={200} y={P0 - 50} />
+            <Copa x={228} y={P0 - 50} />
+            <Botella x={244} y={P0 - 50} />
+            <Plato x={116} y={P0 - 52} />
+            <Plato x={178} y={P0 - 52} />
+            <Plato x={262} y={P0 - 52} />
+            <Vela x={140} y={P0 - 62} alto={14} />
+            <Vela x={158} y={P0 - 62} alto={14} delay={700} />
           </g>
 
           {/* Sentados de los dos lados, y alguien de pie sirviendo */}
           <g transform={fuga(0.74)}>
-            <Silla x={128} y={SUELO} alto={44} mirando={-1} />
-            <Silla x={182} y={SUELO} alto={44} mirando={-1} />
-            <Silla x={236} y={SUELO} alto={44} mirando={-1} />
-            <PersonaSilla x={128} y={SUELO} alto={74} mirando={-1} kipa delay={0} />
-            <PersonaSilla x={182} y={SUELO} alto={72} mirando={-1} color="fill-primary-700" pelo delay={900} />
-            <PersonaSilla x={236} y={SUELO} alto={76} mirando={-1} kipa delay={1800} />
+            <Silla x={128} y={P0} alto={44} mirando={-1} />
+            <Silla x={182} y={P0} alto={44} mirando={-1} />
+            <Silla x={236} y={P0} alto={44} mirando={-1} />
+            <PersonaSilla x={128} y={P0} alto={74} mirando={-1} kipa delay={0} />
+            <PersonaSilla x={182} y={P0} alto={72} mirando={-1} color="fill-primary-700" pelo delay={900} />
+            <PersonaSilla x={236} y={P0} alto={76} mirando={-1} kipa delay={1800} />
           </g>
           <g transform={fuga(0.06)}>
-            <Silla x={146} y={SUELO} alto={44} />
-            <Silla x={214} y={SUELO} alto={44} />
-            <PersonaSilla x={146} y={SUELO} alto={78} pelo delay={500} />
-            <PersonaSilla x={214} y={SUELO} alto={76} color="fill-primary-700" kipa delay={2200} />
-            <Persona x={280} y={SUELO} alto={82} mirando={-1} pelo delay={1300} />
+            <Silla x={146} y={P0} alto={44} />
+            <Silla x={214} y={P0} alto={44} />
+            <PersonaSilla x={146} y={P0} alto={78} pelo delay={500} />
+            <PersonaSilla x={214} y={P0} alto={76} color="fill-primary-700" kipa delay={2200} />
+            <Persona x={280} y={P0} alto={82} mirando={-1} pelo delay={1300} />
           </g>
         </g>
 
         {/* ================= QUINCHO ====================================== */}
         <g className={grupo('quincho')}>
-          <Volumen techo={452} piso={SUELO} x1={QUINCHO.x1} x2={QUINCHO.x2} />
+          <Volumen techo={QUINCHO.techo} piso={P0} x1={QUINCHO.x1} x2={QUINCHO.x2} />
           <g transform={fuga(0.5)}>
-            <Parrilla x={QUINCHO.x1 + 10} y={514} piso={SUELO} ancho={58} />
-          </g>
-          <g transform={fuga(0.5)}>
-            <Humo x={QUINCHO.x1 + 24} y={500} delay={200} />
-            <Humo x={QUINCHO.x1 + 44} y={502} delay={1100} escala={0.8} />
+            <Parrilla x={QUINCHO.x1 + 10} y={P0 - 46} piso={P0} ancho={58} />
+            <Humo x={QUINCHO.x1 + 24} y={P0 - 60} delay={200} />
+            <Humo x={QUINCHO.x1 + 44} y={P0 - 58} delay={1100} escala={0.8} />
           </g>
           <g transform={fuga(0.12)}>
-            <Persona x={QUINCHO.x2 - 22} y={SUELO - 2} alto={74} mirando={-1} kipa delay={1200} />
+            <Persona x={QUINCHO.x2 - 22} y={P0 - 2} alto={74} mirando={-1} kipa delay={1200} />
+          </g>
+        </g>
+
+        {/* ================= SUBSUELO: yoga y cochera ===================== */}
+        <g className={grupo('subsuelo')}>
+          <Volumen {...PISOS.subsuelo} />
+
+          {/* El portón y la rampa por donde bajan los autos */}
+          <g transform={fuga(0.8)}>
+            <Porton x={CASA.x1 + 8} y={SS} ancho={46} alto={56} />
+          </g>
+          <g transform={fuga(0.34)}>
+            <Auto x={CASA.x1 + 14} y={SS} largo={74} />
+          </g>
+
+          {/* La clase: colchonetas apoyadas y gente sentada arriba */}
+          {/* Cada colchoneta a la misma profundidad que quien está sentado
+              arriba: si la colchoneta va más al fondo que la persona, se ve
+              flotando a la altura de su cabeza. */}
+          <g transform={fuga(0.34)}>
+            <Alfombra x={182} y={SS - 2} ancho={38} prof={0.3} color="fill-primary-200" />
+            <PersonaSentada x={200} y={SS - 2} alto={54} pelo delay={0} />
+          </g>
+          <g transform={fuga(0.22)}>
+            <Alfombra x={228} y={SS - 2} ancho={38} prof={0.3} color="fill-primary-200" />
+            <PersonaSentada x={246} y={SS - 2} alto={56} color="fill-primary-700" delay={900} />
+          </g>
+          <g transform={fuga(0.1)}>
+            <Alfombra x={272} y={SS - 2} ancho={38} prof={0.3} color="fill-primary-200" />
+            <PersonaSentada x={290} y={SS - 2} alto={52} pelo delay={1800} />
+          </g>
+          <g transform={fuga(0.5)}>
+            <Persona x={306} y={SS} alto={62} mirando={-1} delay={1400} />
+          </g>
+          <g transform={fuga(0.78)}>
+            <Rollo x={168} y={SS} alto={28} />
+            <Rollo x={181} y={SS} alto={24} />
           </g>
         </g>
 
@@ -427,14 +430,16 @@ const CasaDibujada = ({ activo = 'todo', className = '' }) => {
         </g>
 
         {/* ---- las líneas del corte, siempre encima ---- */}
-        <g className="fill-none stroke-ink" strokeWidth="2" strokeLinejoin="round">
-          <path d={`M ${CASA.x1} ${SUELO} L ${CASA.x1} ${PISOS.terraza.piso}`} />
-          <path d={`M ${CASA.x2} ${SUELO} L ${CASA.x2} ${PISOS.terraza.piso}`} />
+        <g className="fill-none stroke-ink" strokeWidth={TRAZO * 1.25} strokeLinejoin="round">
+          <path d={`M ${CASA.x1} ${PISOS.subsuelo.piso} L ${CASA.x1} ${PISOS.terraza.piso}`} />
+          <path d={`M ${CASA.x2} ${PISOS.subsuelo.piso} L ${CASA.x2} ${PISOS.terraza.piso}`} />
           {Object.values(PISOS).map((p) => (
             <path key={p.piso} d={`M ${CASA.x1} ${p.piso} L ${CASA.x2} ${p.piso}`} />
           ))}
-          <path d={`M ${CASA.x1} ${PISOS.terraza.piso} L ${CASA.x1 + FONDO.x} ${PISOS.terraza.piso + FONDO.y} L ${CASA.x2 + FONDO.x} ${PISOS.terraza.piso + FONDO.y} L ${CASA.x2} ${PISOS.terraza.piso}`} />
-          <path d={`M ${QUINCHO.x1} ${SUELO} L ${QUINCHO.x1} 452 L ${QUINCHO.x2} 452 L ${QUINCHO.x2} ${SUELO}`} />
+          <path
+            d={`M ${CASA.x1} ${PISOS.terraza.piso} L ${CASA.x1 + FONDO.x} ${PISOS.terraza.piso + FONDO.y} L ${CASA.x2 + FONDO.x} ${PISOS.terraza.piso + FONDO.y} L ${CASA.x2} ${PISOS.terraza.piso}`}
+          />
+          <path d={`M ${QUINCHO.x1} ${SUELO} L ${QUINCHO.x1} ${QUINCHO.techo} L ${QUINCHO.x2} ${QUINCHO.techo} L ${QUINCHO.x2} ${SUELO}`} />
         </g>
       </g>
     </svg>
