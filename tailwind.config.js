@@ -372,6 +372,23 @@ export default {
           '0%, 100%': { transform: 'rotate(-1.4deg)' },
           '50%': { transform: 'rotate(1.4deg)' },
         },
+        /* Servir: el brazo baja despacio, se queda un momento y vuelve. */
+        servir: {
+          '0%, 55%, 100%': { transform: 'rotate(0deg)' },
+          '68%, 82%': { transform: 'rotate(-38deg)' },
+        },
+        /* El sorbo de café: sube a la altura de la cara y baja. */
+        tomar: {
+          '0%, 70%, 100%': { transform: 'rotate(0deg)' },
+          '80%, 88%': { transform: 'rotate(-128deg)' },
+        },
+        /* Chispas de la parrilla: suben rápido y se apagan enseguida, que es lo
+           que las distingue del humo. */
+        chispa: {
+          '0%': { opacity: '0', transform: 'translate(0, 0) scale(1)' },
+          '20%': { opacity: '0.9' },
+          '100%': { opacity: '0', transform: 'translate(6px, -22px) scale(0.4)' },
+        },
         shimmer: {
           from: { backgroundPosition: '200% 0' },
           to: { backgroundPosition: '-200% 0' },
@@ -413,6 +430,9 @@ export default {
         estirar: 'estirar 9.6s ease-in-out infinite',
         voltear: 'voltear 2.4s ease-in-out infinite',
         andar: 'andar 1.2s ease-in-out infinite',
+        servir: 'servir 7.2s ease-in-out infinite',
+        tomar: 'tomar 8.4s ease-in-out infinite',
+        chispa: 'chispa 2.4s ease-out infinite',
         shimmer: 'shimmer 1.4s linear infinite',
       },
     },

@@ -405,3 +405,110 @@ export const Notas = ({ x, y, cantidad = 4, escala = 1 }) => (
     ))}
   </g>
 );
+
+/* ------------------------------------------------------------------ */
+/* La escalera y el techo                                              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * La escalera caracol, de las de hierro antiguas.
+ *
+ * No está dibujada peldaño por peldaño a mano: se genera girando. Cada escalón
+ * sale del eje con un ángulo un poco mayor que el anterior y sube una altura
+ * fija, y el achatamiento de la vuelta —lo que hace que se lea como una espiral
+ * y no como un abanico— sale de multiplicar el coseno del ángulo por lo mismo
+ * que achata todo el dibujo. Es la misma cuenta que usa la casa para la fuga,
+ * aplicada peldaño a peldaño.
+ *
+ * El pasamanos es la hélice que pasa por la punta de cada escalón: se dibuja
+ * como una sola polilínea y el ojo la completa. Con el eje, los escalones y esa
+ * curva alcanza — una caracol de hierro no es mucho más que eso.
+ */
+export const Caracol = ({ x, base, alto, radio = 18, subida = 21, porVuelta = 8 }) => {
+  const pasos = Math.max(2, Math.round(alto / subida));
+  const punto = (i) => {
+    const ang = (i / porVuelta) * Math.PI * 2;
+    return {
+      x: x + Math.sin(ang) * radio,
+      y: base - i * subida + Math.cos(ang) * radio * 0.3,
+      frente: Math.cos(ang) > 0,
+    };
+  };
+
+  const escalones = Array.from({ length: pasos }, (_, i) => ({ i, ...punto(i) }));
+  const pasamanos = escalones
+    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y - 26}`)
+    .join(' ');
+
+  return (
+    <g>
+      {/* El eje */}
+      <rect x={x - 1.8} y={base - alto} width="3.6" height={alto} className="fill-ink/85" />
+
+      {escalones.map((p) => (
+        <path
+          key={p.i}
+          d={`M ${x} ${base - p.i * subida} L ${p.x} ${p.y}`}
+          /* Los de adelante en madera clara y los de atrás en oscura: es lo
+             único que hace que la espiral se lea como espiral y no como un
+             abanico plano. */
+          className={p.frente ? 'stroke-barro-claro' : 'stroke-barro-oscuro'}
+          strokeWidth="4"
+          strokeLinecap="round"
+        />
+      ))}
+
+      <path d={pasamanos} className="fill-none stroke-ink/45" strokeWidth="1.6" strokeLinejoin="round" />
+      {/* Un balaustre cada dos escalones. Con uno por escalón la caracol se
+          convierte en una maraña a este tamaño. */}
+      {escalones
+        .filter((p) => p.i % 2 === 0)
+        .map((p) => (
+          <path
+            key={`b-${p.i}`}
+            d={`M ${p.x} ${p.y} L ${p.x} ${p.y - 26}`}
+            className="stroke-ink/30"
+            strokeWidth="1.1"
+          />
+        ))}
+    </g>
+  );
+};
+
+/** El tanque de agua: no hay terraza porteña sin uno. */
+export const Tanque = ({ x, y, ancho = 30, alto = 26 }) => (
+  <g className={filete} strokeWidth={TRAZO}>
+    <path d={`M ${x + 4} ${y} L ${x + 4} ${y - 10} M ${x + ancho - 4} ${y} L ${x + ancho - 4} ${y - 10}`} className="stroke-ink" />
+    <rect x={x} y={y - 10 - alto} width={ancho} height={alto} rx="4" className="fill-casa-costado" />
+    <ellipse cx={x + ancho / 2} cy={y - 10 - alto} rx={ancho / 2} ry="4" className="fill-casa-fondo" />
+  </g>
+);
+
+/** El cartel de la casa, al lado de la puerta. */
+export const Cartel = ({ x, y, ancho = 26 }) => (
+  <g className={filete} strokeWidth={TRAZO}>
+    <rect x={x} y={y} width={ancho} height={ancho * 0.42} rx="2" className="fill-primary" />
+    <path
+      d={`M ${x + 5} ${y + ancho * 0.26} L ${x + ancho - 5} ${y + ancho * 0.26}`}
+      className="stroke-surface-page"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+    />
+  </g>
+);
+
+/** Chispas de la parrilla. */
+export const Chispas = ({ x, y }) => (
+  <g transform={`translate(${x} ${y})`} className="fill-flame">
+    {[0, 800, 1600].map((d, i) => (
+      <circle
+        key={d}
+        cx={i * 5 - 5}
+        cy="0"
+        r="1.4"
+        className="animate-chispa motion-reduce:hidden"
+        style={{ animationDelay: `${d}ms` }}
+      />
+    ))}
+  </g>
+);
