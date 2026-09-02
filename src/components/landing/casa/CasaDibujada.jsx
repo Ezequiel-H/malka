@@ -31,10 +31,14 @@ import {
   Pizarra,
   Plato,
   Platillo,
+  Cantero,
   Parlante,
+  Pergola,
   Piso,
   Jacuzzi,
+  Pileta,
   Porton,
+  Reposera,
   PuertaEntrada,
   RinconCafe,
   Silla,
@@ -47,7 +51,7 @@ import {
   Ventana,
   Zocalo,
 } from './muebles';
-import { CASA, FONDO, PISOS, SERVICIO, SUELO, TRAZO, costado, planoPiso, paredFondo } from './geometria';
+import { CASA, FONDO, PATIO, PISOS, SERVICIO, SUELO, TRAZO, costado, planoPiso, paredFondo } from './geometria';
 
 /**
  * La casa, dibujada en corte axonométrico.
@@ -95,11 +99,15 @@ const FOCOS = {
      mismo encuadre, la segunda se siente un déjà vu y el recorrido pierde el
      hilo. Por eso hay tres planos generales distintos —la ciudad, la fachada y
      la casa— y no uno usado tres veces. */
-  todo: { x: 236, y: 262, s: 0.92 },
-  ciudad: { x: 232, y: 214, s: 0.78 },
+  todo: { x: 318, y: 262, s: 0.8 },
+  ciudad: { x: 320, y: 222, s: 0.7 },
   fachada: { x: 196, y: 300, s: 1.02 },
   casa: { x: 250, y: 262, s: 1.28 },
   vereda: { x: 44, y: P0v - 40, s: 1.44 },
+
+  patio: { x: 546, y: P0v - 56, s: 1.42 },
+  pileta: { x: 476, y: P0v - 24, s: 1.98 },
+  quincho: { x: 572, y: P0v - 58, s: 1.86 },
 
   /* El zoom no es el mismo en todas: la puerta y el baño son un objeto y piden
      estar encima; la mesa, el cowork y la clase son un ambiente con gente y se
@@ -122,7 +130,11 @@ const FOCOS = {
 /* La lámina tiene cielo de más arriba de la terraza. No es decorativo: sin ese
    aire, la cámara no puede centrarse en el último piso sin salirse del dibujo,
    y el encuadre queda siempre corrido hacia abajo. */
-const VISTA = { x: -62, y: -110, ancho: 544, alto: 760 };
+/* La lámina llega hasta bien pasado el fondo del lote. El margen de la derecha
+   no es decorativo: el encuadre está atado a los bordes de la lámina, así que
+   sin ese aire la cámara no puede centrarse en el patio y se queda mirando la
+   casa. */
+const VISTA = { x: -62, y: -110, ancho: 872, alto: 760 };
 
 /**
  * El encuadre, atado a los bordes del dibujo.
@@ -149,7 +161,7 @@ const encuadrar = ({ x, y, s }) => {
  * coordenadas del frente y este transform lo manda al fondo: corrido, subido y
  * un poco más chico. Es lo que evita tener que recalcular a mano cada mueble.
  */
-const CENTRO = { x: (CASA.x1 + CASA.x2) / 2, y: 300 };
+const CENTRO = { x: 300, y: 300 };
 
 const fuga = (t) => {
   /* El achique de lo lejano se hace alrededor del centro del dibujo y no del
@@ -496,15 +508,9 @@ const CasaDibujada = ({ activo = 'todo', zona = 'todo', className = '' }) => {
             <Alacena x={SERVICIO.x1 + 62} y={P0 - 96} ancho={48} />
             <Mesada x={SERVICIO.x1 + 8} y={P0} ancho={100} />
           </g>
-          <g transform={fuga(0.46)}>
-            <Parrilla x={SERVICIO.x1 + 46} y={P0 - 46} piso={P0} ancho={54} />
-            <Humo x={SERVICIO.x1 + 60} y={P0 - 60} delay={200} />
-            <Humo x={SERVICIO.x1 + 80} y={P0 - 58} delay={1100} escala={0.8} />
-            <Chispas x={SERVICIO.x1 + 70} y={P0 - 50} />
-          </g>
           <g transform={fuga(0.2)}>
-            <Persona x={SERVICIO.x1 + 26} y={P0 - 2} alto={74} kipa delay={1200} brazo="voltear" brazoDelay={600} />
-            <Persona x={SERVICIO.x2 - 14} y={P0 - 2} alto={70} mirando={-1} pelo delay={2400} brazo="servir" brazoDelay={2600} />
+            <Persona x={SERVICIO.x1 + 30} y={P0 - 2} alto={74} kipa delay={1200} brazo="teclear" brazoDelay={600} />
+            <Persona x={SERVICIO.x2 - 20} y={P0 - 2} alto={70} mirando={-1} pelo delay={2400} brazo="servir" brazoDelay={2600} />
           </g>
         </g>
 
@@ -565,6 +571,61 @@ const CasaDibujada = ({ activo = 'todo', zona = 'todo', className = '' }) => {
           {/* Quien guía la clase levanta los brazos medio segundo antes. */}
           <g transform={fuga(0.6)}>
             <Persona x={404} y={SS} alto={64} mirando={-1} delay={1400} brazo="estirar" brazoDelay={-600} />
+          </g>
+        </g>
+
+        {/* ================= EL PATIO DEL FONDO =========================== */}
+        <g className={grupo('patio')} filter={foco('patio')}>
+          {/* El suelo del patio, en fuga como todo lo demás, y las medianeras
+              que lo cierran. Un patio sin paredes se lee como un descampado. */}
+          <path d={planoPiso(SUELO, PATIO.x1, PATIO.x2)} className="fill-casa-piso" />
+          <Piso x1={PATIO.x1} x2={PATIO.x2} y={SUELO} material="baldosa" />
+          <path
+            d={`M ${PATIO.x2} ${SUELO} L ${PATIO.x2} ${SUELO - 96} L ${PATIO.x2 + FONDO.x} ${SUELO - 96 + FONDO.y} L ${PATIO.x2 + FONDO.x} ${SUELO + FONDO.y} Z`}
+            className="fill-casa-costado stroke-ink/30"
+            strokeWidth="1"
+          />
+          <path
+            d={`M ${PATIO.x1 + FONDO.x} ${SUELO + FONDO.y} L ${PATIO.x2 + FONDO.x} ${SUELO + FONDO.y} L ${PATIO.x2 + FONDO.x} ${SUELO - 96 + FONDO.y} L ${PATIO.x1 + FONDO.x} ${SUELO - 96 + FONDO.y} Z`}
+            className="fill-casa-fondo stroke-ink/25"
+            strokeWidth="1"
+          />
+
+          {/* Los árboles del fondo, contra la medianera */}
+          <g transform={fuga(0.92)}>
+            <Arbol x={PATIO.x1 + 52} y={SUELO} alto={116} />
+            <Arbol x={PATIO.x2 - 40} y={SUELO} alto={98} />
+          </g>
+          <g transform={fuga(0.74)}>
+            <Cantero x={PATIO.x1 + 8} y={SUELO} ancho={78} />
+          </g>
+
+          {/* El quincho: pérgola, parrilla y mesa larga debajo */}
+          <g transform={fuga(0.56)}>
+            <Pergola x={PATIO.x1 + 88} y={SUELO} ancho={128} alto={92} prof={0.62} />
+            <Parrilla x={PATIO.x1 + 104} y={SUELO - 48} piso={SUELO} ancho={62} />
+            <Humo x={PATIO.x1 + 122} y={SUELO - 60} delay={200} />
+            <Humo x={PATIO.x1 + 142} y={SUELO - 58} delay={1100} escala={0.8} />
+            <Chispas x={PATIO.x1 + 132} y={SUELO - 50} />
+          </g>
+          <g transform={fuga(0.34)}>
+            <Mesa x={PATIO.x1 + 104} y={SUELO - 44} ancho={96} piso={SUELO} prof={0.32} />
+            <Plato x={PATIO.x1 + 126} y={SUELO - 44} />
+            <Plato x={PATIO.x1 + 166} y={SUELO - 44} />
+          </g>
+          <g transform={fuga(0.16)}>
+            <Persona x={PATIO.x1 + 100} y={SUELO} alto={74} kipa delay={600} brazo="voltear" brazoDelay={300} />
+            <Persona x={PATIO.x1 + 190} y={SUELO} alto={70} mirando={-1} pelo delay={1800} ritmo />
+          </g>
+
+          {/* La pileta, del lado del sol, con su reposera */}
+          {/* La pileta, del lado del sol y bien al frente del patio: si va al
+              fondo queda tapada por el quincho y se lee como una baldosa. */}
+          <g transform={fuga(0.18)}>
+            <Pileta x={PATIO.x1 + 6} y={SUELO - 6} ancho={112} fondo={0.46} />
+          </g>
+          <g transform={fuga(0.02)}>
+            <Reposera x={PATIO.x1 + 60} y={SUELO} />
           </g>
         </g>
 

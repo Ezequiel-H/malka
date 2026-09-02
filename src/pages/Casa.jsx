@@ -74,11 +74,41 @@ const SECCIONES = [
     id: 'cocina',
     piso: 'planta',
     zona: 'cocina',
-    kicker: 'Al fondo',
+    kicker: 'Planta baja',
+    titulo: 'La cocina',
+    entrada: 'Experiencias culinarias únicas.',
+    texto:
+      'De la mano de referentes de la gastronomía, y también del que se anima a cocinar para todos. Lo que sale de acá termina siempre en la mesa larga o en el patio.',
+  },
+  {
+    id: 'patio',
+    piso: 'todo',
+    zona: 'patio',
+    kicker: 'Cruzando la casa',
+    titulo: 'El fondo',
+    entrada: 'Atrás se abre el patio, y el patio es otra casa.',
+    texto:
+      'Árboles, plantas, la pileta y el quincho. Cuando el clima acompaña, la casa entera se muda para acá.',
+  },
+  {
+    id: 'quincho',
+    piso: 'todo',
+    zona: 'quincho',
+    kicker: 'En el patio',
     titulo: 'El sueño del quincho',
     entrada: 'Cumplimos el sueño del quincho con parrilla.',
     texto:
       'Para comer rico mientras charlamos y debatimos. ¿Los temas? Un hermoso variadito que va desde judaísmo moderno hasta economía y emprendedurismo. Acá hay lugar para todo lo que sea aprendizaje y compartir ideas.',
+  },
+  {
+    id: 'pileta',
+    piso: 'todo',
+    zona: 'pileta',
+    kicker: 'En el patio',
+    titulo: 'La pileta',
+    entrada: 'Una pileta para disfrutar el verano.',
+    texto:
+      'Siempre hay un mate que te está esperando, un café para compartir y, cuando aprieta el calor, esto.',
   },
   {
     id: 'cowork',

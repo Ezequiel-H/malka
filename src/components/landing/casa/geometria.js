@@ -27,10 +27,20 @@ export const FONDO = { x: 44, y: -26 };
 export const CASA = { x1: 58, x2: 416 };
 
 /* La franja de servicio, contra la pared derecha: abajo la cochera, en la
-   planta la cocina y la parrilla, arriba el rincón de café. Tener una columna
-   fija para eso es lo que hace que la casa se lea como una casa y no como tres
-   escenas apiladas. */
+   planta la cocina, arriba el rincón de café. Tener una columna fija para eso
+   es lo que hace que la casa se lea como una casa y no como tres escenas
+   apiladas. */
 export const SERVICIO = { x1: 300, x2: 410 };
+
+/**
+ * El patio del fondo.
+ *
+ * Un lote de casa chorizo se dibuja siempre igual: calle, casa, patio, en esa
+ * fila. Por eso el fondo va a la derecha del edificio y no "atrás" —atrás, en
+ * axonométrica, quedaría tapado por la propia casa— y por eso la lámina se
+ * extendió hasta el 660 en vez de terminar en la medianera.
+ */
+export const PATIO = { x1: 430, x2: 648 };
 
 /* Un solo grosor de trazo para todo el dibujo. Es lo que separa una
    ilustración de un collage: si cada objeto trae su propio filete, el ojo lee

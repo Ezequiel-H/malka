@@ -1007,7 +1007,7 @@ export const Pileta = ({ x, y, ancho = 96, fondo = 0.5 }) => {
     <g>
       <path
         d={`M ${x} ${y} L ${x + ancho} ${y} L ${x + ancho + dx} ${y + dy} L ${x + dx} ${y + dy} Z`}
-        className="fill-primary-200 stroke-ink/40"
+        className="fill-primary-300 stroke-ink/45"
         strokeWidth={TRAZO}
         strokeLinejoin="round"
       />
@@ -1034,3 +1034,71 @@ export const Pileta = ({ x, y, ancho = 96, fondo = 0.5 }) => {
     </g>
   );
 };
+
+/* ------------------------------------------------------------------ */
+/* El patio del fondo                                                  */
+/* ------------------------------------------------------------------ */
+
+/** La pérgola del quincho: cuatro postes y las vigas cruzadas. */
+export const Pergola = ({ x, y, ancho = 108, alto = 74, prof = 0.7 }) => {
+  const dx = FONDO.x * prof;
+  const dy = FONDO.y * prof;
+  return (
+    <g>
+      {/* Los postes: dos adelante y dos atrás, los del fondo más finos */}
+      {[
+        [x, y, 4],
+        [x + ancho, y, 4],
+        [x + dx, y + dy, 3],
+        [x + ancho + dx, y + dy, 3],
+      ].map(([px, py, w]) => (
+        <rect key={`${px}-${py}`} x={px - w / 2} y={py - alto} width={w} height={alto} className="fill-barro-oscuro" />
+      ))}
+      {/* El techo, en fuga, con sus vigas */}
+      <path
+        d={`M ${x} ${y - alto} L ${x + ancho} ${y - alto} L ${x + ancho + dx} ${y - alto + dy} L ${x + dx} ${y - alto + dy} Z`}
+        className="fill-barro-claro stroke-ink/40"
+        strokeWidth="1.2"
+      />
+      {Array.from({ length: 7 }, (_, i) => {
+        const px = x + 10 + i * ((ancho - 20) / 6);
+        return (
+          <path
+            key={i}
+            d={`M ${px} ${y - alto} L ${px + dx} ${y - alto + dy}`}
+            className="stroke-barro"
+            strokeWidth="2.4"
+          />
+        );
+      })}
+    </g>
+  );
+};
+
+/** Reposera al sol, al borde de la pileta. */
+export const Reposera = ({ x, y, mirando = 1 }) => (
+  <g transform={`translate(${x} ${y}) scale(${mirando} 1)`} className={filete} strokeWidth={TRAZO} strokeLinejoin="round">
+    <path d="M -18 0 L -14 -10 L 16 -10 L 12 0 Z" className="fill-primary-200" />
+    <path d="M 12 -10 L 24 -26 L 30 -22 L 18 -8 Z" className="fill-primary-200" />
+    <path d="M -12 0 L -10 -4 M 10 0 L 8 -4" className="stroke-ink/50" />
+  </g>
+);
+
+/** Cantero de plantas del patio. */
+export const Cantero = ({ x, y, ancho = 70 }) => (
+  <g>
+    <Caja x={x} y={y - 9} ancho={ancho} alto={9} prof={0.24} />
+    {Array.from({ length: Math.max(3, Math.floor(ancho / 22)) }, (_, i) => (
+      <g key={i} transform={`translate(${x + 12 + i * 22} ${y - 9})`}>
+        <g
+          className="origin-bottom animate-mecer motion-reduce:animate-none"
+          style={{ animationDelay: `${i * 620}ms`, transformBox: 'fill-box', transformOrigin: 'bottom center' }}
+        >
+          <path d="M 0 0 L 0 -18" className="stroke-primary-600" strokeWidth="2" strokeLinecap="round" />
+          <ellipse cx={-5} cy={-13} rx="6" ry="3.2" className="fill-primary-400" transform="rotate(-26 -5 -13)" />
+          <ellipse cx={5} cy={-16} rx="6" ry="3.2" className="fill-primary" transform="rotate(24 5 -16)" />
+        </g>
+      </g>
+    ))}
+  </g>
+);
