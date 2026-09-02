@@ -1,3 +1,5 @@
+import { FONDO } from './geometria';
+
 /**
  * Las piezas sueltas del dibujo de la casa.
  *
@@ -6,76 +8,149 @@
  * donde la K es un candelabro hecho de tres barras y tres puntos. Un dibujo a
  * mano alzada al lado de ese wordmark se vería de otra marca.
  *
- * Cada pieza se anima sola y en su propio tiempo (los `delay` nunca son
- * múltiplos exactos: si la huerta entera se mece al unísono se ve un GIF, y si
- * cada planta va por su lado se ve viento). Todas respetan
- * `prefers-reduced-motion` y quedan quietas sin romperse.
+ * Desde que la casa es axonométrica, cada pieza tiene que resolver dos cosas
+ * más: **apoyarse** (una sombra que la pega al piso; sin eso todo flota) y
+ * **tener canto** (una cara superior y una lateral, que es lo que convierte un
+ * rectángulo en un mueble).
+ *
+ * Cada pieza se anima en su propio tiempo — los `delay` nunca son múltiplos
+ * exactos: si la huerta entera se mece al unísono se ve un GIF, y si cada
+ * planta va por su lado se ve viento. Todas respetan `prefers-reduced-motion` y
+ * quedan quietas sin romperse.
  */
 
-/** Una persona: cabeza, cuerpo y nada más. A esta escala, una cara sería ruido. */
-export const Persona = ({ x, y, alto = 34, color = 'fill-ink', mirando = 1 }) => {
+/** La sombra que apoya cualquier cosa contra el piso. */
+export const Sombra = ({ x, y, ancho, opacidad = 0.5 }) => (
+  <ellipse
+    cx={x + ancho * 0.1}
+    cy={y - 1}
+    rx={ancho * 0.62}
+    ry={ancho * 0.2}
+    className="fill-casa-sombra"
+    opacity={opacidad}
+  />
+);
+
+/**
+ * Una caja con volumen: cara frontal, tapa y canto. Sirve de escritorio, de
+ * mesa, de estante y de parrilla — todo el mobiliario de la casa es esto con
+ * medidas distintas.
+ */
+export const Caja = ({
+  x,
+  y,
+  ancho,
+  alto,
+  prof = 0.22,
+  claro = 'fill-barro-claro',
+  base = 'fill-barro',
+  oscuro = 'fill-barro-oscuro',
+}) => {
+  const dx = FONDO.x * prof;
+  const dy = FONDO.y * prof;
+  return (
+    <g>
+      <path d={`M ${x} ${y} L ${x + ancho} ${y} L ${x + ancho + dx} ${y + dy} L ${x + dx} ${y + dy} Z`} className={claro} />
+      <rect x={x} y={y} width={ancho} height={alto} className={base} />
+      <path
+        d={`M ${x + ancho} ${y} L ${x + ancho + dx} ${y + dy} L ${x + ancho + dx} ${y + alto + dy} L ${x + ancho} ${y + alto} Z`}
+        className={oscuro}
+      />
+    </g>
+  );
+};
+
+/** Una persona: cabeza, cuerpo, sombra y respiración. */
+export const Persona = ({ x, y, alto = 34, color = 'fill-ink', mirando = 1, delay = 0 }) => {
   /* Proporciones de persona y no de muñeco: la cabeza entra unas cinco veces y
      media en el alto. Con la cabeza más grande el dibujo se va a infantil, que
      es justo lo que no queremos para un público de treinta años. */
   const cabeza = alto * 0.115;
   const ancho = alto * 0.3;
   return (
-    <g transform={`translate(${x} ${y}) scale(${mirando} 1)`} className={color}>
-      <circle cx="0" cy={-alto + cabeza} r={cabeza} />
-      {/* Cuello corto y hombros caídos: el tronco arranca apenas debajo de la
-          cabeza y se ensancha, que es lo que hace que una silueta se lea como
-          alguien parado y no como un bolo. */}
-      <path
-        d={`M ${-ancho / 2} 0
-            L ${-ancho / 2} ${-alto + cabeza * 3.4}
-            Q ${-ancho / 2} ${-alto + cabeza * 2.2} ${-ancho * 0.16} ${-alto + cabeza * 2.1}
-            L ${ancho * 0.16} ${-alto + cabeza * 2.1}
-            Q ${ancho / 2} ${-alto + cabeza * 2.2} ${ancho / 2} ${-alto + cabeza * 3.4}
-            L ${ancho / 2} 0 Z`}
-      />
+    /* Tres nodos y no uno, y la razón es una trampa clásica de SVG: una
+       animación CSS que toca `transform` **reemplaza** al atributo `transform`
+       del elemento. Si la posición y la respiración viven en el mismo nodo, la
+       figura se va al origen del dibujo en cuanto arranca la animación. Así
+       que uno ubica, otro respira y el de adentro espeja. */
+    <g transform={`translate(${x} ${y})`}>
+      <Sombra x={0} y={0} ancho={ancho * 1.5} />
+      <g
+        className={`${color} animate-respirar motion-reduce:animate-none`}
+        style={{ animationDelay: `${delay}ms` }}
+      >
+        <g transform={`scale(${mirando} 1)`}>
+          <circle cx="0" cy={-alto + cabeza} r={cabeza} />
+          {/* Cuello corto y hombros caídos: el tronco arranca apenas debajo
+              de la cabeza y se ensancha, que es lo que hace que una silueta se
+              lea como alguien parado y no como un bolo. */}
+          <path
+            d={`M ${-ancho / 2} 0
+              L ${-ancho / 2} ${-alto + cabeza * 3.4}
+              Q ${-ancho / 2} ${-alto + cabeza * 2.2} ${-ancho * 0.16} ${-alto + cabeza * 2.1}
+              L ${ancho * 0.16} ${-alto + cabeza * 2.1}
+              Q ${ancho / 2} ${-alto + cabeza * 2.2} ${ancho / 2} ${-alto + cabeza * 3.4}
+              L ${ancho / 2} 0 Z`}
+          />
+        </g>
+      </g>
     </g>
   );
 };
 
-/** Alguien sentado con las piernas cruzadas: un triángulo y una cabeza. */
-export const PersonaSentada = ({ x, y, alto = 26, color = 'fill-ink' }) => (
-  <g transform={`translate(${x} ${y})`} className={color}>
-    <circle cx="0" cy={-alto + alto * 0.17} r={alto * 0.17} />
-    {/* El tronco es un trapecio angosto y las piernas cruzadas, la base ancha.
-        Un triángulo entero se lee como un cono. */}
-    <path
-      d={`M ${-alto * 0.19} ${-alto * 0.42}
-          L ${-alto * 0.14} ${-alto + alto * 0.36}
-          L ${alto * 0.14} ${-alto + alto * 0.36}
-          L ${alto * 0.19} ${-alto * 0.42} Z`}
-    />
-    <path d={`M ${-alto * 0.52} 0 Q 0 ${-alto * 0.58} ${alto * 0.52} 0 Z`} />
+/** Alguien sentado con las piernas cruzadas. */
+export const PersonaSentada = ({ x, y, alto = 26, color = 'fill-ink', delay = 0 }) => (
+  <g transform={`translate(${x} ${y})`}>
+    <Sombra x={0} y={0} ancho={alto * 0.9} opacidad={0.4} />
+    <g
+      className={`${color} animate-respirar motion-reduce:animate-none`}
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <circle cx="0" cy={-alto + alto * 0.17} r={alto * 0.17} />
+      {/* El tronco es un trapecio angosto y las piernas cruzadas, la base
+          ancha. Un triángulo entero se lee como un cono. */}
+      <path
+        d={`M ${-alto * 0.19} ${-alto * 0.42}
+            L ${-alto * 0.14} ${-alto + alto * 0.36}
+            L ${alto * 0.14} ${-alto + alto * 0.36}
+            L ${alto * 0.19} ${-alto * 0.42} Z`}
+      />
+      <path d={`M ${-alto * 0.52} 0 Q 0 ${-alto * 0.58} ${alto * 0.52} 0 Z`} />
+    </g>
   </g>
 );
 
 /** Planta en maceta. Se mece desde la base, que es donde se doblan las plantas. */
 export const Planta = ({ x, y, alto = 26, delay = 0, maceta = true }) => (
   <g transform={`translate(${x} ${y})`}>
-    {maceta && <path d="M -7 0 L 7 0 L 5 -9 L -5 -9 Z" className="fill-barro" />}
-    <g
-      className="origin-bottom animate-mecer motion-reduce:animate-none"
-      style={{ animationDelay: `${delay}ms`, transformBox: 'fill-box', transformOrigin: 'bottom' }}
-    >
-      <path
-        d={`M 0 ${maceta ? -8 : 0} L 0 ${-alto}`}
-        className="stroke-primary-600"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <ellipse cx={-5} cy={-alto * 0.72} rx="6" ry="3.4" className="fill-primary-400" transform={`rotate(-28 ${-5} ${-alto * 0.72})`} />
-      <ellipse cx={5} cy={-alto * 0.86} rx="6" ry="3.4" className="fill-primary" transform={`rotate(26 5 ${-alto * 0.86})`} />
+    <Sombra x={0} y={0} ancho={14} opacidad={0.35} />
+    <g>
+      {maceta && (
+        <>
+          <path d="M -7 0 L 7 0 L 5 -9 L -5 -9 Z" className="fill-barro" />
+          <path d="M -5 -9 L 5 -9 L 7 -11 L -3 -11 Z" className="fill-barro-claro" />
+        </>
+      )}
+      <g
+        className="origin-bottom animate-mecer motion-reduce:animate-none"
+        style={{ animationDelay: `${delay}ms`, transformBox: 'fill-box', transformOrigin: 'bottom' }}
+      >
+        <path
+          d={`M 0 ${maceta ? -8 : 0} L 0 ${-alto}`}
+          className="stroke-primary-600"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <ellipse cx={-5} cy={-alto * 0.72} rx="6" ry="3.4" className="fill-primary-400" transform={`rotate(-28 ${-5} ${-alto * 0.72})`} />
+        <ellipse cx={5} cy={-alto * 0.86} rx="6" ry="3.4" className="fill-primary" transform={`rotate(26 5 ${-alto * 0.86})`} />
+      </g>
     </g>
   </g>
 );
 
 /** Humo o vapor: tres bocanadas desfasadas que suben y se abren. */
 export const Humo = ({ x, y, delay = 0, escala = 1 }) => (
-  <g transform={`translate(${x} ${y}) scale(${escala})`} className="fill-ink/25">
+  <g transform={`translate(${x} ${y}) scale(${escala})`} className="fill-ink/20">
     {[0, 900, 1800].map((d) => (
       <ellipse
         key={d}
@@ -94,6 +169,7 @@ export const Humo = ({ x, y, delay = 0, escala = 1 }) => (
 export const Vela = ({ x, y, alto = 16, delay = 0 }) => (
   <g transform={`translate(${x} ${y})`}>
     <rect x="-2" y={-alto} width="4" height={alto} rx="1.4" className="fill-surface" />
+    <ellipse cx="0" cy={-alto - 4} rx="9" ry="9" className="fill-flame/25" />
     <path
       d={`M 0 ${-alto - 8} Q 3 ${-alto - 3} 0 ${-alto - 1} Q -3 ${-alto - 3} 0 ${-alto - 8} Z`}
       className="animate-llama fill-flame motion-reduce:animate-none"
@@ -125,14 +201,16 @@ export const Guirnalda = ({ x1, x2, y, caida = 16 }) => {
         fill="none"
       />
       {puntos.map((p) => (
-        <circle
-          key={p.x}
-          cx={p.x}
-          cy={p.y + 4}
-          r="2.6"
-          className="animate-titilar fill-flame motion-reduce:animate-none"
-          style={{ animationDelay: `${p.delay}ms` }}
-        />
+        <g key={p.x}>
+          <circle cx={p.x} cy={p.y + 4} r="7" className="animate-titilar fill-flame/20 motion-reduce:animate-none" style={{ animationDelay: `${p.delay}ms` }} />
+          <circle
+            cx={p.x}
+            cy={p.y + 4}
+            r="2.6"
+            className="animate-titilar fill-flame motion-reduce:animate-none"
+            style={{ animationDelay: `${p.delay}ms` }}
+          />
+        </g>
       ))}
     </g>
   );

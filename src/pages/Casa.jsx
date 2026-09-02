@@ -116,10 +116,10 @@ const Casa = () => {
       <main className="mx-auto max-w-6xl px-5 sm:px-8">
         <div className="lg:grid lg:grid-cols-12 lg:gap-x-12">
           {/* El dibujo: fijo al costado en escritorio, fijo arriba en mobile. */}
-          <div className="sticky top-16 z-30 -mx-5 bg-surface-page/95 px-5 backdrop-blur sm:-mx-8 sm:px-8 lg:top-16 lg:z-auto lg:col-span-5 lg:mx-0 lg:h-[calc(100vh-4rem)] lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
+          <div className="sticky top-16 z-30 -mx-5 bg-surface-page/95 px-5 backdrop-blur sm:-mx-8 sm:px-8 lg:top-16 lg:z-auto lg:col-span-5 lg:mx-0 lg:flex lg:h-[calc(100vh-4rem)] lg:items-center lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
             <CasaDibujada
               activo={activo}
-              className="mx-auto h-[38vh] w-auto py-3 lg:h-full lg:py-10"
+              className="mx-auto h-[36vh] w-auto max-w-full py-2 lg:h-auto lg:max-h-[calc(100vh-8rem)] lg:w-full lg:py-0"
             />
           </div>
 

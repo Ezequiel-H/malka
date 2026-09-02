@@ -45,6 +45,37 @@ export default {
           border: '#ebe4d8',
         },
 
+        /* El calor del dibujo: el fuego de la parrilla, las velas de la mesa y
+           las luces de la terraza. Es el único color cálido de la paleta —el
+           resto es verde y crema— y por eso ordena solo la lectura: donde hay
+           ámbar, hay algo pasando. */
+        flame: {
+          core: '#ffdd9b',
+          DEFAULT: '#e8942b',
+          deep: '#c25e12',
+        },
+
+        /* Maderas y macetas del dibujo. No son colores de interfaz: no se usan
+           para botones ni estados, sólo adentro de la ilustración. */
+        barro: {
+          claro: '#e2c3a4',
+          DEFAULT: '#c98d63',
+          oscuro: '#9c6440',
+        },
+
+        /* Los planos del dibujo de la casa. Son cuatro escalones de un mismo
+           crema, ordenados por cuánta luz les llega: el piso recibe de frente,
+           la pared del fondo está más lejos, el canto lateral queda a
+           contraluz y la sombra es lo que no ve nada. Que sean escalones de un
+           solo color —y no cuatro colores distintos— es lo que hace que se lea
+           como un volumen iluminado y no como un collage. */
+        casa: {
+          piso: '#efe2cf',
+          fondo: '#f4ede1',
+          costado: '#e0d5c3',
+          sombra: '#c9bda9',
+        },
+
         /* Semánticos: significado, no color. Un botón de borrar es `danger`,
            no `red-600` — si mañana el rojo cambia, cambia acá y nada más. */
         success: { 50: '#eef7f0', 500: '#3f9159', 600: '#2f7546', 700: '#255c38' },
@@ -220,6 +251,19 @@ export default {
           '0%, 100%': { transform: 'scaleY(1) scaleX(1)', opacity: '0.9' },
           '50%': { transform: 'scaleY(1.18) scaleX(0.92)', opacity: '1' },
         },
+        /* Respiración. Un píxel y pico de recorrido en cuatro segundos: no se
+           ve moverse a nadie, se ve que nadie está congelado. Es la diferencia
+           entre un dibujo con gente y un dibujo con maniquíes. */
+        respirar: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-1.4px)' },
+        },
+        /* El resplandor de la lámpara y de las brasas, que no titila como una
+           llama: sube y baja despacio, como sube y baja una luz cálida. */
+        latir: {
+          '0%, 100%': { opacity: '0.55' },
+          '50%': { opacity: '0.9' },
+        },
         shimmer: {
           from: { backgroundPosition: '200% 0' },
           to: { backgroundPosition: '-200% 0' },
@@ -241,6 +285,8 @@ export default {
         mecer: 'mecer 4.6s ease-in-out infinite',
         titilar: 'titilar 2.6s ease-in-out infinite',
         llama: 'llama 1.8s ease-in-out infinite',
+        respirar: 'respirar 4.2s ease-in-out infinite',
+        latir: 'latir 5s ease-in-out infinite',
         shimmer: 'shimmer 1.4s linear infinite',
       },
     },
