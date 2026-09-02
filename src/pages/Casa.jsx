@@ -53,7 +53,7 @@ const SECCIONES = [
   {
     id: 'puerta',
     piso: 'planta',
-    zona: 'vereda',
+    zona: 'puerta',
     kicker: 'La puerta',
     titulo: 'Venite darling',
     entrada: 'Podés caer de lunes a viernes, entre las 14 y las 21.',
@@ -81,20 +81,10 @@ const SECCIONES = [
       'De la mano de referentes de la gastronomía, y también del que se anima a cocinar para todos. Lo que sale de acá termina siempre en la mesa larga o en el patio.',
   },
   {
-    id: 'patio',
-    piso: 'todo',
-    zona: 'patio',
-    kicker: 'Cruzando la casa',
-    titulo: 'El fondo',
-    entrada: 'Atrás se abre el patio, y el patio es otra casa.',
-    texto:
-      'Árboles, plantas, la pileta y el quincho. Cuando el clima acompaña, la casa entera se muda para acá.',
-  },
-  {
     id: 'quincho',
     piso: 'todo',
-    zona: 'quincho',
-    kicker: 'En el patio',
+    zona: 'parrilla',
+    kicker: 'En el fondo',
     titulo: 'El sueño del quincho',
     entrada: 'Cumplimos el sueño del quincho con parrilla.',
     texto:
@@ -108,7 +98,7 @@ const SECCIONES = [
     titulo: 'La pileta',
     entrada: 'Una pileta para disfrutar el verano.',
     texto:
-      'Siempre hay un mate que te está esperando, un café para compartir y, cuando aprieta el calor, esto.',
+      'Del otro lado del patio, con sus árboles y su sombra. Siempre hay un mate esperándote, un café para compartir y, cuando aprieta el calor, esto.',
   },
   {
     id: 'cowork',
@@ -252,21 +242,70 @@ const Casa = () => {
     document.getElementById('intro')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
+  /**
+   * Qué sección está activa.
+   *
+   * El observer avisa **que algo cambió**, pero no sirve para decidir cuál es
+   * la sección activa: cuando scrolleás rápido o cambiás de dirección, la
+   * misma tanda de avisos puede traer dos o tres secciones y el orden en que
+   * llegan no es el orden de la página. Eso es lo que hacía saltar el encuadre
+   * al subir y bajar.
+   *
+   * Así que el observer sólo despierta el cálculo, y la decisión se toma
+   * mirando la página: gana la sección cuyo centro está más cerca del centro de
+   * la pantalla. Es determinista, no depende de la dirección del scroll y
+   * cuesta una docena de mediciones cada vez que algo entra o sale, no por
+   * frame.
+   */
   useEffect(() => {
-    const obs = new IntersectionObserver(
-      (entradas) => {
-        for (const e of entradas) {
-          if (!e.isIntersecting) continue;
-          setActivo(e.target.dataset.piso);
-          setZona(e.target.dataset.zona);
+    const secciones = [...document.querySelectorAll('[data-zona]')];
+    if (!secciones.length) return undefined;
+
+    const elegir = () => {
+      const centro = window.innerHeight / 2;
+      let mejor = secciones[0];
+      let menor = Infinity;
+      for (const n of secciones) {
+        const r = n.getBoundingClientRect();
+        const d = Math.abs(r.top + r.height / 2 - centro);
+        if (d < menor) {
+          menor = d;
+          mejor = n;
         }
-      },
-      /* La banda angosta del medio de la pantalla: así el piso cambia cuando la
-         sección está siendo leída, y no cuando asoma por el borde. */
-      { rootMargin: '-45% 0px -45% 0px' }
-    );
-    document.querySelectorAll('[data-piso]').forEach((n) => obs.observe(n));
-    return () => obs.disconnect();
+      }
+      setActivo(mejor.dataset.piso);
+      setZona(mejor.dataset.zona);
+    };
+
+    let pedido = null;
+    const pedir = () => {
+      if (pedido == null) pedido = requestAnimationFrame(() => {
+        pedido = null;
+        elegir();
+      });
+    };
+
+    const obs = new IntersectionObserver(pedir, {
+      /* Umbrales repartidos: así el observer avisa varias veces mientras una
+         sección entra, y no sólo cuando cruza un punto exacto — que es donde se
+         perdía el aviso si el salto de scroll era grande. */
+      threshold: [0, 0.25, 0.5, 0.75, 1],
+      rootMargin: '-20% 0px -20% 0px',
+    });
+    secciones.forEach((n) => obs.observe(n));
+
+    /* Y un aviso más por scroll, con el mismo cálculo: si alguien salta con la
+       barra o con "fin", el observer puede no disparar nunca. */
+    window.addEventListener('scroll', pedir, { passive: true });
+    window.addEventListener('resize', pedir);
+    elegir();
+
+    return () => {
+      obs.disconnect();
+      if (pedido != null) cancelAnimationFrame(pedido);
+      window.removeEventListener('scroll', pedir);
+      window.removeEventListener('resize', pedir);
+    };
   }, []);
 
   return (

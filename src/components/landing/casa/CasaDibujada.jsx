@@ -33,14 +33,11 @@ import {
   Platillo,
   Cantero,
   Parlante,
-  QuinchoCerrado,
   Piso,
   Jacuzzi,
   EnLaPileta,
   Pileta,
   Porton,
-  Reposera,
-  Toalla,
   PuertaEntrada,
   RinconCafe,
   Silla,
@@ -102,14 +99,12 @@ const FOCOS = {
      hilo. Por eso hay tres planos generales distintos —la ciudad, la fachada y
      la casa— y no uno usado tres veces. */
   todo: { x: 318, y: 262, s: 1.0 },
-  ciudad: { x: 320, y: 222, s: 0.92 },
-  fachada: { x: 196, y: 300, s: 1.3 },
-  casa: { x: 250, y: 262, s: 1.62 },
-  vereda: { x: 44, y: P0v - 40, s: 1.86 },
+  ciudad: { x: 320, y: 222, s: 0.95 },
+  fachada: { x: 196, y: 300, s: 1.46 },
+  casa: { x: 250, y: 262, s: 1.78 },
 
-  patio: { x: 546, y: P0v - 56, s: 1.8 },
-  pileta: { x: 476, y: P0v - 24, s: 2.45 },
-  quincho: { x: 572, y: P0v - 58, s: 2.25 },
+  pileta: { x: 468, y: P0v - 30, s: 2.4 },
+  parrilla: { x: 580, y: P0v - 62, s: 2.05 },
 
   /* El zoom no es el mismo en todas: la puerta y el baño son un objeto y piden
      estar encima; la mesa, el cowork y la clase son un ambiente con gente y se
@@ -123,7 +118,7 @@ const FOCOS = {
   bano: { x: 352, y: P1v - 48, s: 2.3 },
 
   banda: { x: 178, y: 84, s: 1.96 },
-  equipo: { x: 252, y: 90, s: 1.6 },
+  equipo: { x: 252, y: 90, s: 1.76 },
   suca: { x: 372, y: 88, s: 2.35 },
 
   clase: { x: 304, y: SSv - 48, s: 1.94 },
@@ -614,28 +609,36 @@ const CasaDibujada = ({ activo = 'todo', zona = 'todo', className = '' }) => {
             <Cantero x={PATIO.x1 + 96} y={SUELO} ancho={64} />
           </g>
 
-          {/* El quincho, cerrado y con la parrilla adentro */}
-          <g transform={fuga(0.5)}>
-            <QuinchoCerrado x={PATIO.x1 + 68} y={SUELO} ancho={148} alto={98} prof={0.62} />
-            <Humo x={PATIO.x1 + 118} y={SUELO - 142} delay={200} escala={1.1} />
-            <Humo x={PATIO.x1 + 126} y={SUELO - 136} delay={1400} escala={0.9} />
-            <ParrillaArgentina x={PATIO.x1 + 90} y={SUELO} ancho={112} alto={94} />
-            <Chispas x={PATIO.x1 + 128} y={SUELO - 58} />
+          {/* La parrilla, contra el paredón del fondo. Estaba metida adentro de
+              un quincho cerrado y no se entendía ninguna de las dos cosas: la
+              caja tapaba la parrilla y la parrilla no dejaba leer la caja. Sola
+              contra la pared se lee de una. */}
+          <g transform={fuga(0.72)}>
+            <ParrillaArgentina x={PATIO.x1 + 122} y={SUELO} ancho={118} alto={104} />
+            <Humo x={PATIO.x1 + 181} y={SUELO - 168} delay={200} escala={1.1} />
+            <Humo x={PATIO.x1 + 189} y={SUELO - 160} delay={1400} escala={0.9} />
+            <Chispas x={PATIO.x1 + 160} y={SUELO - 62} />
           </g>
-          <g transform={fuga(0.24)}>
-            <Persona x={PATIO.x1 + 96} y={SUELO} alto={74} kipa delay={600} brazo="voltear" brazoDelay={300} />
+          <g transform={fuga(0.5)}>
+            <Persona x={PATIO.x1 + 132} y={SUELO} alto={74} kipa delay={600} brazo="voltear" brazoDelay={300} />
           </g>
 
-          {/* La pileta, del lado del sol y bien al frente del patio: si va al
-              fondo queda tapada por el quincho y se lee como una baldosa. */}
-          <g transform={fuga(0.16)}>
-            <Pileta x={PATIO.x1 + 4} y={SUELO - 6} ancho={116} fondo={0.46} />
-            <EnLaPileta x={PATIO.x1 + 34} y={SUELO - 18} />
+          {/* La mesa del patio, entre la parrilla y la pileta */}
+          <g transform={fuga(0.3)}>
+            <Mesa x={PATIO.x1 + 108} y={SUELO - 44} ancho={92} piso={SUELO} prof={0.3} />
+            <Plato x={PATIO.x1 + 128} y={SUELO - 46} />
+            <Plato x={PATIO.x1 + 172} y={SUELO - 46} />
           </g>
-          <g transform={fuga(0.02)}>
-            <Reposera x={PATIO.x1 + 70} y={SUELO} />
-            <Toalla x={PATIO.x1 + 96} y={SUELO - 26} />
-            <Persona x={PATIO.x1 + 186} y={SUELO} alto={70} mirando={-1} pelo delay={1800} ritmo />
+          <g transform={fuga(0.12)}>
+            <Silla x={PATIO.x1 + 128} y={SUELO} alto={42} />
+            <PersonaSilla x={PATIO.x1 + 128} y={SUELO} alto={64} pelo delay={1500} />
+          </g>
+
+          {/* La pileta, sola en su mitad del patio y sin nada delante: cualquier
+              cosa que se le cruce adelante la convierte en una mancha. */}
+          <g transform={fuga(0.34)}>
+            <Pileta x={PATIO.x1 + 2} y={SUELO - 10} ancho={92} fondo={0.5} />
+            <EnLaPileta x={PATIO.x1 + 30} y={SUELO - 24} />
           </g>
         </g>
 

@@ -1173,11 +1173,13 @@ export const Cantero = ({ x, y, ancho = 70 }) => (
  * pasarla debajo—, la **campana** que se la traga, y la **manija de la rueda**
  * que regula la altura. Sin eso es un anafe.
  */
-export const ParrillaArgentina = ({ x, y, ancho = 132, alto = 118 }) => {
+export const ParrillaArgentina = ({ x, y, ancho = 132, alto = 118, chimenea = true }) => {
   const mesada = y - 46;
   return (
     <g className={filete} strokeWidth={TRAZO} strokeLinejoin="round">
-      {/* El cuerpo de mampostería */}
+      {/* El paredón de ladrillo contra el que se hace la parrilla, y el cuerpo
+          de mampostería debajo de la mesada. */}
+      <rect x={x - 8} y={mesada - alto + 40} width={ancho + 16} height={alto - 40 + 46} className="fill-casa-fondo stroke-ink/30" strokeWidth="1" />
       <rect x={x} y={mesada} width={ancho} height={46} className="fill-casa-costado" />
       {Array.from({ length: 3 }, (_, f) =>
         Array.from({ length: 5 }, (_, c) => (
@@ -1199,9 +1201,13 @@ export const ParrillaArgentina = ({ x, y, ancho = 132, alto = 118 }) => {
         d={`M ${x - 4} ${mesada - alto + 52} L ${x + ancho + 4} ${mesada - alto + 52} L ${x + ancho - 16} ${mesada - alto + 84} L ${x + 16} ${mesada - alto + 84} Z`}
         className="fill-casa-costado"
       />
-      {/* El tiro sube y se va por la chimenea del quincho, así que acá se corta:
-          dos chimeneas en el mismo techo se leen como un error de dibujo. */}
-      <rect x={x + ancho / 2 - 9} y={mesada - alto + 34} width="18" height="20" className="fill-casa-costado" />
+      {/* El tiro y su sombrerete */}
+      {chimenea && (
+        <>
+          <rect x={x + ancho / 2 - 10} y={mesada - alto - 6} width="20" height="60" className="fill-casa-costado" />
+          <rect x={x + ancho / 2 - 15} y={mesada - alto - 13} width="30" height="8" rx="1.5" className="fill-ink/70" />
+        </>
+      )}
 
       {/* El brasero, al costado: acá se hace la brasa y de acá se pasa abajo */}
       <rect x={x + ancho - 34} y={mesada - 30} width="30" height="26" rx="2" className="fill-ink" />
