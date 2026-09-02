@@ -24,12 +24,10 @@ import Settings from './pages/admin/Settings';
 import UserDetail from './pages/admin/UserDetail';
 import MyInterests from './pages/participant/MyInterests';
 import MyProfile from './pages/participant/MyProfile';
-import PostAuthRedirect from './components/auth/PostAuthRedirect';
 import PrivateRoute from './components/auth/PrivateRoute';
 import AdminRoute from './components/auth/AdminRoute';
 // TEMPORAL: vitrina del design system. Se borra junto con su ruta /ds.
 import DesignSystem from './pages/DesignSystem';
-import Casa from './pages/Casa';
 
 function App() {
   const { user, loading } = useAuth();
@@ -55,8 +53,6 @@ function App() {
         {/* TEMPORAL: /ds — vitrina del design system, sin auth para poder
             iterarla sin loguearse. Borrar antes de producción. */}
         <Route path="/ds" element={<DesignSystem />} />
-        {/* Maqueta de la landing nueva. Igual que /ds, no va a producción. */}
-        <Route path="/casa" element={<Casa />} />
 
         <Route
           path="/dashboard"
@@ -208,9 +204,12 @@ function App() {
         />
 
         {/* La raíz es la vitrina pública: reemplaza a casamalka.org como
-            puerta de entrada. Quien ya tiene sesión no la ve — sigue yendo
-            a donde le corresponde por su rol, igual que antes. */}
-        <Route path="/" element={user ? <PostAuthRedirect /> : <Landing />} />
+            puerta de entrada. La ve todo el mundo, con o sin sesión — quien ya
+            entró la lee con otro tono ("ir a mi cuenta", "ver la agenda") en
+            vez de que se la escondamos: al link de Instagram lo abre gente que
+            a veces ya tiene cuenta. A la app se sigue entrando por el login y
+            por el acceso directo de la PWA, que arranca en /dashboard. */}
+        <Route path="/" element={<Landing />} />
       </Routes>
     </ErrorBoundary>
   );
@@ -220,7 +219,7 @@ function App() {
      quedaba con dos cabeceras y con la barra de pestañas de la app tapándole
      el final. Su barra ya sabe qué mostrarle a alguien logueado —"ir a mi
      cuenta" en vez de "registrate"—, que es justamente lo que no se veía. */
-  const esVitrina = location.pathname === '/casa';
+  const esVitrina = location.pathname === '/';
 
   // Las rutas sin sesión (login, registro, /ds) no llevan el shell.
   return (
