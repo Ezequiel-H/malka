@@ -29,6 +29,7 @@ import PrivateRoute from './components/auth/PrivateRoute';
 import AdminRoute from './components/auth/AdminRoute';
 // TEMPORAL: vitrina del design system. Se borra junto con su ruta /ds.
 import DesignSystem from './pages/DesignSystem';
+import Casa from './pages/Casa';
 
 function App() {
   const { user, loading } = useAuth();
@@ -54,6 +55,8 @@ function App() {
         {/* TEMPORAL: /ds — vitrina del design system, sin auth para poder
             iterarla sin loguearse. Borrar antes de producción. */}
         <Route path="/ds" element={<DesignSystem />} />
+        {/* Maqueta de la landing nueva. Igual que /ds, no va a producción. */}
+        <Route path="/casa" element={<Casa />} />
 
         <Route
           path="/dashboard"

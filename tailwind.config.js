@@ -196,6 +196,30 @@ export default {
           from: { transform: 'scaleX(0)' },
           to: { transform: 'scaleX(1)' },
         },
+        /* El humo de la parrilla y el vapor del café: sube, se abre y se va.
+           Tres bocanadas desfasadas se leen como humo; una sola, como una
+           burbuja. */
+        humo: {
+          '0%': { opacity: '0', transform: 'translateY(0) scaleX(1)' },
+          '25%': { opacity: '0.55' },
+          '100%': { opacity: '0', transform: 'translateY(-26px) scaleX(1.6)' },
+        },
+        /* Las plantas de la huerta y las macetas. Rotación mínima y ciclo
+           largo: una planta que se mueve mucho parece un dibujo animado. */
+        mecer: {
+          '0%, 100%': { transform: 'rotate(-2.5deg)' },
+          '50%': { transform: 'rotate(2.5deg)' },
+        },
+        /* La guirnalda de la terraza. */
+        titilar: {
+          '0%, 100%': { opacity: '0.45' },
+          '50%': { opacity: '1' },
+        },
+        /* Las velas de la mesa de Shabat. Acá sí son velas. */
+        llama: {
+          '0%, 100%': { transform: 'scaleY(1) scaleX(1)', opacity: '0.9' },
+          '50%': { transform: 'scaleY(1.18) scaleX(0.92)', opacity: '1' },
+        },
         shimmer: {
           from: { backgroundPosition: '200% 0' },
           to: { backgroundPosition: '-200% 0' },
@@ -213,6 +237,10 @@ export default {
         'line-rise': 'line-rise 900ms cubic-bezier(0.16, 1, 0.3, 1) both',
         marquee: 'marquee 38s linear infinite',
         'rule-draw': 'rule-draw 900ms cubic-bezier(0.16, 1, 0.3, 1) both',
+        humo: 'humo 3.6s ease-out infinite',
+        mecer: 'mecer 4.6s ease-in-out infinite',
+        titilar: 'titilar 2.6s ease-in-out infinite',
+        llama: 'llama 1.8s ease-in-out infinite',
         shimmer: 'shimmer 1.4s linear infinite',
       },
     },
