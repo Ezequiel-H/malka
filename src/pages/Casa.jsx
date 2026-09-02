@@ -195,6 +195,17 @@ const Casa = () => {
    */
   const [manual, setManual] = useState(null);
   const [pregunta, setPregunta] = useState(0);
+
+  /* Si la pantalla es angosta, el dibujo va arriba y en chico: la cámara se
+     acerca más para compensar. */
+  const [compacto, setCompacto] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < 1024 : false
+  );
+  useEffect(() => {
+    const medir = () => setCompacto(window.innerWidth < 1024);
+    window.addEventListener('resize', medir);
+    return () => window.removeEventListener('resize', medir);
+  }, []);
   const manualRef = useRef(null);
   const mirar = (seccionId, espacio) => {
     const elegido = { seccion: seccionId, zona: espacio.zona, piso: espacio.piso };
@@ -381,7 +392,11 @@ const Casa = () => {
       <main className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
         <div className="lg:grid lg:grid-cols-12 lg:gap-x-12">
           {/* El dibujo: fijo al costado en escritorio, fijo arriba en mobile. */}
-          <div className="sticky top-16 z-30 -mx-5 bg-surface-page/95 px-5 backdrop-blur sm:-mx-8 sm:px-8 lg:top-16 lg:z-auto lg:col-span-6 lg:mx-0 lg:flex lg:h-[calc(100vh-4rem)] lg:items-center lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
+          {/* En mobile la casa vive en una franja pegada arriba y **opaca**: el
+              texto pasa por detrás, y si la franja deja ver a través se
+              superponen los dos y no se lee ninguno. El borde de abajo se
+              desvanece para que el texto no aparezca cortado por una línea. */}
+          <div className="sticky top-16 z-30 -mx-5 bg-surface-page px-5 pb-3 shadow-[0_18px_18px_-18px_rgba(44,61,52,0.25)] sm:-mx-8 sm:px-8 lg:top-16 lg:z-auto lg:col-span-6 lg:mx-0 lg:flex lg:h-[calc(100vh-4rem)] lg:items-center lg:bg-transparent lg:px-0 lg:pb-0 lg:shadow-none">
             {/* La casa no se mueve nunca de su columna. Antes se corría al
                 centro en la portada y volvía al scrollear: ese viaje lateral, con
                 el texto cortándose al mismo tiempo, era el momento más brusco de
@@ -396,7 +411,8 @@ const Casa = () => {
             <CasaDibujada
               activo={manual?.piso ?? activo}
               zona={manual?.zona ?? zona}
-              className="mx-auto h-[38vh] w-auto max-w-none py-2 lg:h-auto lg:max-h-[calc(100vh-5rem)] lg:w-[118%] lg:-ml-[18%] lg:py-0 [mask-image:radial-gradient(125%_105%_at_54%_46%,#000_62%,transparent_100%)]"
+              compacto={compacto}
+              className="mx-auto h-[34vh] w-auto max-w-none py-1 lg:h-auto lg:max-h-[calc(100vh-5rem)] lg:w-[118%] lg:-ml-[18%] lg:py-0 [mask-image:radial-gradient(125%_105%_at_54%_46%,#000_62%,transparent_100%)]"
             />
 
             </div>
@@ -414,7 +430,11 @@ const Casa = () => {
                   id={p.id}
                   data-piso={p.piso}
                   data-zona={p.zona}
-                  className="flex min-h-[92vh] flex-col justify-center pb-16 pt-[42vh] lg:min-h-screen lg:py-32"
+                  /* La portada no lleva el colchón de las demás: viene justo
+                     después de la franja del dibujo, que en mobile ya ocupa su
+                     lugar en el flujo. Con el colchón, el wordmark caía fuera
+                     de la primera pantalla. */
+                  className="flex min-h-[46vh] flex-col justify-start pb-12 pt-7 lg:min-h-screen lg:justify-center lg:py-32"
                 >
                   <img
                     src={logoMalka}
@@ -424,10 +444,10 @@ const Casa = () => {
                   <p className="mt-7 max-w-xl animate-fade-in-up font-grotesk text-[clamp(1.7rem,3.4vw,2.4rem)] font-semibold leading-[1.1] tracking-tight text-ink [animation-delay:1400ms] [animation-duration:700ms] [animation-fill-mode:backwards]">
                     El punto de encuentro para tu identidad judía.
                   </p>
-                  <ul className="mt-7 flex animate-fade-in-up flex-wrap items-center gap-x-3 gap-y-2 text-[0.68rem] font-semibold uppercase tracking-label text-ink-soft [animation-delay:1520ms] [animation-fill-mode:backwards]">
+                  <ul className="mt-7 flex animate-fade-in-up flex-col items-start gap-1.5 text-[0.68rem] sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-2 sm:text-[0.68rem] font-semibold uppercase tracking-label text-ink-soft [animation-delay:1520ms] [animation-fill-mode:backwards]">
                     {['18 a 35 años', 'Lunes a viernes, 14 a 21', '3 de Febrero 1325'].map((d, i) => (
                       <li key={d} className="flex items-center gap-3">
-                        {i > 0 && <span className="h-1 w-1 rounded-pill bg-ink-faint" />}
+                        {i > 0 && <span className="hidden h-1 w-1 rounded-pill bg-ink-faint sm:block" />}
                         {d}
                       </li>
                     ))}
@@ -451,7 +471,7 @@ const Casa = () => {
                    debajo de él: sin este colchón, el título de cada sección
                    nace tapado. En escritorio el dibujo está al costado y el
                    colchón sobra. */
-                className="flex min-h-[92vh] flex-col justify-center pb-16 pt-[42vh] lg:min-h-screen lg:py-32"
+                className="flex min-h-[86vh] flex-col justify-start pb-14 pt-[38vh] lg:min-h-screen lg:justify-center lg:py-32"
               >
                 {/* El nombre del espacio, con su filete: es lo que ata el
                     texto con lo que la cámara está mirando. Sin esa etiqueta,
@@ -494,7 +514,7 @@ const Casa = () => {
                               type="button"
                               onClick={() => mirar(p.id, e)}
                               aria-pressed={elegido}
-                              className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-card border px-4 py-3.5 text-left transition-all duration-base ease-standard ${
+                              className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-card border px-3.5 py-2.5 text-left transition-all duration-base ease-standard sm:px-4 sm:py-3.5 ${
                                 elegido
                                   ? 'border-primary/40 bg-primary-50 shadow-subtle'
                                   : 'border-ink/10 bg-surface/50 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-surface hover:shadow-subtle'
@@ -507,7 +527,7 @@ const Casa = () => {
                                 }`}
                               />
                               <span
-                                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-pill transition-colors duration-base ${
+                                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-pill transition-colors duration-base sm:h-10 sm:w-10 ${
                                   elegido
                                     ? 'bg-primary/15 text-primary-700'
                                     : 'bg-ink/5 text-ink-soft group-hover:bg-primary/10 group-hover:text-primary-700'
@@ -587,12 +607,25 @@ const Casa = () => {
                                   {q.pregunta}
                                 </span>
                               </button>
+
+                              {/* En un teléfono la respuesta va acá, pegada a la
+                                  pregunta: la columna de al lado no existe y
+                                  mandarla al final de la lista obliga a
+                                  scrollear para leer lo que acabás de tocar. */}
+                              {abierta && (
+                                <div className="animate-fade-in-up border-l border-primary/25 pb-3 pl-5 pt-1 sm:hidden">
+                                  <p className="font-grotesk font-bold leading-none tracking-tight text-primary-700">
+                                    {q.veredicto}
+                                  </p>
+                                  <p className="mt-2 text-sm leading-relaxed text-ink-soft">{q.detalle}</p>
+                                </div>
+                              )}
                             </li>
                           );
                         })}
                       </ul>
 
-                      <div key={pregunta} className="animate-fade-in-up border-l border-primary/25 pl-6">
+                      <div key={pregunta} className="hidden animate-fade-in-up border-primary/25 sm:block sm:border-l sm:pl-6">
                         <p className="font-grotesk text-2xl font-bold leading-none tracking-tight text-primary-700">
                           {PREGUNTAS[pregunta].veredicto}
                         </p>
@@ -614,7 +647,7 @@ const Casa = () => {
               id="staff"
               data-piso="terraza"
               data-zona="equipo"
-              className="flex min-h-[86vh] flex-col justify-center py-24 lg:min-h-screen lg:py-32"
+              className="flex min-h-[86vh] flex-col justify-start pb-14 pt-[38vh] lg:min-h-screen lg:justify-center lg:py-32"
             >
               <p className="text-[0.7rem] font-semibold uppercase tracking-label text-ink-soft">
                 Quiénes te reciben
@@ -639,11 +672,14 @@ const Casa = () => {
                         src={persona.foto}
                         alt={persona.nombre}
                         loading="lazy"
-                        className="h-full w-full object-cover grayscale-[0.55] transition-all duration-cinematic ease-standard group-hover:scale-[1.04] group-hover:grayscale-0 motion-reduce:transition-none"
+                        /* El tirado al verde sólo donde hay mouse: en un teléfono no hay
+                            hover que lo devuelva a color, y quedarían cuatro
+                            fotos apagadas para siempre. */
+                        className="h-full w-full object-cover transition-all duration-cinematic ease-standard [@media(hover:hover)]:grayscale-[0.55] group-hover:scale-[1.04] group-hover:grayscale-0 motion-reduce:transition-none"
                       />
                       <span
                         aria-hidden
-                        className="pointer-events-none absolute inset-0 bg-primary/25 mix-blend-multiply transition-opacity duration-cinematic group-hover:opacity-0"
+                        className="pointer-events-none absolute inset-0 bg-primary/25 opacity-0 mix-blend-multiply transition-opacity duration-cinematic [@media(hover:hover)]:opacity-100 group-hover:opacity-0"
                       />
                     </div>
                     <p className="mt-3 font-semibold leading-tight text-ink transition-colors duration-base group-hover:text-primary-700">
@@ -663,7 +699,7 @@ const Casa = () => {
               id="sumate"
               data-piso="todo"
               data-zona="ciudad"
-              className="flex min-h-[86vh] flex-col justify-center py-24 lg:min-h-screen lg:py-32"
+              className="flex min-h-[86vh] flex-col justify-start pb-14 pt-[38vh] lg:min-h-screen lg:justify-center lg:py-32"
             >
               <h2 className="text-[clamp(2rem,4.4vw,3rem)] font-bold uppercase leading-[0.95] tracking-display">
                 {user ? 'Ya sos de la casa' : 'Vení a conocer Malka'}

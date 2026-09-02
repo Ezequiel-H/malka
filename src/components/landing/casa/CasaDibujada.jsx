@@ -169,7 +169,15 @@ const fuga = (t) => {
   return `translate(${FONDO.x * t} ${FONDO.y * t}) translate(${CENTRO.x} ${CENTRO.y}) scale(${s}) translate(${-CENTRO.x} ${-CENTRO.y})`;
 };
 
-const CasaDibujada = ({ activo = 'todo', zona = 'todo', className = '' }) => {
+const CasaDibujada = ({
+  activo = 'todo',
+  zona = 'todo',
+  className = '',
+  /* En un teléfono el dibujo entra en un tercio del alto de la pantalla, así
+     que todo se ve un 40% más chico que en escritorio. Los encuadres son los
+     mismos; lo que cambia es cuánto se acercan. */
+  compacto = false,
+}) => {
   /**
    * La cámara: un estado, un `transform`, una transición de CSS.
    *
@@ -186,7 +194,8 @@ const CasaDibujada = ({ activo = 'todo', zona = 'todo', className = '' }) => {
    * la cámara viaja: es la misma razón por la que un `transition` de CSS nunca
    * tiembla y un bucle de `requestAnimationFrame` sí puede.
    */
-  const pose = encuadrar(FOCOS[zona] ?? FOCOS.todo);
+  const base = FOCOS[zona] ?? FOCOS.todo;
+  const pose = encuadrar(compacto ? { ...base, s: base.s * 1.62 } : base);
   const camara = {
     transform: `translate(${VISTA.x + VISTA.ancho / 2 - pose.s * pose.x}px, ${
       VISTA.y + VISTA.alto / 2 - pose.s * pose.y
