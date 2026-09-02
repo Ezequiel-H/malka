@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Icon } from '../components/ui';
 import IconoPropuesta from '../components/landing/IconosPropuestas';
 import Grano from '../components/landing/Grano';
 import { useAuth } from '../contexts/AuthContext';
@@ -215,6 +216,92 @@ const PildoraEspacio = ({ espacio, elegido, onClick }) => (
   </button>
 );
 
+/**
+ * La casa a pantalla completa, para el teléfono.
+ *
+ * En un monitor la casa vive al costado y la cámara acompaña la lectura: hay
+ * lugar para las dos cosas a la vez. En un teléfono no. Meter el dibujo pegado
+ * arriba dejaba media pantalla para el texto y la casa en miniatura, y encima
+ * el texto pasaba por atrás. Así que en el teléfono el dibujo no acompaña el
+ * scroll: se abre cuando lo pedís, ocupa todo, y ahí sí se recorre espacio por
+ * espacio con el pulgar.
+ */
+const VisorCasa = ({ onCerrar }) => {
+  const [espacio, setEspacio] = useState(null);
+
+  useEffect(() => {
+    const alTeclear = (e) => e.key === 'Escape' && onCerrar();
+    const previo = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', alTeclear);
+    return () => {
+      document.body.style.overflow = previo;
+      window.removeEventListener('keydown', alTeclear);
+    };
+  }, [onCerrar]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="La casa por dentro"
+      className="fixed inset-0 z-[70] flex animate-fade-in flex-col bg-surface-page md:hidden"
+    >
+      <header className="flex shrink-0 items-center justify-between px-5 pt-4">
+        <p className="text-[0.66rem] font-semibold uppercase tracking-label text-ink-faint">
+          La casa por dentro
+        </p>
+        <button
+          type="button"
+          onClick={onCerrar}
+          aria-label="Cerrar"
+          className="-mr-2 inline-flex h-11 w-11 items-center justify-center rounded-pill text-ink transition-control duration-fast hover:bg-ink/5 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ink/25"
+        >
+          <Icon name="close" size="md" />
+        </button>
+      </header>
+
+      {/* La caja del teléfono es vertical y el dibujo apaisado, así que las dos
+          vistas no se encuadran igual: la casa entera entra completa a lo ancho
+          —si se recorta deja de ser un plano—, y un espacio suelto llena el
+          alto y se come los costados, que es justo lo que no estás mirando. */}
+      <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden">
+        <CasaDibujada
+          activo={espacio?.piso ?? 'todo'}
+          zona={espacio?.zona ?? 'casa'}
+          /* Un espacio suelto se mira de cerca: acá no hay texto al lado que
+             compita, así que el encuadre se acerca más que en escritorio. */
+          acercar={espacio ? 1.45 : 1}
+          className={
+            espacio
+              ? 'h-full w-auto max-w-none transition-[height] duration-slow'
+              : 'h-auto max-h-full w-full'
+          }
+        />
+      </div>
+
+      <div className="shrink-0 pb-6 pt-2">
+        <p className="min-h-[3rem] px-5 text-sm leading-snug text-ink-soft">
+          <span className="font-semibold text-ink">{espacio ? espacio.nombre : 'Toda la casa'}</span>
+          {' — '}
+          {espacio ? espacio.que : 'Elegí un espacio y te lo muestro por dentro.'}
+        </p>
+        <ul className="flex snap-x snap-mandatory gap-2 overflow-x-auto px-5 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {ESPACIOS.map((e) => (
+            <li key={e.nombre} className="snap-start">
+              <PildoraEspacio
+                espacio={e}
+                elegido={espacio?.zona === e.zona}
+                onClick={() => setEspacio((actual) => (actual?.zona === e.zona ? null : e))}
+              />
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+};
+
 const Casa = () => {
   const { user } = useAuth();
   const [activo, setActivo] = useState('todo');
@@ -236,15 +323,29 @@ const Casa = () => {
      donde vive el dibujo: en el teléfono es una franja de un tercio de
      pantalla, en tablet una columna angosta, y recién en escritorio grande la
      casa tiene todo el ancho que pide. */
-  const cuantoAcercar = (ancho) => (ancho < 768 ? 1.62 : ancho < 1280 ? 1.08 : 1);
+  const cuantoAcercar = (ancho) => (ancho < 1280 ? 1.08 : 1);
+  const esTelefono = () => typeof window !== 'undefined' && window.innerWidth < 768;
   const [acercar, setAcercar] = useState(
     typeof window !== 'undefined' ? cuantoAcercar(window.innerWidth) : 1
   );
+  /* En el teléfono la casa no acompaña el scroll: se abre a pantalla completa
+     cuando la piden. Así que abajo de 768 no hace falta ni el dibujo al
+     costado ni el observer que lo mueve. */
+  const [telefono, setTelefono] = useState(esTelefono);
+  const [visor, setVisor] = useState(false);
   useEffect(() => {
-    const medir = () => setAcercar(cuantoAcercar(window.innerWidth));
+    const medir = () => {
+      setAcercar(cuantoAcercar(window.innerWidth));
+      setTelefono(esTelefono());
+    };
     window.addEventListener('resize', medir);
     return () => window.removeEventListener('resize', medir);
   }, []);
+  /* Si la ventana crece con el visor abierto, la casa ya está al costado: el
+     visor sobra y se cierra solo. */
+  useEffect(() => {
+    if (!telefono && visor) setVisor(false);
+  }, [telefono, visor]);
   const manualRef = useRef(null);
   const mirar = (seccionId, espacio) => {
     const elegido = { seccion: seccionId, zona: espacio.zona, piso: espacio.piso };
@@ -262,12 +363,33 @@ const Casa = () => {
    * página. Acá el transform vive en un envoltorio interno —el sticky queda
    * limpio— y cambia una sola vez, cuando dejás la portada.
    */
-  const enPortada = zona === 'todo';
+  /* En el teléfono la cámara no corre, así que `zona` se queda en 'todo' para
+     siempre: la barra de arriba necesita su propia señal, que es haber bajado
+     de la portada. */
+  const [bajado, setBajado] = useState(false);
+  useEffect(() => {
+    if (!telefono) return undefined;
+    const alScrollear = () => setBajado(window.scrollY > window.innerHeight * 0.5);
+    alScrollear();
+    window.addEventListener('scroll', alScrollear, { passive: true });
+    return () => window.removeEventListener('scroll', alScrollear);
+  }, [telefono]);
 
-  /* El botón de la portada no navega: baja. Con `smooth` lo maneja el
-     navegador, así que la cámara —que sólo mira en qué sección estás— la
-     acompaña sola. */
-  const bajar = () => {
+  const enPortada = telefono ? !bajado : zona === 'todo';
+
+  /**
+   * "Conocé la casa" hace dos cosas distintas según la pantalla, y en las dos
+   * hace lo que dice.
+   *
+   * En un monitor la casa ya está ahí al costado: el botón baja, y la cámara
+   * —que sólo mira en qué sección estás— acompaña sola. En un teléfono la casa
+   * no está a la vista, así que el botón la abre a pantalla completa.
+   */
+  const conocerLaCasa = () => {
+    if (telefono) {
+      setVisor(true);
+      return;
+    }
     document.getElementById('quienes')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
@@ -287,6 +409,7 @@ const Casa = () => {
    * frame.
    */
   useEffect(() => {
+    if (telefono) return undefined;
     const secciones = [...document.querySelectorAll('[data-zona]')];
     if (!secciones.length) return undefined;
 
@@ -340,10 +463,11 @@ const Casa = () => {
       window.removeEventListener('scroll', pedir);
       window.removeEventListener('resize', pedir);
     };
-  }, []);
+  }, [telefono]);
 
   return (
     <div className="relative min-h-screen bg-surface-page font-grotesk text-ink">
+      {visor && <VisorCasa onCerrar={() => setVisor(false)} />}
       {/* El crema plano se leía como un vacío. Estas dos capas no se ven de
           frente pero se sienten: la primera son tres manchas de luz muy
           abiertas —las mismas que usa el login de la app— y la segunda es
@@ -430,12 +554,12 @@ const Casa = () => {
 
       <main className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
         <div className="md:grid md:grid-cols-12 md:gap-x-8 xl:gap-x-12">
-          {/* El dibujo: fijo al costado en escritorio, fijo arriba en mobile. */}
-          {/* En mobile la casa vive en una franja pegada arriba y **opaca**: el
-              texto pasa por detrás, y si la franja deja ver a través se
-              superponen los dos y no se lee ninguno. El borde de abajo se
-              desvanece para que el texto no aparezca cortado por una línea. */}
-          <div className="sticky top-16 z-30 -mx-5 bg-surface-page px-5 pb-3 shadow-[0_18px_18px_-18px_rgba(44,61,52,0.25)] sm:-mx-8 sm:px-8 md:top-16 md:z-auto md:col-span-6 md:mx-0 md:flex md:h-[calc(100vh-4rem)] md:items-center md:bg-transparent md:px-0 md:pb-0 md:shadow-none lg:col-span-5 xl:col-span-6">
+          {/* El dibujo al costado, siguiendo la lectura: de tablet para
+              arriba. En el teléfono no existe —la casa se abre a pantalla
+              completa desde la portada— porque una franja pegada arriba dejaba
+              media pantalla para el texto y la casa en miniatura. */}
+          {!telefono && (
+          <div className="sticky top-16 z-30 md:z-auto md:col-span-6 md:flex md:h-[calc(100vh-4rem)] md:items-center lg:col-span-5 xl:col-span-6">
             {/* La casa no se mueve nunca de su columna. Antes se corría al
                 centro en la portada y volvía al scrollear: ese viaje lateral, con
                 el texto cortándose al mismo tiempo, era el momento más brusco de
@@ -451,27 +575,11 @@ const Casa = () => {
               activo={manual?.piso ?? activo}
               zona={manual?.zona ?? zona}
               acercar={acercar}
-              className="mx-auto h-[34vh] w-auto max-w-none py-1 sm:h-[38vh] md:h-auto md:max-h-[calc(100vh-5rem)] md:w-[112%] md:-ml-[9%] md:py-0 lg:w-[112%] lg:-ml-[12%] 2xl:w-[116%] 2xl:-ml-[16%] [mask-image:radial-gradient(100%_86%_at_50%_46%,#000_30%,transparent_84%)] md:[mask-image:radial-gradient(106%_94%_at_53%_45%,#000_50%,transparent_90%)]"
+              className="mx-auto h-auto max-h-[calc(100vh-5rem)] w-[112%] max-w-none -ml-[9%] lg:w-[112%] lg:-ml-[12%] 2xl:w-[116%] 2xl:-ml-[16%] [mask-image:radial-gradient(106%_94%_at_53%_45%,#000_50%,transparent_90%)]"
             />
-
-              {/* En el teléfono el recorrido vive pegado abajo del dibujo: se
-                  arrastra con el pulgar y la casa reacciona ahí nomás, sin que
-                  haya que ir a buscar los botones adentro del texto. */}
-              <div data-barra className="-mx-5 mt-1 sm:-mx-8 md:hidden">
-                <ul className="flex snap-x snap-mandatory gap-2 overflow-x-auto px-5 pb-1 sm:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  {ESPACIOS.map((e) => (
-                    <li key={e.nombre} className="snap-start">
-                      <PildoraEspacio
-                        espacio={e}
-                        elegido={(manual?.zona ?? zona) === e.zona}
-                        onClick={() => mirar('barra', e)}
-                      />
-                    </li>
-                  ))}
-                </ul>
-              </div>
             </div>
           </div>
+          )}
 
           <div className="md:col-span-6 lg:col-span-7 xl:col-span-6">
             {SECCIONES.map((p, i) =>
@@ -490,6 +598,23 @@ const Casa = () => {
                      de la primera pantalla. */
                   className="flex min-h-[42vh] flex-col justify-start pb-12 pt-7 md:min-h-screen md:justify-center md:py-24 xl:py-32"
                 >
+                  {/* En el teléfono la casa aparece una vez, quieta, arriba de
+                      todo: es la cara de la página y la puerta al recorrido,
+                      pero no persigue el scroll. */}
+                  {telefono && (
+                    <button
+                      type="button"
+                      onClick={() => setVisor(true)}
+                      aria-label="Ver la casa por dentro"
+                      className="-mx-5 mb-2 block w-[calc(100%+2.5rem)] animate-fade-in-up [animation-duration:900ms] [animation-fill-mode:backwards]"
+                    >
+                      <CasaDibujada
+                        activo="todo"
+                        zona="casa"
+                        className="h-auto w-full [mask-image:radial-gradient(100%_86%_at_50%_46%,#000_30%,transparent_84%)]"
+                      />
+                    </button>
+                  )}
                   <img
                     src={logoMalka}
                     alt="Malka"
@@ -507,7 +632,7 @@ const Casa = () => {
                     ))}
                   </ul>
                   <div className="mt-9 flex animate-fade-in-up flex-wrap items-center gap-3 [animation-delay:1640ms] [animation-fill-mode:backwards]">
-                    <LandingButton size="lg" icon="chevronDown" onClick={bajar}>
+                    <LandingButton size="lg" icon={telefono ? 'forward' : 'chevronDown'} onClick={conocerLaCasa}>
                       Conocé la casa
                     </LandingButton>
                     <LandingButton to={user ? '/activities' : '/register'} variant="outline" size="lg">
@@ -521,11 +646,9 @@ const Casa = () => {
                 id={p.id}
                 data-piso={p.piso}
                 data-zona={p.zona}
-                /* En mobile el dibujo está pegado arriba, así que el texto arranca
-                   debajo de él: sin este colchón, el título de cada sección
-                   nace tapado. En escritorio el dibujo está al costado y el
-                   colchón sobra. */
-                className="flex min-h-[86vh] flex-col justify-start pb-14 pt-[calc(34vh+6rem)] md:min-h-screen md:justify-center md:py-0 md:pt-24 md:pb-24 xl:pt-32 xl:pb-32"
+                /* En el teléfono no hay dibujo al costado ni franja arriba:
+                   la sección es texto y ocupa lo que necesita. */
+                className="flex min-h-[62vh] flex-col justify-center py-14 md:min-h-screen md:py-0 md:pt-24 md:pb-24 xl:pt-32 xl:pb-32"
               >
                 {/* El nombre del espacio, con su filete: es lo que ata el
                     texto con lo que la cámara está mirando. Sin esa etiqueta,
@@ -550,6 +673,17 @@ const Casa = () => {
                 {/* Los espacios de la casa, en una lista corta. Antes cada uno
                     tenía su sección y la página se hacía interminable: nombrarlos
                     acá cuenta lo mismo y deja que el dibujo haga el resto. */}
+                {p.espacios && telefono && (
+                  <LandingButton
+                    variant="outline"
+                    size="md"
+                    icon="forward"
+                    className="mt-8 self-start"
+                    onClick={() => setVisor(true)}
+                  >
+                    Recorré la casa
+                  </LandingButton>
+                )}
                 {p.espacios && (
                   <div className="hidden md:block">
                     <p className="mt-10 text-[0.66rem] font-semibold uppercase tracking-label text-ink-faint">
@@ -668,7 +802,7 @@ const Casa = () => {
               id="staff"
               data-piso="terraza"
               data-zona="equipo"
-              className="flex min-h-[86vh] flex-col justify-start pb-14 pt-[calc(34vh+6rem)] md:min-h-screen md:justify-center md:py-0 md:pt-24 md:pb-24 xl:pt-32 xl:pb-32"
+              className="flex min-h-[62vh] flex-col justify-center py-14 md:min-h-screen md:py-0 md:pt-24 md:pb-24 xl:pt-32 xl:pb-32"
             >
               <p className="text-[0.7rem] font-semibold uppercase tracking-label text-ink-soft">
                 Quiénes te reciben
@@ -720,7 +854,7 @@ const Casa = () => {
               id="sumate"
               data-piso="todo"
               data-zona="ciudad"
-              className="flex min-h-[86vh] flex-col justify-start pb-14 pt-[calc(34vh+6rem)] md:min-h-screen md:justify-center md:py-0 md:pt-24 md:pb-24 xl:pt-32 xl:pb-32"
+              className="flex min-h-[62vh] flex-col justify-center py-14 md:min-h-screen md:py-0 md:pt-24 md:pb-24 xl:pt-32 xl:pb-32"
             >
               <h2 className="text-[clamp(2rem,4.4vw,3rem)] font-bold uppercase leading-[0.95] tracking-display">
                 {user ? 'Ya sos de la casa' : 'Vení a conocer Malka'}
