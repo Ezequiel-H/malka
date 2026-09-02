@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import CasaDibujada from '../components/landing/casa/CasaDibujada';
 import LandingButton from '../components/landing/LandingButton';
 import logoMalka from '../assets/logo-malka-positivo.png';
@@ -129,7 +130,44 @@ const SECCIONES = [
   },
 ];
 
+/**
+ * Las preguntas, contestadas de frente.
+ *
+ * El sitio actual tiene un acordeón de ocho preguntas que hay que abrir de a
+ * una. Acá la respuesta está a la vista y es lo primero que se lee: lo que
+ * frena a alguien de venir es la duda —¿tengo que ser socio?, ¿tengo que
+ * saber?— y una duda se despeja mostrando el "no", no escondiéndolo detrás de
+ * un clic.
+ */
+const PREGUNTAS = [
+  { veredicto: 'No', pregunta: '¿Hay que ser socio?', detalle: 'Ni socio ni nada. Se entra y ya.' },
+  { veredicto: 'No', pregunta: '¿Hay que anotarse para venir?', detalle: 'Para las actividades sí, para caer al cowork no.' },
+  { veredicto: 'No', pregunta: '¿Tengo que saber de judaísmo?', detalle: 'Se entra sepas lo que sepas y creas lo que creas.' },
+  { veredicto: 'Sí', pregunta: '¿Puedo venir solo?', detalle: 'La mayoría empieza así. Alguien te va a estar esperando.' },
+  { veredicto: 'Sí', pregunta: '¿Puedo proponer una actividad?', detalle: 'Nos encantaría. Traé la idea y la armamos.' },
+  { veredicto: '18 a 35', pregunta: '¿Qué edad hay que tener?', detalle: 'Es la franja de la casa. Movida judía y pluralista.' },
+];
+
+/* Los cuatro que te reciben. Las fotos van acá cuando Malka las mande; hasta
+   entonces la ficha muestra las iniciales, que es más honesto que una foto de
+   banco de imágenes. */
+const STAFF = [
+  { nombre: 'Wally Liebhaber', rol: 'Dirección' },
+  { nombre: 'Sem. Mati Bomse', rol: 'Dirección' },
+  { nombre: 'Sem. Brian Bruh', rol: 'Dirección' },
+  { nombre: 'Tami Saban', rol: 'Asistente de Dirección' },
+];
+
+const iniciales = (nombre) =>
+  nombre
+    .replace(/^Sem\.\s*/, '')
+    .split(' ')
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join('');
+
 const Casa = () => {
+  const { user } = useAuth();
   const [activo, setActivo] = useState('todo');
   const [zona, setZona] = useState('todo');
 
@@ -182,19 +220,29 @@ const Casa = () => {
       >
         <nav className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-5 sm:px-8">
           <img src={logoMalka} alt="Malka" className="h-6 w-auto shrink-0" />
+          {/* Con sesión iniciada, la barra deja de ofrecer lo que ya tenés: en
+              vez de "registrate" te lleva adentro, que es a lo que venías. */}
           <div className="ml-auto flex items-center gap-3">
-            <LandingButton
-              to="/login"
-              variant="outline"
-              size="sm"
-              icon={null}
-              className="hidden whitespace-nowrap sm:inline-flex"
-            >
-              Iniciar sesión
-            </LandingButton>
-            <LandingButton to="/register" size="sm" className="whitespace-nowrap">
-              Registrate
-            </LandingButton>
+            {user ? (
+              <LandingButton to="/dashboard" size="sm" className="whitespace-nowrap">
+                Ir a mi cuenta
+              </LandingButton>
+            ) : (
+              <>
+                <LandingButton
+                  to="/login"
+                  variant="outline"
+                  size="sm"
+                  icon={null}
+                  className="hidden whitespace-nowrap sm:inline-flex"
+                >
+                  Iniciar sesión
+                </LandingButton>
+                <LandingButton to="/register" size="sm" className="whitespace-nowrap">
+                  Registrate
+                </LandingButton>
+              </>
+            )}
           </div>
         </nav>
       </header>
@@ -255,8 +303,8 @@ const Casa = () => {
                   <LandingButton size="lg" icon="chevronDown" onClick={bajar}>
                     Conocé la casa
                   </LandingButton>
-                  <LandingButton to="/register" variant="outline" size="lg">
-                    Entrá a tu casa
+                  <LandingButton to={user ? '/activities' : '/register'} variant="outline" size="lg">
+                    {user ? 'Ver la agenda' : 'Entrá a tu casa'}
                   </LandingButton>
                 </div>
               </div>
@@ -284,7 +332,7 @@ const Casa = () => {
                    debajo de él: sin este colchón, el título de cada sección
                    nace tapado. En escritorio el dibujo está al costado y el
                    colchón sobra. */
-                className="flex min-h-screen flex-col justify-center border-t border-ink/10 pb-16 pt-[44vh] first:border-t-0 lg:min-h-screen lg:py-24"
+                className="flex min-h-[92vh] flex-col justify-center pb-14 pt-[42vh] lg:min-h-[88vh] lg:py-20"
               >
                 <p className="text-[0.7rem] font-semibold uppercase tracking-label text-ink-soft">
                   {p.kicker}
@@ -306,26 +354,113 @@ const Casa = () => {
               )
             )}
 
+            {/* ---- Las preguntas, de frente ---- */}
+            <section
+              id="preguntas"
+              data-piso="todo"
+              data-zona="casa"
+              className="flex min-h-[86vh] flex-col justify-center py-20"
+            >
+              <p className="text-[0.7rem] font-semibold uppercase tracking-label text-ink-soft">
+                Antes de venir
+              </p>
+              <h2 className="mt-4 text-[clamp(2rem,4.4vw,3rem)] font-bold uppercase leading-[0.95] tracking-display">
+                Las dudas, cortas
+              </h2>
+
+              <ul className="mt-10 grid gap-x-6 gap-y-7 sm:grid-cols-2">
+                {PREGUNTAS.map((p) => (
+                  <li key={p.pregunta}>
+                    {/* El veredicto primero y grande: lo que frena a alguien de
+                        venir es la duda, y una duda se despeja mostrando el
+                        "no", no escondiéndolo detrás de un clic. */}
+                    <p className="font-grotesk text-2xl font-bold leading-none tracking-tight text-primary-700">
+                      {p.veredicto}
+                    </p>
+                    <p className="mt-2 font-semibold leading-snug text-ink">{p.pregunta}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-ink-soft">{p.detalle}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            {/* ---- Quiénes te reciben ---- */}
+            <section
+              id="staff"
+              data-piso="planta"
+              data-zona="puerta"
+              className="flex min-h-[86vh] flex-col justify-center py-20"
+            >
+              <p className="text-[0.7rem] font-semibold uppercase tracking-label text-ink-soft">
+                Quiénes te reciben
+              </p>
+              <h2 className="mt-4 text-[clamp(2rem,4.4vw,3rem)] font-bold uppercase leading-[0.95] tracking-display">
+                Son cuatro y están siempre
+              </h2>
+              <p className="mt-6 max-w-xl leading-relaxed text-ink-soft sm:text-lg">
+                Alguien del staff te va a estar esperando con una sonrisa. Si es tu primera vez,
+                buscá a cualquiera de ellos y decíselo: de eso se trata la casa.
+              </p>
+
+              <ul className="mt-10 grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-4">
+                {STAFF.map((persona) => (
+                  <li key={persona.nombre}>
+                    <div className="flex aspect-[4/5] w-full items-center justify-center overflow-hidden rounded-card bg-primary-100">
+                      <span className="font-grotesk text-2xl font-bold tracking-tight text-primary-700">
+                        {iniciales(persona.nombre)}
+                      </span>
+                    </div>
+                    <p className="mt-3 font-semibold leading-tight text-ink">{persona.nombre}</p>
+                    <p className="text-sm text-ink-muted">{persona.rol}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            {/* ---- Sumarse ---- */}
+            {/* El cierre mira la casa entera, no la portada: `todo` es el
+                encuadre exclusivo de la portada, y si otra sección lo pide, la
+                portada vuelve a aparecer encima del texto. */}
             <section
               data-piso="todo"
               data-zona="casa"
-              className="flex min-h-screen flex-col justify-center border-t border-ink/10 pb-16 pt-[44vh] lg:min-h-[70vh] lg:py-24"
+              className="flex min-h-[86vh] flex-col justify-center py-20"
             >
-              <h2 className="text-[clamp(2rem,5vw,3.2rem)] font-bold uppercase leading-[0.9] tracking-display">
-                ¿Cómo entro?
+              <h2 className="text-[clamp(2rem,4.4vw,3rem)] font-bold uppercase leading-[0.95] tracking-display">
+                {user ? 'Ya sos de la casa' : 'Sumate'}
               </h2>
               <p className="mt-6 text-2xl leading-snug sm:text-3xl">
-                Te registrás y ves la agenda.
+                {user ? 'La agenda te está esperando.' : 'Te registrás y ves la agenda.'}
               </p>
               <p className="mt-5 max-w-xl leading-relaxed text-ink-soft sm:text-lg">
-                Adentro está todo lo que pasa cada semana y te inscribís en un toque. Para caer al
-                cowork un martes no hace falta ni eso: la puerta está abierta de 14 a 21.
+                {user
+                  ? 'Todo lo que pasa cada semana está adentro, y te inscribís en un toque.'
+                  : 'Adentro está todo lo que pasa cada semana y te inscribís en un toque. Para caer al cowork un martes no hace falta ni eso: la puerta está abierta de 14 a 21.'}
               </p>
-              <div className="mt-8">
-                <LandingButton to="/register" size="lg">
-                  Entrá a tu casa
+
+              <div className="mt-9">
+                <LandingButton to={user ? '/activities' : '/register'} size="lg">
+                  {user ? 'Ver la agenda' : 'Entrá a tu casa'}
                 </LandingButton>
               </div>
+
+              {/* Los datos de la casa, que es lo último que alguien busca antes
+                  de venir. Sin formulario: el canal real es WhatsApp. */}
+              <dl className="mt-14 grid gap-x-8 gap-y-6 border-t border-ink/10 pt-10 sm:grid-cols-2">
+                {[
+                  ['Dónde', '3 de Febrero 1325, CABA'],
+                  ['Cuándo', 'Lunes a viernes, de 14 a 21'],
+                  ['WhatsApp', '+54 9 11 3440-5730'],
+                  ['Instagram', '@somosmalka'],
+                ].map(([que, dato]) => (
+                  <div key={que}>
+                    <dt className="text-[0.66rem] font-semibold uppercase tracking-label text-ink-faint">
+                      {que}
+                    </dt>
+                    <dd className="mt-1 text-ink">{dato}</dd>
+                  </div>
+                ))}
+              </dl>
             </section>
           </div>
         </div>
