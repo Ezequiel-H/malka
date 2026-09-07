@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../components/ui';
 import IconoPropuesta from '../components/landing/IconosPropuestas';
 import Grano from '../components/landing/Grano';
 import { useAuth } from '../contexts/AuthContext';
-import CasaDibujada from '../components/landing/casa/CasaDibujada';
+import CasaDibujada, { PROPORCION } from '../components/landing/casa/CasaDibujada';
 import LandingButton from '../components/landing/LandingButton';
 import logoMalka from '../assets/logo-malka-positivo.png';
 import fotoWally from '../assets/landing/staff/wally.jpg';
@@ -204,8 +204,11 @@ const PildoraEspacio = ({ espacio, elegido, onClick, compacta = false }) => (
     type="button"
     onClick={onClick}
     aria-pressed={elegido}
-    className={`group inline-flex shrink-0 items-center gap-2 rounded-pill border transition-all duration-base ease-standard focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary/25 ${
-      compacta ? 'w-full min-w-0 justify-center px-1.5 py-2.5' : 'py-1.5 pl-1.5 pr-3.5'
+    className={`group inline-flex shrink-0 items-center rounded-pill border transition-all duration-base ease-standard focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary/25 ${
+      /* En el teléfono la píldora es lo que se toca con el pulgar: 44 px de alto
+         es el mínimo cómodo, y el nombre entero tiene que entrar sin cortarse
+         en tres columnas —de ahí el aire justo entre el ícono y la palabra. */
+      compacta ? 'w-full min-w-0 justify-center gap-1.5 px-1.5 py-3' : 'gap-2 py-1.5 pl-1.5 pr-3.5'
     } ${
       elegido
         ? 'border-primary bg-primary text-surface shadow-subtle'
@@ -214,7 +217,7 @@ const PildoraEspacio = ({ espacio, elegido, onClick, compacta = false }) => (
   >
     <span
       className={`flex shrink-0 items-center justify-center rounded-pill transition-colors duration-base ${
-        compacta ? 'h-4 w-4' : 'h-6 w-6'
+        compacta ? 'h-[1.1rem] w-[1.1rem]' : 'h-6 w-6'
       } ${
         elegido
           ? compacta
@@ -223,9 +226,9 @@ const PildoraEspacio = ({ espacio, elegido, onClick, compacta = false }) => (
           : `text-ink-soft group-hover:text-ink ${compacta ? '' : 'bg-ink/5'}`
       }`}
     >
-      <IconoPropuesta nombre={espacio.icono} className={compacta ? 'h-4 w-4' : 'h-3.5 w-3.5'} />
+      <IconoPropuesta nombre={espacio.icono} className={compacta ? 'h-[1.1rem] w-[1.1rem]' : 'h-3.5 w-3.5'} />
     </span>
-    <span className={`min-w-0 truncate font-grotesk font-semibold uppercase leading-none tracking-label ${compacta ? 'text-[0.64rem]' : 'whitespace-nowrap text-[0.72rem]'}`}>
+    <span className={`min-w-0 truncate font-grotesk font-semibold uppercase leading-none tracking-label ${compacta ? 'text-[0.66rem]' : 'whitespace-nowrap text-[0.72rem]'}`}>
       {compacta ? espacio.corto : espacio.nombre}
     </span>
   </button>
@@ -243,6 +246,34 @@ const PildoraEspacio = ({ espacio, elegido, onClick, compacta = false }) => (
  */
 const VisorCasa = ({ onCerrar }) => {
   const [espacio, setEspacio] = useState(null);
+
+  /**
+   * Cuánto del dibujo queda a la vista.
+   *
+   * La caja del visor es vertical y la lámina es apaisada, así que el dibujo
+   * tapa la caja: llena el alto y de su ancho se ve poco más de la mitad. La
+   * cuenta es la que traduce el tamaño de la caja en esa fracción, y el dibujo
+   * la necesita por dos cosas: para saber que tiene que tapar en vez de entrar
+   * —entrar en una caja alta lo dejaba flotando en el medio, del tamaño de una
+   * estampilla— y para poder centrarse en la casa sin creer que se le ve todo
+   * el ancho.
+   */
+  const cajaRef = useRef(null);
+  const [recorte, setRecorte] = useState(1);
+  /* La medición va antes del primer pintado y no después: la cámara tiene una
+     transición de un segundo, así que si el encuadre se corrigiera en el frame
+     siguiente al de la apertura, abrir el visor empezaría con un viaje que
+     nadie pidió. */
+  useLayoutEffect(() => {
+    const medir = () => {
+      const caja = cajaRef.current;
+      if (!caja) return;
+      setRecorte(Math.min(1, caja.clientWidth / (caja.clientHeight * PROPORCION)));
+    };
+    medir();
+    window.addEventListener('resize', medir);
+    return () => window.removeEventListener('resize', medir);
+  }, []);
 
   useEffect(() => {
     const alTeclear = (e) => e.key === 'Escape' && onCerrar();
@@ -267,18 +298,34 @@ const VisorCasa = ({ onCerrar }) => {
           cosas chicas. La caja de la cámara termina donde empieza la barra de
           abajo, así que el espacio queda centrado en lo que se ve, no en lo que
           tapa la barra. */}
-      <div className="absolute inset-x-0 bottom-[8.5rem] top-14 flex items-center justify-center overflow-hidden">
+      <div
+        ref={cajaRef}
+        className="absolute inset-x-0 bottom-[9.25rem] top-14 flex items-center justify-center overflow-hidden"
+      >
         <CasaDibujada
           activo={espacio?.piso ?? 'todo'}
-          zona={espacio?.zona ?? 'todo'}
-          /* El dibujo mide siempre lo mismo y lo único que cambia es la cámara.
-             Antes la vista general venía en un elemento de otro tamaño que el
-             de los espacios: al elegir uno, el dibujo cambiaba de caja de
-             golpe y se veía un salto. Ahora la casa entera entra porque la
-             cámara se aleja —abajo de 1—, no porque el elemento se achique, y
+          /* Sin espacio elegido la cámara no se va lejos: se para justo delante
+             de la casa, que llena el ancho de la pantalla de medianera a
+             medianera. Alejarse hasta que entrara también la lámina —el cielo,
+             la vereda, el patio— dejaba la casa del tamaño de una estampilla en
+             medio del crema, y la primera cosa que ves al abrir el visor es
+             justamente ésta. */
+          zona={espacio?.zona ?? 'entera'}
+          /* Un espacio se mira de un poco más lejos que en el monitor: la caja
+             es alta y angosta, y que asomen el piso de arriba y el de abajo
+             —desenfocados— es lo que ubica el ambiente dentro de la casa.
+             Lo que no cambia nunca es el elemento: antes la vista general venía
+             en una caja de otro tamaño que la de los espacios y al elegir uno
+             el dibujo saltaba. Acá lo único que se mueve es la cámara, así que
              el viaje hasta un espacio es una sola transición continua. */
-          acercar={espacio ? 1.7 : 0.85}
-          className="h-full w-auto max-w-none"
+          acercar={espacio ? 0.9 : 1}
+          recorte={recorte}
+          /* Los bordes se desvanecen, como en la portada: la caja del visor
+             corta el dibujo por los costados —una lámina apaisada en una
+             pantalla vertical no tiene otra— y una línea recta ahí convierte el
+             corte en un error. Con la máscara, lo que queda afuera se pierde en
+             el papel. */
+          className="h-full w-full [mask-image:radial-gradient(122%_104%_at_50%_46%,#000_62%,transparent_98%)]"
         />
       </div>
 
@@ -709,12 +756,20 @@ const Landing = () => {
                       type="button"
                       onClick={() => setVisor(true)}
                       aria-label="Ver la casa por dentro"
-                      className="-mx-5 -mt-[9vh] mb-1 block w-[calc(100%+2.5rem)] animate-fade-in-up [animation-duration:900ms] [animation-fill-mode:backwards]"
+                      className="-mx-5 -mt-[4vh] mb-1 block w-[calc(100%+2.5rem)] animate-fade-in-up [animation-duration:900ms] [animation-fill-mode:backwards]"
                     >
                       <CasaDibujada
                         activo="todo"
-                        zona="todo"
-                        className="h-auto w-full"
+                        /* La portada no muestra la lámina entera: encuadra la
+                           casa con su patio. Con todo el aire alrededor la casa
+                           quedaba en el medio de un rectángulo de crema, y lo
+                           que se leía primero era el rectángulo. */
+                        zona="portada"
+                        /* Y los bordes se desvanecen, como en el monitor: si el
+                           dibujo termina en una línea recta, lo que hay arriba
+                           del wordmark es una foto pegada. Con la máscara la
+                           casa se apoya en el papel. */
+                        className="h-auto w-full [mask-image:radial-gradient(128%_112%_at_50%_40%,#000_56%,transparent_94%)]"
                       />
                     </button>
                   )}

@@ -102,6 +102,16 @@ const FOCOS = {
   fachada: { x: 196, y: 300, s: 1.46 },
   casa: { x: 250, y: 262, s: 1.78 },
 
+  /* Los dos encuadres del teléfono. En un monitor la casa vive al costado y le
+     sobra ancho: la lámina entera se lee bien. En un teléfono no —el dibujo o
+     es la portada o es la pantalla completa— y ahí todo ese aire de cielo y de
+     vereda deja la casa chica y perdida en el crema. Estos dos recortan el
+     aire: `portada` encuadra la casa con su patio, y `entera` se le pone más
+     encima todavía, porque en el visor la caja es vertical y de la lámina
+     apaisada sólo se ve una franja del ancho. */
+  portada: { x: 372, y: 272, s: 1.16 },
+  entera: { x: 256, y: 294, s: 0.92, libre: true },
+
   pileta: { x: 496, y: P0v - 30, s: 2.4 },
   parrilla: { x: 602, y: P0v - 62, s: 2.05 },
 
@@ -134,6 +144,12 @@ const FOCOS = {
 const VISTA = { x: -62, y: -110, ancho: 872, alto: 760 };
 
 /**
+ * La proporción de la lámina. La necesita quien recorte el dibujo: es lo que
+ * traduce el tamaño de una caja en cuánto del ancho queda a la vista.
+ */
+export const PROPORCION = VISTA.ancho / VISTA.alto;
+
+/**
  * El encuadre, atado a los bordes del dibujo.
  *
  * Sin esto, acercarse al salón —que está abajo de todo— dejaba media pantalla
@@ -141,13 +157,24 @@ const VISTA = { x: -62, y: -110, ancho: 872, alto: 760 };
  * dibujo alrededor. Se limita el centro para que la ventana visible nunca se
  * salga de la lámina, que es lo que hace cualquier visor de mapas.
  */
-const encuadrar = ({ x, y, s }) => {
-  const ancho = VISTA.ancho / s;
+const encuadrar = ({ x, y, s, libre = false }, recorte = 1) => {
+  /* Un encuadre `libre` ya está centrado en el dibujo y no en la lámina, así
+     que limitarlo es justo lo que lo descentra: el papel tiene 150 unidades de
+     cielo arriba de la casa y 68 de tierra abajo, y un plano general que se
+     apoye en esos bordes deja la casa corrida hacia abajo. Los planos
+     generales del teléfono son los únicos así —la casa entra completa, no hay
+     manera de apuntar a un vacío— y son los únicos que se saltean el límite. */
+  if (libre) return { s, x, y };
+  /* El ancho que se ve no es siempre el de la lámina. Cuando el dibujo entra
+     por su alto en una caja vertical —el visor del teléfono— los costados
+     quedan fuera de la pantalla, y limitar la cámara como si se viera todo la
+     empuja al medio de la lámina: la casa se va de cuadro y queda mirando el
+     patio. Por eso el recorte entra en la cuenta. */
+  const ancho = (VISTA.ancho / s) * recorte;
   const alto = VISTA.alto / s;
-  /* Si la ventana es más grande que el dibujo entero —pasa cuando la cámara
-     se aleja por debajo de 1, que es como entra la casa completa en una
-     pantalla vertical— no hay nada que limitar: se centra y listo. Sin este
-     caso, las dos cotas se cruzan y el clamp devuelve el borde, que era un
+  /* Si la ventana es más grande que el dibujo entero —pasa en cuanto la cámara
+     se aleja hasta 1 o menos— no hay nada que limitar: se centra y listo. Sin
+     este caso, las dos cotas se cruzan y el clamp devuelve el borde, que era un
      encuadre corrido a la nada. */
   const limitar = (v, ventana, desde, total) =>
     ventana >= total
@@ -185,6 +212,19 @@ const CasaDibujada = ({
      una tablet: los encuadres son los mismos, lo que cambia es el acercamiento
      que compensa el tamaño de la caja. */
   acercar = 1,
+  /**
+   * Cuánto del ancho de la lámina queda de verdad a la vista, de 0 a 1.
+   *
+   * Abajo de 1 el dibujo deja de entrar dentro de su caja y pasa a taparla:
+   * llena el alto y pierde los costados. Es lo que hace falta cuando la caja
+   * es más vertical que la lámina —la pantalla de un teléfono— porque entrar
+   * dentro significa entrar por el ancho, y entonces el dibujo queda flotando
+   * en el medio con una franja de crema arriba y otra abajo: eso es lo que
+   * hacía que la casa se viera chiquita y perdida. El número también entra en
+   * el límite del encuadre, que si no cuenta con los costados que no se ven
+   * empuja la cámara al medio de la lámina.
+   */
+  recorte = 1,
 }) => {
   /**
    * La cámara: un estado, un `transform`, una transición de CSS.
@@ -203,7 +243,7 @@ const CasaDibujada = ({
    * tiembla y un bucle de `requestAnimationFrame` sí puede.
    */
   const base = FOCOS[zona] ?? FOCOS.todo;
-  const pose = encuadrar(acercar === 1 ? base : { ...base, s: base.s * acercar });
+  const pose = encuadrar(acercar === 1 ? base : { ...base, s: base.s * acercar }, recorte);
   const camara = {
     transform: `translate(${VISTA.x + VISTA.ancho / 2 - pose.s * pose.x}px, ${
       VISTA.y + VISTA.alto / 2 - pose.s * pose.y
@@ -279,6 +319,7 @@ const CasaDibujada = ({
   return (
     <svg
       viewBox={`${VISTA.x} ${VISTA.y} ${VISTA.ancho} ${VISTA.alto}`}
+      preserveAspectRatio={recorte < 1 ? 'xMidYMid slice' : 'xMidYMid meet'}
       className={className}
       role="img"
       aria-label="Corte de la casa de Malka: la terraza y la huerta arriba, el estudio, el cowork, el salón con la mesa larga y el quincho con la parrilla."
