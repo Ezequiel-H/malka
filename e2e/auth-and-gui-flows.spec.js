@@ -180,7 +180,7 @@ test.describe('Próximos cumpleaños', () => {
       meUser: adminUser,
       birthdays: {
         hoy: [
-          { _id: 'b1', nombre: 'Ana', apellido: 'Groisman', fecha: '2026-09-25', edad: 34, esHoy: true, diasFaltan: 0, semana: 'esta' }
+          { _id: 'b1', nombre: 'Ana', apellido: 'Groisman', telefono: '+5491133334444', fecha: '2026-09-25', edad: 34, esHoy: true, diasFaltan: 0, semana: 'esta' }
         ],
         estaSemana: [
           { _id: 'b2', nombre: 'Bruno', apellido: 'Feldman', fecha: '2026-09-26', edad: 38, esHoy: false, diasFaltan: 1, semana: 'esta' }
@@ -206,6 +206,14 @@ test.describe('Próximos cumpleaños', () => {
     await expect(page.getByRole('link', { name: 'Ana Groisman' })).toHaveAttribute(
       'href',
       '/admin/users/b1'
+    );
+
+    /* Y el botón abre WhatsApp con el saludo ya escrito. Sólo en la fila de hoy. */
+    const saludar = page.getByRole('link', { name: 'Saludar' });
+    await expect(saludar).toHaveCount(1);
+    await expect(saludar).toHaveAttribute(
+      'href',
+      `https://wa.me/5491133334444?text=${encodeURIComponent('¡Feliz cumpleaños, Ana!')}`
     );
   });
 

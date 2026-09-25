@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { Alert, Badge, Card, Icon } from '../ui';
+import { Alert, Badge, Button, Card, Icon } from '../ui';
 import { formatUtcCalendarDateEsAR } from '../../utils/dateUtils';
+import { buildWaLink, renderPlantilla } from '../../utils/whatsapp';
 
 /**
  * Los cumpleaños de esta semana y la que viene, en el panel.
@@ -36,7 +37,7 @@ const cuandoEs = (diasFaltan) => {
  * y se distingue por el fondo, el ícono y el peso, no por una caja aparte: si
  * se saliera de la grilla, la columna de fechas dejaría de leerse de un saque.
  */
-const Fila = ({ persona, destacado = false }) => (
+const Fila = ({ persona, destacado = false, saludo }) => (
   <li
     className={
       destacado
@@ -73,6 +74,24 @@ const Fila = ({ persona, destacado = false }) => (
         {persona.veintinueveDeFebrero && (
           <span className="text-xs text-ink-faint">nació un 29/02</span>
         )}
+
+        {/* Sólo en la fila de hoy: un saludo adelantado nueve días no es un
+            saludo. Sin teléfono cargado tampoco hay botón — uno que no puede
+            hacer nada es peor que ninguno.
+            Va adentro del contenedor que envuelve: afuera, en el teléfono se
+            montaba encima del nombre. */}
+        {saludo && (
+          <Button
+            href={saludo}
+            target="_blank"
+            rel="noopener noreferrer"
+            size="sm"
+            icon="whatsapp"
+            className="ml-auto shrink-0"
+          >
+            Saludar
+          </Button>
+        )}
       </div>
     ) : (
       <>
@@ -98,6 +117,7 @@ const Fila = ({ persona, destacado = false }) => (
         </span>
       </>
     )}
+
   </li>
 );
 
@@ -119,6 +139,7 @@ const Grupo = ({ titulo, personas }) => {
 
 const UpcomingBirthdays = ({ className = '' }) => {
   const [data, setData] = useState(null);
+  const [saludoPlantilla, setSaludoPlantilla] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -147,6 +168,33 @@ const UpcomingBirthdays = ({ className = '' }) => {
     cargar();
   }, [cargar]);
 
+  /* El saludo se pide aparte: si Ajustes falla, la lista de cumpleaños tiene
+     que salir igual — se pierde el botón, no el bloque. */
+  useEffect(() => {
+    let vigente = true;
+    axios
+      .get('/settings')
+      .then((res) => {
+        if (vigente) setSaludoPlantilla(res.data?.settings?.whatsappCumpleanosMensaje || '');
+      })
+      .catch(() => {});
+    return () => {
+      vigente = false;
+    };
+  }, []);
+
+  /* wa.me se abre contra el teléfono DE LA PERSONA, no contra el número del
+     centro: acá el que escribe es Malka.
+     Sin texto no hay botón: lo que el botón promete es un saludo ya escrito, y
+     abrir un chat en blanco no es eso. */
+  const linkDeSaludo = (persona) => {
+    const texto = renderPlantilla(saludoPlantilla, {
+      nombre: persona.nombre,
+      edad: persona.edad,
+    }).trim();
+    return texto ? buildWaLink(persona.telefono, texto) : null;
+  };
+
   const hoy = data?.hoy ?? [];
   const vacio =
     data && !hoy.length && !data.estaSemana.length && !data.proximaSemana.length;
@@ -172,7 +220,12 @@ const UpcomingBirthdays = ({ className = '' }) => {
           {hoy.length > 0 && (
             <ul className="mb-4 space-y-2">
               {hoy.map((persona) => (
-                <Fila key={persona._id} persona={persona} destacado />
+                <Fila
+                  key={persona._id}
+                  persona={persona}
+                  destacado
+                  saludo={linkDeSaludo(persona)}
+                />
               ))}
             </ul>
           )}

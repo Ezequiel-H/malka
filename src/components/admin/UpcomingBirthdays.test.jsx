@@ -16,12 +16,16 @@ const respuesta = (overrides = {}) => ({
   ...overrides
 });
 
-const mock = (data) =>
-  vi.spyOn(axios, 'get').mockImplementation((url) =>
-    url === '/admin/birthdays'
-      ? Promise.resolve({ data })
-      : Promise.reject(new Error(`url inesperada: ${url}`))
-  );
+const SALUDO = '¡Feliz cumpleaños, {nombre}! Cumplís {edad}.';
+
+const mock = (data, saludo = SALUDO) =>
+  vi.spyOn(axios, 'get').mockImplementation((url) => {
+    if (url === '/admin/birthdays') return Promise.resolve({ data });
+    if (url === '/settings') {
+      return Promise.resolve({ data: { settings: { whatsappCumpleanosMensaje: saludo } } });
+    }
+    return Promise.reject(new Error(`url inesperada: ${url}`));
+  });
 
 const renderizar = () =>
   render(
@@ -168,6 +172,97 @@ describe('UpcomingBirthdays', () => {
     expect(
       await screen.findByText('Nadie cumple años en estas dos semanas.')
     ).toBeInTheDocument();
+  });
+
+  it('ofrece saludar por WhatsApp a quien cumple hoy, con el texto ya armado', async () => {
+    mock(
+      respuesta({
+        hoy: [
+          {
+            _id: 'u1',
+            nombre: 'Ana',
+            apellido: 'Pérez',
+            telefono: '+54 9 11 3333-4444',
+            fecha: '2026-09-25',
+            edad: 34,
+            esHoy: true,
+            diasFaltan: 0,
+            semana: 'esta'
+          }
+        ],
+        total: 1
+      })
+    );
+    renderizar();
+
+    const boton = await screen.findByRole('link', { name: 'Saludar' });
+    // El teléfono va sin +, espacios ni guiones: wa.me no los acepta.
+    expect(boton).toHaveAttribute(
+      'href',
+      `https://wa.me/5491133334444?text=${encodeURIComponent('¡Feliz cumpleaños, Ana! Cumplís 34.')}`
+    );
+    expect(boton).toHaveAttribute('target', '_blank');
+  });
+
+  it('no ofrece saludar a quien cumple más adelante', async () => {
+    mock(
+      respuesta({
+        estaSemana: [
+          {
+            _id: 'u2',
+            nombre: 'Bruno',
+            apellido: 'Feldman',
+            telefono: '+5491140012345',
+            fecha: '2026-09-26',
+            edad: 38,
+            esHoy: false,
+            diasFaltan: 1,
+            semana: 'esta'
+          }
+        ],
+        total: 1
+      })
+    );
+    renderizar();
+
+    await screen.findByText('Bruno Feldman');
+    // Un saludo de cumpleaños adelantado no es un saludo.
+    expect(screen.queryByRole('link', { name: 'Saludar' })).not.toBeInTheDocument();
+  });
+
+  it('sin teléfono cargado no muestra el botón', async () => {
+    mock(
+      respuesta({
+        hoy: [
+          { _id: 'u3', nombre: 'Sin', apellido: 'Teléfono', fecha: '2026-09-25', edad: 40, esHoy: true, diasFaltan: 0, semana: 'esta' }
+        ],
+        total: 1
+      })
+    );
+    renderizar();
+
+    await screen.findByText('Sin Teléfono');
+    expect(screen.queryByRole('link', { name: 'Saludar' })).not.toBeInTheDocument();
+  });
+
+  it('si Ajustes falla, la lista sale igual y sólo se pierde el botón', async () => {
+    vi.spyOn(axios, 'get').mockImplementation((url) => {
+      if (url === '/admin/birthdays') {
+        return Promise.resolve({
+          data: respuesta({
+            hoy: [
+              { _id: 'u4', nombre: 'Ana', apellido: 'Pérez', telefono: '+5491133334444', fecha: '2026-09-25', edad: 34, esHoy: true, diasFaltan: 0, semana: 'esta' }
+            ],
+            total: 1
+          })
+        });
+      }
+      return Promise.reject(new Error('ajustes caídos'));
+    });
+    renderizar();
+
+    expect(await screen.findByText('Cumple 34 hoy')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Saludar' })).not.toBeInTheDocument();
   });
 
   it('pide los cumpleaños una sola vez', async () => {

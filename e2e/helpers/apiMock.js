@@ -72,6 +72,13 @@ export async function installApiMock(page, options = {}) {
       return;
     }
 
+    if (method === 'GET' && path === '/api/settings') {
+      await route.fulfill(
+        json({ settings: { whatsappCumpleanosMensaje: '¡Feliz cumpleaños, {nombre}!' } })
+      );
+      return;
+    }
+
     if (method === 'GET' && path === '/api/admin/birthdays') {
       await route.fulfill(json({ ...emptyBirthdays, ...(birthdays || {}) }));
       return;

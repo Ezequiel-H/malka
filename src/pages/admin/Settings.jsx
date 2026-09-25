@@ -13,6 +13,7 @@ const Settings = () => {
   const [instruccionesPagoDefault, setInstruccionesPagoDefault] = useState('');
   const [whatsappNumero, setWhatsappNumero] = useState('');
   const [whatsappViajeMensaje, setWhatsappViajeMensaje] = useState('');
+  const [whatsappCumpleanosMensaje, setWhatsappCumpleanosMensaje] = useState('');
   const [plantillas, setPlantillas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -29,6 +30,7 @@ const Settings = () => {
       setInstruccionesPagoDefault(s.instruccionesPagoDefault || '');
       setWhatsappNumero(s.whatsappNumero || '');
       setWhatsappViajeMensaje(s.whatsappViajeMensaje || '');
+      setWhatsappCumpleanosMensaje(s.whatsappCumpleanosMensaje || '');
       setPlantillas(s.plantillasWhatsApp || []);
     } catch (error) {
       showError('Error al cargar ajustes');
@@ -49,6 +51,7 @@ const Settings = () => {
         instruccionesPagoDefault,
         whatsappNumero,
         whatsappViajeMensaje,
+        whatsappCumpleanosMensaje,
         plantillasWhatsApp: plantillas,
       });
       // El back limpia (descarta filas vacías, normaliza el número):
@@ -111,6 +114,17 @@ const Settings = () => {
               value={whatsappViajeMensaje}
               onChange={(e) => setWhatsappViajeMensaje(e.target.value)}
               rows={3}
+            />
+          </Field>
+
+          <Field
+            label="Saludo de cumpleaños"
+            hint="Lo que sale prellenado al tocar «Saludar» en los cumpleaños del panel. Variables: {nombre} y {edad}."
+          >
+            <Textarea
+              value={whatsappCumpleanosMensaje}
+              onChange={(e) => setWhatsappCumpleanosMensaje(e.target.value)}
+              rows={2}
             />
           </Field>
 
