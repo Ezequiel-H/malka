@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { pickDate } from './helpers/pickDate.js';
 import {
   installApiMock,
   participantApproved,
@@ -141,6 +142,7 @@ test.describe('Registro', () => {
     await page.goto('/register');
     await page.locator('input[name="nombre"]').fill('Nuevo');
     await page.locator('input[name="apellido"]').fill('Usuario');
+    await pickDate(page, 'Fecha de nacimiento', '1990-05-15');
     await page.locator('input[name="dni"]').fill('12345678');
     await page.locator('input[name="email"]').fill('nuevo@e2e.test');
     await page.locator('input[name="telefono"]').fill('+5411999999999');
@@ -163,5 +165,53 @@ test.describe('Navegación autenticada (participante)', () => {
     await page.getByRole('button', { name: 'Mis intereses' }).click();
     await expect(page).toHaveURL(/\/my-interests$/);
     await expect(page.getByRole('heading', { name: /Mis intereses/i })).toBeVisible();
+  });
+});
+
+test.describe('Próximos cumpleaños', () => {
+  const entrarComoAdmin = async (page) => {
+    await page.addInitScript(() => localStorage.setItem('token', 'e2e-test-token'));
+    await page.goto('/admin');
+    await expect(page.getByRole('heading', { name: 'Próximos cumpleaños' })).toBeVisible();
+  };
+
+  test('destaca a quien cumple hoy y separa las dos semanas', async ({ page }) => {
+    await installApiMock(page, {
+      meUser: adminUser,
+      birthdays: {
+        hoy: [
+          { _id: 'b1', nombre: 'Ana', apellido: 'Groisman', fecha: '2026-09-25', edad: 34, esHoy: true, diasFaltan: 0, semana: 'esta' }
+        ],
+        estaSemana: [
+          { _id: 'b2', nombre: 'Bruno', apellido: 'Feldman', fecha: '2026-09-26', edad: 38, esHoy: false, diasFaltan: 1, semana: 'esta' }
+        ],
+        proximaSemana: [
+          { _id: 'b3', nombre: 'Diego', apellido: 'Rosenthal', fecha: '2026-10-01', edad: 47, esHoy: false, diasFaltan: 6, semana: 'proxima' }
+        ],
+        total: 3,
+        sinFecha: 1
+      }
+    });
+
+    await entrarComoAdmin(page);
+
+    await expect(page.getByText('Cumple 34 hoy')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Esta semana', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'La semana que viene' })).toBeVisible();
+    await expect(page.getByText('mañana')).toBeVisible();
+    await expect(page.getByText('en 6 días')).toBeVisible();
+    await expect(page.getByText(/1 persona sin fecha de nacimiento cargada/)).toBeVisible();
+
+    /* El nombre lleva a la ficha, que es donde está el teléfono para saludar. */
+    await expect(page.getByRole('link', { name: 'Ana Groisman' })).toHaveAttribute(
+      'href',
+      '/admin/users/b1'
+    );
+  });
+
+  test('avisa cuando no hay ninguno', async ({ page }) => {
+    await installApiMock(page, { meUser: adminUser });
+    await entrarComoAdmin(page);
+    await expect(page.getByText('Nadie cumple años en estas dos semanas.')).toBeVisible();
   });
 });

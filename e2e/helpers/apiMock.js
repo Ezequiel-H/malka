@@ -9,6 +9,18 @@ const json = (data, status = 200) => ({
 
 const pathname = (route) => new URL(route.request().url()).pathname;
 
+/** Ventana de cumpleaños vacía: la forma que devuelve GET /admin/birthdays. */
+const emptyBirthdays = {
+  desde: '2026-09-25',
+  finDeEstaSemana: '2026-09-27',
+  hasta: '2026-10-04',
+  hoy: [],
+  estaSemana: [],
+  proximaSemana: [],
+  total: 0,
+  sinFecha: 0
+};
+
 /**
  * Intercepts API calls so E2E tests run without a real backend.
  * @param {import('@playwright/test').Page} page
@@ -16,9 +28,10 @@ const pathname = (route) => new URL(route.request().url()).pathname;
  * @param {object} [options.loginUser] — Successful login payload (token is added automatically). Omit if using rejectLogin.
  * @param {boolean} [options.rejectLogin] — When true, POST /auth/login returns 401.
  * @param {object | null} [options.meUser] — User for GET /auth/me when Bearer token is sent. Defaults to loginUser when that is set.
+ * @param {object} [options.birthdays] — Payload for GET /admin/birthdays. Defaults to an empty window.
  */
 export async function installApiMock(page, options = {}) {
-  const { loginUser, rejectLogin = false, meUser: meUserOpt } = options;
+  const { loginUser, rejectLogin = false, meUser: meUserOpt, birthdays } = options;
   const meUser = meUserOpt !== undefined ? meUserOpt : loginUser || null;
 
   await page.route(`${API_BASE}/**`, async (route) => {
@@ -56,6 +69,11 @@ export async function installApiMock(page, options = {}) {
 
     if (method === 'GET' && path.startsWith('/api/activities')) {
       await route.fulfill(json({ activities: [], count: 0 }));
+      return;
+    }
+
+    if (method === 'GET' && path === '/api/admin/birthdays') {
+      await route.fulfill(json({ ...emptyBirthdays, ...(birthdays || {}) }));
       return;
     }
 

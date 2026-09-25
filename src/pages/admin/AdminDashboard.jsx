@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { DateTime } from 'luxon';
 import LoadingScreen from '../../components/layout/LoadingScreen';
 import PageContainer from '../../components/layout/PageContainer';
+import UpcomingBirthdays from '../../components/admin/UpcomingBirthdays';
 import {
   Bar,
   BarChart,
@@ -298,6 +299,8 @@ const AdminDashboard = () => {
             </Link>
           </Card>
         </div>
+
+        <UpcomingBirthdays className="mb-8" />
 
         <Card as="section" className="mb-8">
           <h2 className="mb-2 text-xl font-bold text-ink">
