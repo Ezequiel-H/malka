@@ -71,7 +71,8 @@ describe('MyProfile', () => {
 
     expect(screen.getByLabelText('Nombre')).toHaveValue('Ana');
     expect(screen.getByLabelText('Apellido')).toHaveValue('Perez');
-    expect(screen.getByLabelText('Fecha de nacimiento')).toHaveValue('1992-07-10');
+    // El DatePicker es un botón que muestra la fecha en es-AR, no un input.
+    expect(screen.getByLabelText('Fecha de nacimiento')).toHaveTextContent('10/07/1992');
     expect(screen.getByLabelText('DNI')).toHaveValue('12345678');
     expect(screen.getByLabelText('Teléfono')).toHaveValue('+5491112345678');
     expect(screen.getByLabelText('Email')).toHaveValue('ana@example.com');

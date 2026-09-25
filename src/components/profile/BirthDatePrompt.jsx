@@ -4,11 +4,16 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { formatAuthError } from '../../utils/authErrors';
 import { formatLocalDateToString } from '../../utils/dateUtils';
-import DateInput from '../common/DateInput';
+import { Alert, Button, DatePicker, Field } from '../ui';
 
 export const userNeedsBirthDate = (user) =>
   user?.role === 'participant' && !user?.fechaNacimiento;
 
+/**
+ * Pedido de la fecha de nacimiento a quien se registró antes de que el campo
+ * existiera. Se muestra una sola vez: en cuanto la guarda, `userNeedsBirthDate`
+ * pasa a false y el bloque desaparece solo.
+ */
 const BirthDatePrompt = ({ className = '' }) => {
   const { user, updateUser, fetchUser } = useAuth();
   const { showSuccess, showError } = useToast();
@@ -42,32 +47,30 @@ const BirthDatePrompt = ({ className = '' }) => {
   };
 
   return (
-    <div className={`alert alert-info min-w-0 overflow-hidden ${className}`.trim()}>
-      <h2 className="text-lg sm:text-xl font-semibold mb-2">Completá tu fecha de nacimiento</h2>
-      <p className="text-base mb-4">
+    <Alert
+      tone="info"
+      title="Completá tu fecha de nacimiento"
+      titleAs="h2"
+      className={`min-w-0 ${className}`.trim()}
+    >
+      <p className="mb-4">
         Necesitamos esta información para completar tu perfil. Solo tenés que ingresarla una vez.
       </p>
       <form onSubmit={handleSubmit} className="flex w-full flex-col gap-3">
-        <div className="form-group mb-0 w-full min-w-0">
-          <label htmlFor="birth-date-prompt">Fecha de nacimiento</label>
-          <DateInput
+        <Field label="Fecha de nacimiento" htmlFor="birth-date-prompt" required className="mb-0">
+          <DatePicker
             id="birth-date-prompt"
             name="fechaNacimiento"
             value={fechaNacimiento}
-            onChange={(e) => setFechaNacimiento(e.target.value)}
-            required
+            onChange={setFechaNacimiento}
             max={formatLocalDateToString(new Date())}
           />
-        </div>
-        <button
-          type="submit"
-          className="btn btn-primary w-full justify-center !min-h-0 h-11 py-2"
-          disabled={saving || !fechaNacimiento}
-        >
+        </Field>
+        <Button type="submit" className="w-full justify-center" disabled={saving || !fechaNacimiento}>
           {saving ? 'Guardando...' : 'Guardar'}
-        </button>
+        </Button>
       </form>
-    </div>
+    </Alert>
   );
 };
 

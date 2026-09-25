@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import BirthDatePrompt, { userNeedsBirthDate } from './BirthDatePrompt';
+import { pickDate } from '../../test/pickDate';
 
 const patchMock = vi.fn();
 
@@ -70,7 +71,7 @@ describe('BirthDatePrompt', () => {
 
     render(<BirthDatePrompt />);
 
-    await user.type(screen.getByLabelText('Fecha de nacimiento'), '1985-03-20');
+    await pickDate(user, 'Fecha de nacimiento', '1985-03-20');
     await user.click(screen.getByRole('button', { name: 'Guardar' }));
 
     await waitFor(() => {
