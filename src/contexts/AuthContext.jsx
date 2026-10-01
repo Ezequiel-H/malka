@@ -89,8 +89,16 @@ export const AuthProvider = ({ children }) => {
       const { token, user } = response.data;
       localStorage.setItem('token', token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      setUser(user);
-      return { success: true, user };
+      // Preferir perfil completo (/me) para no perder campos como fechaNacimiento
+      try {
+        const me = await axios.get('/auth/me');
+        const fullUser = me.data?.user || user;
+        setUser(fullUser);
+        return { success: true, user: fullUser };
+      } catch {
+        setUser(user);
+        return { success: true, user };
+      }
     } catch (error) {
       return {
         success: false,
