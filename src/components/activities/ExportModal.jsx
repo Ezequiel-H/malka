@@ -11,6 +11,7 @@ const COLUMNAS = [
   { clave: 'email', label: 'Email' },
   { clave: 'telefono', label: 'Teléfono' },
   { clave: 'dni', label: 'DNI' },
+  { clave: 'edad', label: 'Edad' },
   { clave: 'restricciones', label: 'Restricciones alimenticias' },
   { clave: 'tags', label: 'Tags' },
   { clave: 'estado', label: 'Estado de inscripción' },
