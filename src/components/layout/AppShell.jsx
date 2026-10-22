@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button, Icon, cn } from '../ui';
 import InstallBanner from './InstallBanner';
+import PushBanner from './PushBanner';
 import logoMalka from '../../assets/logo-malka-positivo.png';
 
 /* Cada sección con su icono. `exact` evita que "Panel" (/admin) quede activo
@@ -281,6 +282,7 @@ const AppShell = ({ children }) => {
         )}
       >
         <InstallBanner />
+        {!isAdmin && <PushBanner />}
         {children}
       </main>
 

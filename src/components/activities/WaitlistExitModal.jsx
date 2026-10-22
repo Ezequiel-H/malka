@@ -67,14 +67,14 @@ const WaitlistExitModal = ({ inscription, estado, onClose, onConfirm }) => {
             Cancelar
           </Button>
           <Button onClick={handleConfirm} loading={saving}>
-            {notificar ? 'Cambiar estado y mandar mail' : 'Cambiar estado'}
+            {notificar ? 'Cambiar estado y avisar' : 'Cambiar estado'}
           </Button>
         </>
       }
     >
       <div className="space-y-4">
         <Checkbox
-          label="Mandarle un mail avisando que se liberó un lugar"
+          label="Avisarle que se liberó un lugar (mail y notificación)"
           description={email ? `Se manda a ${email.to}.` : undefined}
           checked={notificar}
           onChange={(e) => setNotificar(e.target.checked)}

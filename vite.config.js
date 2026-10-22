@@ -29,7 +29,9 @@ export default defineConfig({
       workbox: {
         // La API y los comprobantes nunca deben caer en el fallback de SPA
         // ni quedar cacheados por el precache.
-        navigateFallbackDenylist: [/^\/api\//, /^\/uploads\//]
+        navigateFallbackDenylist: [/^\/api\//, /^\/uploads\//],
+        // Manejo de notificaciones push (mostrar y abrir al tocar).
+        importScripts: ['push-sw.js']
       }
     })
   ],

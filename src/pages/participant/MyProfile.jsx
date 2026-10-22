@@ -6,6 +6,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { formatAuthError, normalizePhone } from '../../utils/authErrors';
 import { birthDateToInputValue, formatLocalDateToString } from '../../utils/dateUtils';
 import PageContainer from '../../components/layout/PageContainer';
+import NotificationSettings from '../../components/profile/NotificationSettings';
 import { Alert, Button, Card, Checkbox, DatePicker, Field, Input } from '../../components/ui';
 import { invalidEs } from '../../utils/formValidation';
 
@@ -262,6 +263,8 @@ const MyProfile = () => {
             </Button>
           </div>
         </form>
+
+        <NotificationSettings className="mt-6 border-t border-surface-border pt-6" />
 
         {/* En mobile no hay sidebar ni drawer: el logout vive acá. */}
         <div className="mt-6 border-t border-surface-border pt-4 lg:hidden">

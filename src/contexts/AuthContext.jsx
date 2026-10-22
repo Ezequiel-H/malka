@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { disablePush } from '../utils/push';
 import { formatAuthError, normalizePhone } from '../utils/authErrors.js';
 import { setAuthRedirect } from '../utils/authRedirect.js';
 
@@ -201,6 +202,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    /* Este dispositivo deja de recibir los avisos de esta cuenta. Se manda
+       con el header armado a mano porque clearSession lo borra enseguida. */
+    const auth = axios.defaults.headers.common['Authorization'];
+    if (auth) disablePush(auth).catch(() => {});
     clearSession();
     setUser(null);
   };

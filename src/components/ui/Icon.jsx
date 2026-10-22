@@ -1,5 +1,7 @@
 import {
   AlertCircle,
+  Bell,
+  BellOff,
   Baby,
   Bike,
   BookOpen,
@@ -149,6 +151,8 @@ const ICONS = {
   policy: FileText,
   whatsapp: MessageCircle,
   mail: Mail,
+  bell: Bell,
+  bellOff: BellOff,
   phone: Phone,
   color: Palette,
 

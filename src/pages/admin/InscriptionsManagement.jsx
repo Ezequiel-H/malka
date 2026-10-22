@@ -117,7 +117,7 @@ const InscriptionsManagement = () => {
     const { inscription, estado } = waitlistExit;
     try {
       await axios.put(`/inscriptions/${inscription._id}/status`, { estado, notificar });
-      showSuccess(notificar ? 'Estado actualizado y mail enviado' : `Estado actualizado a ${getEstadoLabel(estado)}`);
+      showSuccess(notificar ? 'Estado actualizado y aviso enviado' : `Estado actualizado a ${getEstadoLabel(estado)}`);
       setWaitlistExit(null);
       fetchInscriptions();
       fetchPendingCount();
