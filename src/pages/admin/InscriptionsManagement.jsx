@@ -5,6 +5,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { formatUtcCalendarDayAndTime } from '../../utils/dateUtils';
 import { getPagoEstadoLabel, getPagoEstadoTone } from '../../utils/paymentUtils';
 import PendingPaymentProofsModal from '../../components/admin/PendingPaymentProofsModal';
+import WaitlistExitModal from '../../components/activities/WaitlistExitModal';
 import PageContainer from '../../components/layout/PageContainer';
 import {
   Badge,
@@ -108,7 +109,30 @@ const InscriptionsManagement = () => {
     }
   };
 
-  const handleStatusChange = async (inscriptionId, newStatus) => {
+  /* Sacar a alguien de la lista de espera tiene su propio modal: ahí el admin
+     decide si le manda el mail y lo ve antes. */
+  const [waitlistExit, setWaitlistExit] = useState(null);
+
+  const handleWaitlistExit = async (notificar) => {
+    const { inscription, estado } = waitlistExit;
+    try {
+      await axios.put(`/inscriptions/${inscription._id}/status`, { estado, notificar });
+      showSuccess(notificar ? 'Estado actualizado y mail enviado' : `Estado actualizado a ${getEstadoLabel(estado)}`);
+      setWaitlistExit(null);
+      fetchInscriptions();
+      fetchPendingCount();
+    } catch (error) {
+      showError(error.response?.data?.message || 'Error al actualizar estado');
+    }
+  };
+
+  const handleStatusChange = async (inscription, newStatus) => {
+    if (inscription.estado === 'en_espera' && ['pendiente', 'aceptada'].includes(newStatus)) {
+      setWaitlistExit({ inscription, estado: newStatus });
+      return;
+    }
+
+    const inscriptionId = inscription._id;
     const ok = await confirm({
       title: `¿Cambiar el estado a "${getEstadoLabel(newStatus)}"?`,
       description: 'La persona ve este estado en sus inscripciones.',
@@ -278,7 +302,7 @@ const InscriptionsManagement = () => {
                     <Select
                       options={ESTADO_OPTIONS}
                       value={inscription.estado}
-                      onChange={(value) => handleStatusChange(inscription._id, value)}
+                      onChange={(value) => handleStatusChange(inscription, value)}
                       size="sm"
                       className="w-44"
                     />
@@ -308,6 +332,15 @@ const InscriptionsManagement = () => {
         onClose={() => setShowProofsModal(false)}
         onReviewed={handleProofReviewed}
       />
+
+      {waitlistExit && (
+        <WaitlistExitModal
+          inscription={waitlistExit.inscription}
+          estado={waitlistExit.estado}
+          onClose={() => setWaitlistExit(null)}
+          onConfirm={handleWaitlistExit}
+        />
+      )}
     </PageContainer>
   );
 };

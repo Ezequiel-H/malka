@@ -104,14 +104,19 @@ const Select = ({
   }, [open, searchable]);
 
   /* Mantiene la opción activa dentro del área visible del scroll.
-     El `typeof` no es paranoia: jsdom no implementa scrollIntoView, así que
-     sin el guard cualquier test que abra un Select explota. */
+     Se mueve sólo la lista, a mano: `scrollIntoView` también desplaza a los
+     ancestros (aunque tengan overflow-hidden), y ese scroll ajeno dispara el
+     cierre de abajo — en las últimas filas de una tarjeta el menú se abría y
+     se cerraba solo. */
   useEffect(() => {
     if (!open || activeIndex < 0) return;
-    const node = listRef.current?.querySelector(`[data-index="${activeIndex}"]`);
-    if (typeof node?.scrollIntoView === 'function') {
-      node.scrollIntoView({ block: 'nearest' });
-    }
+    const list = listRef.current;
+    const node = list?.querySelector(`[data-index="${activeIndex}"]`);
+    if (!node) return;
+    const n = node.getBoundingClientRect();
+    const l = list.getBoundingClientRect();
+    if (n.top < l.top) list.scrollTop -= l.top - n.top;
+    else if (n.bottom > l.bottom) list.scrollTop += n.bottom - l.bottom;
   }, [activeIndex, open]);
 
   useEffect(() => {
