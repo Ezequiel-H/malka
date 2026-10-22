@@ -152,6 +152,10 @@ const ActivityForm = () => {
   const [availableTags, setAvailableTags] = useState([]);
   const [availablePrivateTags, setAvailablePrivateTags] = useState([]);
   const [defaultInstruccionesPago, setDefaultInstruccionesPago] = useState('');
+  // Avisar a los participantes sólo tiene sentido la primera vez que se publica.
+  const [estadoOriginal, setEstadoOriginal] = useState(null);
+  const [notificarParticipantes, setNotificarParticipantes] = useState(true);
+  const seEstaPublicando = formData.estado === 'publicada' && estadoOriginal !== 'publicada';
 
   useEffect(() => {
     fetchAvailableTags();
@@ -231,6 +235,7 @@ const ActivityForm = () => {
         recurrence.dayOfMonth = [recurrence.dayOfMonth];
       }
       
+      setEstadoOriginal(activity.estado);
       const publicTags = activityPublicTags(activity);
       const privateTags = activityPrivateTags(activity);
 
@@ -389,7 +394,8 @@ const ActivityForm = () => {
           endDate: formData.recurrence.endDate || null,
           occurrences: formData.recurrence.occurrences || null,
           hora: formData.recurrence.hora || formData.hora
-        } : undefined
+        } : undefined,
+        notificarParticipantes: seEstaPublicando && notificarParticipantes
       };
 
       if (isEdit) {
@@ -779,6 +785,17 @@ const ActivityForm = () => {
             value={formData.estado}
             onChange={(value) => handleChange({ target: { name: 'estado', value, type: 'text' } })}
           />
+          {seEstaPublicando && (
+            <div className="mt-3">
+              <Switch
+                name="notificarParticipantes"
+                label="Avisar a los participantes"
+                description="Les llega una notificación de que hay una actividad nueva. Sólo a quienes pueden verla."
+                checked={notificarParticipantes}
+                onChange={(e) => setNotificarParticipantes(e.target.checked)}
+              />
+            </div>
+          )}
         </Field>
 
         <Field label="Visibilidad">
