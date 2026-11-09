@@ -16,3 +16,86 @@
     @apply bg-surface-page text-ink font-sans antialiased;
   }
 }
+
+/*
+ * Pantallas de acceso con la grilla de puntos (`DotsAccess`). Sin tarjeta: el
+ * fondo es la grilla y el formulario flota a un costado; en el teléfono, la
+ * figura arriba y el formulario abajo.
+ */
+.dots-access {
+	--dots-glow: theme('colors.primary.600');
+	--dots-ground: theme('colors.surface.page');
+	--dots-idle: theme('colors.ink.DEFAULT');
+	position: relative;
+	min-height: 100dvh;
+	container-type: inline-size;
+	background: var(--dots-ground);
+}
+.dots-access__canvas {
+	position: fixed;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+}
+.dots-access__panel {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 1.75rem;
+	min-height: 100dvh;
+	width: min(25rem, calc(100cqw - 4rem));
+	margin-left: clamp(2rem, 8cqw, 8rem);
+	padding-block: calc(env(safe-area-inset-top) + 2rem)
+		calc(env(safe-area-inset-bottom) + 2rem);
+	transition:
+		opacity 0.45s ease,
+		transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.dots-access__panel > * {
+	animation: dots-access-rise 0.95s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.dots-access__panel > :nth-child(2) {
+	animation-delay: 0.1s;
+}
+.dots-access__panel > :nth-child(3) {
+	animation-delay: 0.22s;
+}
+.dots-access__panel > :nth-child(4) {
+	animation-delay: 0.34s;
+}
+.dots-access.is-leaving .dots-access__panel {
+	opacity: 0;
+	transform: translateY(-1.5rem);
+}
+@keyframes dots-access-rise {
+	from {
+		opacity: 0;
+		filter: blur(8px);
+		transform: translateY(1.6rem);
+	}
+}
+@container (max-width: 639px) {
+	.dots-access__panel {
+		justify-content: flex-end;
+		gap: 1.25rem;
+		width: calc(100cqw - 2.5rem);
+		margin-inline: auto;
+		padding-top: 36dvh;
+	}
+}
+@container (max-width: 639px) {
+	@media (max-height: 720px) {
+		.dots-access__panel {
+			padding-top: 30dvh;
+		}
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.dots-access__panel,
+	.dots-access__panel > * {
+		animation: none;
+		transition: none;
+	}
+}

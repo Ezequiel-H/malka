@@ -84,22 +84,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (email, password) => {
+  // `beforeEnter` corre antes de marcar la sesión: al haber usuario la app
+  // cambia de pantalla y el login se desmonta.
+  const login = async (email, password, { beforeEnter } = {}) => {
     try {
       const response = await axios.post('/auth/login', { email, password });
       const { token, user } = response.data;
       localStorage.setItem('token', token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       // Preferir perfil completo (/me) para no perder campos como fechaNacimiento
+      let fullUser = user;
       try {
         const me = await axios.get('/auth/me');
-        const fullUser = me.data?.user || user;
-        setUser(fullUser);
-        return { success: true, user: fullUser };
+        fullUser = me.data?.user || user;
       } catch {
-        setUser(user);
-        return { success: true, user };
+        // Si /me falla, alcanza con lo que devolvió el login.
       }
+      await beforeEnter?.();
+      setUser(fullUser);
+      return { success: true, user: fullUser };
     } catch (error) {
       return {
         success: false,

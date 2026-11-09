@@ -7,13 +7,13 @@ import { formatLocalDateToString } from '../../utils/dateUtils';
 import {
   Alert,
   Button,
-  Card,
   Checkbox,
   DatePicker,
   Field,
   Input,
   Spinner,
 } from '../../components/ui';
+import { DotsAccess, useDotsAccess } from '../../components/auth/dots_access';
 import logoMalka from '../../assets/logo-malka-positivo.png';
 import { invalidEs } from '../../utils/formValidation';
 
@@ -26,7 +26,7 @@ const RESTRICCIONES = [
   'Diabético',
 ];
 
-const Register = () => {
+const RegisterForm = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -45,6 +45,7 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
+  const dots = useDotsAccess();
 
   useEffect(() => {
     let cancelled = false;
@@ -106,6 +107,7 @@ const Register = () => {
     // fecha se chequea acá a mano.
     if (!formData.fechaNacimiento) {
       setError('Decinos tu fecha de nacimiento para completar el registro.');
+      dots.fail();
       return;
     }
 
@@ -122,20 +124,19 @@ const Register = () => {
       navigate('/dashboard');
     } else {
       setError(result.message);
+      dots.fail();
     }
 
     setLoading(false);
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface-page px-4 py-10 sm:px-6 sm:py-12">
-      <div className="w-full min-w-0 max-w-lg">
-        <img src={logoMalka} alt="Malka" className="mx-auto mb-8 h-14 w-auto sm:h-16" />
-        <Card padding="lg">
-          <h1 className="mb-5 text-center text-2xl font-bold text-primary sm:mb-6 sm:text-3xl">
-            Registro
-          </h1>
-
+    <>
+      <img src={logoMalka} alt="Malka" className="h-12 w-auto self-start sm:h-14" />
+      <h1 className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+        Registro
+      </h1>
+      <div>
           {error && (
             <Alert tone="danger" className="mb-5">
               {error}
@@ -199,6 +200,7 @@ const Register = () => {
                 value={formData.email}
                 onChange={handleChange}
                 required
+                autoComplete="email"
               />
             </Field>
 
@@ -228,6 +230,7 @@ const Register = () => {
                 onChange={handleChange}
                 required
                 minLength={6}
+                autoComplete="new-password"
               />
             </Field>
 
@@ -294,10 +297,15 @@ const Register = () => {
               Iniciá sesión aquí
             </Button>
           </p>
-        </Card>
       </div>
-    </div>
+    </>
   );
 };
+
+const Register = () => (
+  <DotsAccess name="Malka">
+    <RegisterForm />
+  </DotsAccess>
+);
 
 export default Register;
