@@ -49,6 +49,7 @@ export const DotsAccess = ({ name, markSrc, children }) => {
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
   const held = useRef(false);
+  const failTimer = useRef(undefined);
   const [leaving, setLeaving] = useState(false);
   useEffect(() => {
     const root = rootRef.current;
@@ -106,9 +107,10 @@ export const DotsAccess = ({ name, markSrc, children }) => {
   const signal = useMemo(
     () => ({
       fail: () => {
+        clearTimeout(failTimer.current);
         held.current = true;
         engineRef.current?.setShape("error");
-        setTimeout(() => {
+        failTimer.current = setTimeout(() => {
           held.current = false;
           engineRef.current?.setShape(
             shapeOfField(document.activeElement) ?? "mark"
@@ -116,6 +118,7 @@ export const DotsAccess = ({ name, markSrc, children }) => {
         }, ERROR_MS);
       },
       succeed: () => {
+        clearTimeout(failTimer.current);
         if (prefersReducedMotion() || !engineRef.current?.drawable) return Promise.resolve();
         held.current = true;
         engineRef.current?.setShape("ok");
