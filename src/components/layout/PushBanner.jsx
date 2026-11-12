@@ -3,6 +3,7 @@ import usePushNotifications from '../../hooks/usePushNotifications';
 import useInstallPrompt from '../../hooks/useInstallPrompt';
 import { useToast } from '../../contexts/ToastContext';
 import { Alert, Button } from '../ui';
+import { useIdioma } from '../../i18n/IdiomaContext';
 
 const STORAGE_KEY = 'malka.pushBanner';
 
@@ -23,6 +24,7 @@ const readDismissed = (key = STORAGE_KEY) => {
 const PushBanner = () => {
   const { status, busy, enable } = usePushNotifications();
   const { showSuccess, showError } = useToast();
+  const { t } = useIdioma();
   const { canPrompt, ios, installed } = useInstallPrompt();
   const [dismissed, setDismissed] = useState(() => readDismissed());
 
@@ -41,11 +43,11 @@ const PushBanner = () => {
   const handleEnable = async () => {
     try {
       if (await enable()) {
-        showSuccess('Listo, te vamos a avisar por acá');
+        showSuccess(t('avisoPush.listo'));
         dismiss();
       }
     } catch (error) {
-      showError(error.message || 'No se pudieron activar las notificaciones');
+      showError(error.message || t('avisoPush.error'));
     }
   };
 
@@ -53,16 +55,15 @@ const PushBanner = () => {
     <div className="px-4 pt-4 sm:px-6">
       <Alert
         tone="info"
-        title="Activá las notificaciones"
+        title={t('avisoPush.titulo')}
         onClose={dismiss}
         action={
           <Button size="sm" icon="bell" onClick={handleEnable} loading={busy}>
-            Activar
+            {t('avisoPush.activar')}
           </Button>
         }
       >
-        Te avisamos cuando haya actividades nuevas, el día de las que te puedan interesar y cuando
-        cambie tu inscripción.
+        {t('avisoPush.texto')}
       </Alert>
     </div>
   );

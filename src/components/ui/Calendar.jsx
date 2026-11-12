@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import Icon from './Icon';
 import cn from './cn';
+import { useIdioma } from '../../i18n/IdiomaContext';
 
 /**
  * Calendario de tres vistas: días → meses → años.
@@ -46,17 +47,23 @@ const Calendar = ({
   value,
   onSelect,
   variant = 'date',
-  weekdayLabels = DEFAULT_WEEKDAYS,
-  monthLabels = DEFAULT_MONTHS,
+  weekdayLabels: weekdayLabelsProp,
+  monthLabels: monthLabelsProp,
   min,
   max,
   className,
 }) => {
+  /* Sin etiquetas propias, las del idioma de la plataforma. */
+  const { t } = useIdioma();
+  const weekdayLabels = weekdayLabelsProp ?? t('ui.diasCortos') ?? DEFAULT_WEEKDAYS;
+  const monthLabels = monthLabelsProp ?? t('ui.meses') ?? DEFAULT_MONTHS;
   const today = new Date();
   const todayIso = isoDate(today.getFullYear(), today.getMonth(), today.getDate());
 
   const parsed = value ? value.split('-').map(Number) : [];
-  const monthsShort = monthLabels.map((m) => m.slice(0, 3));
+  // Las abreviaturas no se pueden sacar cortando el nombre en todos los
+  // idiomas (en hebreo queda ilegible): vienen del diccionario.
+  const monthsShort = monthLabelsProp ? monthLabelsProp.map((m) => m.slice(0, 3)) : t('ui.mesesCortos');
 
   const [view, setView] = useState({
     year: parsed[0] || today.getFullYear(),
@@ -125,8 +132,8 @@ const Calendar = ({
       )}
     >
       <div className="mb-2 flex items-center justify-between">
-        <button type="button" aria-label="Anterior" className={NAV_CLASS} onClick={goPrev}>
-          <Icon name="chevronLeft" size="md" />
+        <button type="button" aria-label={t('ui.anterior')} className={NAV_CLASS} onClick={goPrev}>
+          <Icon name="chevronLeft" size="md" className="rtl:-scale-x-100" />
         </button>
 
         <button
@@ -137,8 +144,8 @@ const Calendar = ({
           {title}
         </button>
 
-        <button type="button" aria-label="Siguiente" className={NAV_CLASS} onClick={goNext}>
-          <Icon name="chevronRight" size="md" />
+        <button type="button" aria-label={t('ui.siguiente')} className={NAV_CLASS} onClick={goNext}>
+          <Icon name="chevronRight" size="md" className="rtl:-scale-x-100" />
         </button>
       </div>
 

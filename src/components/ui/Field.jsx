@@ -59,7 +59,7 @@ const Field = ({
               // accesible del campo pasaría a ser "Nombre*". Eso rompe tanto a
               // los lectores de pantalla como a getByLabelText en los tests.
               // La obligatoriedad ya la comunica `required`/aria-required.
-              required && "after:ml-0.5 after:text-danger-500 after:content-['*']",
+              required && "after:ms-0.5 after:text-danger-500 after:content-['*']",
               labelClassName
             )}
           >

@@ -1,4 +1,5 @@
 import cn from './cn';
+import { useIdioma } from '../../i18n/IdiomaContext';
 
 /**
  * Tabla del sistema.
@@ -12,7 +13,7 @@ import cn from './cn';
  * Para pantallas chicas conviene `stacked`, que convierte cada fila en una
  * tarjeta con etiquetas: una tabla de 8 columnas en un teléfono es ilegible.
  */
-const ALIGN = { left: 'text-left', center: 'text-center', right: 'text-right' };
+const ALIGN = { left: 'text-start', center: 'text-center', right: 'text-end' };
 
 const Table = ({
   columns = [],
@@ -23,13 +24,14 @@ const Table = ({
   stacked = false,
   className,
 }) => {
+  const { t } = useIdioma();
   if (!rows.length && empty) return empty;
 
   return (
     <div
       tabIndex={0}
       role="region"
-      aria-label="Tabla de datos"
+      aria-label={t('ui.tablaDeDatos')}
       className={cn(
         'overflow-x-auto rounded-card border border-surface-border bg-surface',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',

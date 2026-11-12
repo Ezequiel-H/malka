@@ -1,5 +1,6 @@
 import Icon from './Icon';
 import cn from './cn';
+import { useIdioma } from '../../i18n/IdiomaContext';
 
 /**
  * Paleta por tono.
@@ -49,6 +50,7 @@ const Alert = ({
   children,
   ...props
 }) => {
+  const { t } = useIdioma();
   const config = TONES[tone];
   const assertive = tone === 'danger' || tone === 'warning';
 
@@ -72,7 +74,7 @@ const Alert = ({
       <span
         aria-hidden="true"
         style={{ background: `rgb(${config.rgb})` }}
-        className="pointer-events-none absolute -left-8 -top-10 h-24 w-24 rounded-full opacity-[0.18] blur-2xl"
+        className="pointer-events-none absolute -start-8 -top-10 h-24 w-24 rounded-full opacity-[0.18] blur-2xl"
       />
 
       <span
@@ -111,8 +113,8 @@ const Alert = ({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Cerrar"
-          className="relative -mr-1 -mt-1 shrink-0 rounded-[8px] p-1.5 text-ink-faint transition-control duration-fast hover:bg-ink/[0.06] hover:text-ink"
+          aria-label={t('ui.cerrar')}
+          className="relative -me-1 -mt-1 shrink-0 rounded-[8px] p-1.5 text-ink-faint transition-control duration-fast hover:bg-ink/[0.06] hover:text-ink"
         >
           <Icon name="close" size="sm" />
         </button>

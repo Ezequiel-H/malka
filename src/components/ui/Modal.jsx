@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Icon from './Icon';
 import cn from './cn';
+import { useIdioma } from '../../i18n/IdiomaContext';
 
 const SIZES = {
   sm: 'max-w-md',
@@ -36,6 +37,7 @@ const Modal = ({
   className,
   children,
 }) => {
+  const { t } = useIdioma();
   const panelRef = useRef(null);
   const previouslyFocused = useRef(null);
 
@@ -125,7 +127,7 @@ const Modal = ({
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Cerrar"
+                aria-label={t('ui.cerrar')}
                 className="-m-1.5 shrink-0 rounded-control p-1.5 text-ink-faint transition-colors duration-fast hover:bg-ink/[0.05] hover:text-ink"
               >
                 <Icon name="close" size="md" />

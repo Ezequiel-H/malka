@@ -8,11 +8,8 @@
  * El hebreo se escribe en plural (אתם) para no elegir un género por el lector.
  */
 
-export const IDIOMAS = [
-  { id: 'es', corto: 'ES', nombre: 'Español', ruta: '/' },
-  { id: 'en', corto: 'EN', nombre: 'English', ruta: '/en' },
-  { id: 'he', corto: 'עב', nombre: 'עברית', ruta: '/he', rtl: true },
-];
+/* La lista de idiomas es la misma de la plataforma. */
+export { IDIOMAS } from '../../i18n/idiomas';
 
 export const TEXTOS = {
   es: {

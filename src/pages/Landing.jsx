@@ -6,6 +6,7 @@ import Grano from '../components/landing/Grano';
 import CasaDibujada, { PROPORCION } from '../components/landing/casa/CasaDibujada';
 import LandingButton from '../components/landing/LandingButton';
 import { IDIOMAS, TEXTOS } from '../components/landing/textos';
+import { SelectorIdioma, useIdioma } from '../i18n';
 import logoMalka from '../assets/logo-malka-positivo.png';
 import fotoWally from '../assets/landing/staff/wally.jpg';
 import fotoMati from '../assets/landing/staff/mati.jpg';
@@ -106,29 +107,6 @@ const INDICE = ['quienes', 'propuestas', 'sauna', 'staff', 'sumate'];
 
 /* Los espacios con sus nombres en el idioma de la página. */
 const espaciosEn = (t) => ESPACIOS.map((e) => ({ ...e, ...t.espacios[e.zona] }));
-
-/**
- * El cambio de idioma: tres links cortos. Cada idioma tiene su dirección
- * (`/`, `/en`, `/he`), así que se puede compartir el link en el idioma justo.
- */
-const SelectorIdioma = ({ idioma, t, className = '' }) => (
-  <nav aria-label={t.ui.idioma} className={`flex items-center gap-1 ${className}`}>
-    {IDIOMAS.map((i) => (
-      <Link
-        key={i.id}
-        to={i.ruta}
-        lang={i.id}
-        aria-current={i.id === idioma ? 'true' : undefined}
-        title={i.nombre}
-        className={`inline-flex min-h-[32px] min-w-[32px] items-center justify-center rounded-pill px-2 font-grotesk text-[0.7rem] font-semibold tracking-label transition-colors duration-base ${
-          i.id === idioma ? 'bg-ink/10 text-ink' : 'text-ink-faint hover:bg-ink/5 hover:text-ink'
-        }`}
-      >
-        {i.corto}
-      </Link>
-    ))}
-  </nav>
-);
 
 /**
  * Una puerta de la casa, en forma de píldora.
@@ -352,7 +330,7 @@ const Landing = () => {
   /* En hebreo se espeja la página entera: la casa pasa a la derecha, el texto
      a la izquierda y la barra arranca del otro lado. Por eso los márgenes y
      posiciones de acá usan los lógicos (ms, me, end) y no left/right. */
-  const dir = rtl ? 'rtl' : undefined;
+  const dir = rtl ? 'rtl' : 'ltr';
 
   /* El idioma de la página entera: lo usan el lector de pantalla, el
      traductor del navegador y Google. Al salir de la landing vuelve a ser el
@@ -360,13 +338,26 @@ const Landing = () => {
   useEffect(() => {
     const html = document.documentElement;
     const titulo = document.title;
+    const antes = { lang: html.lang, dir: html.dir };
     html.lang = idioma;
+    html.dir = dir;
     document.title = t.titulo;
     return () => {
-      html.lang = 'es';
+      html.lang = antes.lang;
+      html.dir = antes.dir;
       document.title = titulo;
     };
-  }, [idioma, t]);
+  }, [idioma, t, dir]);
+
+  /* Lo que se elige acá vale también para la plataforma: quien entra por
+     /he y se registra, ve el registro en hebreo. Al llegar a la raíz sin
+     haber tocado nada, no se pisa lo que ya había elegido. */
+  const { setIdioma: setIdiomaPlataforma } = useIdioma();
+  const primeraVisita = useRef(true);
+  useEffect(() => {
+    if (!primeraVisita.current || pedido !== 'es') setIdiomaPlataforma(pedido, { fundir: false });
+    primeraVisita.current = false;
+  }, [pedido, setIdiomaPlataforma]);
   const [activo, setActivo] = useState('todo');
   const [zona, setZona] = useState('todo');
   const [seccion, setSeccion] = useState('entrada');
@@ -559,7 +550,7 @@ const Landing = () => {
         <nav aria-label={t.ui.principal} className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-5 sm:gap-4 sm:px-8">
           <img src={logoMalka} alt="Malka" className="h-5 w-auto shrink-0 sm:h-6" />
           <div className={`ms-auto flex items-center gap-3 ${capa}`}>
-            {!telefono && <SelectorIdioma idioma={pedido} t={t} />}
+            {!telefono && <SelectorIdioma comoLinks actual={pedido} etiqueta={t.ui.idioma} className="font-grotesk" />}
                 <LandingButton
                   to="/login"
                   variant="outline"
@@ -640,7 +631,7 @@ const Landing = () => {
                 </Link>
               </li>
               <li className="py-3">
-                <SelectorIdioma idioma={pedido} t={t} />
+                <SelectorIdioma comoLinks actual={pedido} etiqueta={t.ui.idioma} className="font-grotesk" />
               </li>
             </ul>
           </div>
@@ -794,9 +785,10 @@ const Landing = () => {
                   </div>
                   {/* En la portada no hay barra, así que el idioma se elige acá. */}
                   <SelectorIdioma
-                    idioma={pedido}
-                    t={t}
-                    className="mt-6 -ms-2 animate-fade-in-up [animation-delay:1760ms] [animation-fill-mode:backwards]"
+                    comoLinks
+                    actual={pedido}
+                    etiqueta={t.ui.idioma}
+                    className="mt-6 -ms-2 font-grotesk animate-fade-in-up [animation-delay:1760ms] [animation-fill-mode:backwards]"
                   />
                 </section>
               ) : (

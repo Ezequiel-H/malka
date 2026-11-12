@@ -1,5 +1,6 @@
 import Icon from './Icon';
 import cn from './cn';
+import { useIdioma } from '../../i18n/IdiomaContext';
 
 const SPINNER_SIZES = { sm: 'h-4 w-4', md: 'h-6 w-6', lg: 'h-10 w-10' };
 
@@ -7,7 +8,9 @@ const SPINNER_SIZES = { sm: 'h-4 w-4', md: 'h-6 w-6', lg: 'h-10 w-10' };
  * Indicador de carga. `label` es obligatorio en espíritu: un spinner mudo no
  * le dice nada a quien usa lector de pantalla.
  */
-export const Spinner = ({ size = 'md', label = 'Cargando', className }) => (
+export const Spinner = ({ size = 'md', label, className }) => {
+  const { t } = useIdioma();
+  return (
   <span role="status" aria-live="polite" className={cn('inline-flex items-center', className)}>
     <svg
       viewBox="0 0 24 24"
@@ -23,9 +26,10 @@ export const Spinner = ({ size = 'md', label = 'Cargando', className }) => (
         strokeLinecap="round"
       />
     </svg>
-    <span className="sr-only">{label}</span>
+    <span className="sr-only">{label ?? t('ui.cargando')}</span>
   </span>
-);
+  );
+};
 
 /**
  * Placeholder de carga con forma de contenido.
@@ -88,7 +92,7 @@ export const SkeletonRows = ({ count = 6 }) => (
       <div key={i} className="flex items-center gap-4 px-4 py-3.5">
         <Skeleton className="h-4 w-1/4" />
         <Skeleton className="h-4 w-1/3" />
-        <Skeleton className="ml-auto h-6 w-24" rounded="pill" />
+        <Skeleton className="ms-auto h-6 w-24" rounded="pill" />
       </div>
     ))}
   </div>

@@ -1,15 +1,11 @@
 import { useState } from 'react';
 import useInstallPrompt from '../../hooks/useInstallPrompt';
 import { Alert, Button, Icon, Modal } from '../ui';
+import { useIdioma } from '../../i18n/IdiomaContext';
 
 const STORAGE_KEY = 'malka.installBanner';
 
-const IOS_STEPS = [
-  'Abrí Malka en Safari.',
-  'Tocá el botón Compartir (el cuadrado con la flecha hacia arriba).',
-  'Elegí "Agregar a pantalla de inicio".',
-  'Confirmá con "Agregar".',
-];
+const IOS_PASOS = ['paso1', 'paso2', 'paso3', 'paso4'];
 
 /**
  * Invitación a instalar la app, sólo en mobile y sólo cuando aplica:
@@ -18,6 +14,7 @@ const IOS_STEPS = [
  */
 const InstallBanner = () => {
   const { canPrompt, promptInstall, ios, installed } = useInstallPrompt();
+  const { t } = useIdioma();
   const [dismissed, setDismissed] = useState(
     () => localStorage.getItem(STORAGE_KEY) === 'dismissed'
   );
@@ -40,40 +37,40 @@ const InstallBanner = () => {
       <div className="px-4 pt-4 sm:px-6 lg:hidden">
         <Alert
           tone="info"
-          title="Instalá Malka en tu teléfono"
+          title={t('instalar.titulo')}
           onClose={dismiss}
           action={
             canPrompt ? (
               <Button size="sm" icon="download" onClick={handleInstall}>
-                Instalar
+                {t('instalar.instalar')}
               </Button>
             ) : (
               <Button size="sm" icon="download" variant="secondary" onClick={() => setShowIosHelp(true)}>
-                Ver cómo
+                {t('instalar.verComo')}
               </Button>
             )
           }
         >
-          La abrís desde un ícono propio, a pantalla completa.
+          {t('instalar.texto')}
         </Alert>
       </div>
 
       <Modal
         open={showIosHelp}
         onClose={() => setShowIosHelp(false)}
-        title="Instalar en iPhone o iPad"
+        title={t('instalar.iosTitulo')}
         size="sm"
-        footer={<Button onClick={() => setShowIosHelp(false)}>Listo</Button>}
+        footer={<Button onClick={() => setShowIosHelp(false)}>{t('instalar.listo')}</Button>}
       >
         <ol className="space-y-3">
-          {IOS_STEPS.map((step, i) => (
-            <li key={step} className="flex items-start gap-3">
+          {IOS_PASOS.map((paso, i) => (
+            <li key={paso} className="flex items-start gap-3">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-50 text-xs font-semibold text-primary">
                 {i + 1}
               </span>
               <span className="text-ink-soft">
-                {step}
-                {i === 1 && <Icon name="upload" size="sm" className="ml-1.5 inline-block align-text-bottom text-ink-faint" />}
+                {t(`instalar.${paso}`)}
+                {i === 1 && <Icon name="upload" size="sm" className="ms-1.5 inline-block align-text-bottom text-ink-faint" />}
               </span>
             </li>
           ))}

@@ -2,6 +2,7 @@ import { forwardRef, useState } from 'react';
 import Icon from './Icon';
 import { useField } from './Field';
 import cn from './cn';
+import { useIdioma } from '../../i18n/IdiomaContext';
 
 /* Compartido con Textarea y Select para que los tres campos se vean idénticos. */
 export const controlBase = cn(
@@ -51,6 +52,7 @@ const Input = forwardRef(
     },
     ref
   ) => {
+    const { t } = useIdioma();
     const field = useField();
     const [revealed, setRevealed] = useState(false);
 
@@ -76,8 +78,8 @@ const Input = forwardRef(
           controlBase,
           controlSizes[size],
           controlBorder(invalid),
-          icon && 'pl-10',
-          hasSuffix && 'pr-11',
+          icon && 'ps-10',
+          hasSuffix && 'pe-11',
           className
         )}
         {...props}
@@ -89,7 +91,7 @@ const Input = forwardRef(
     return (
       <div className="relative">
         {icon && (
-          <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-ink-faint">
+          <span className="pointer-events-none absolute inset-y-0 start-0 flex items-center ps-3 text-ink-faint">
             <Icon name={icon} size="sm" />
           </span>
         )}
@@ -103,14 +105,14 @@ const Input = forwardRef(
             /* tabIndex -1: al tabular por el formulario el foco va al próximo
                campo, no a este botón auxiliar. Sigue siendo clickeable. */
             tabIndex={-1}
-            aria-label={revealed ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-            className="absolute inset-y-0 right-0 flex items-center rounded-r-control px-3 text-ink-faint transition-colors duration-fast hover:text-ink-soft"
+            aria-label={revealed ? t('ui.ocultarContrasena') : t('ui.mostrarContrasena')}
+            className="absolute inset-y-0 end-0 flex items-center rounded-e-control px-3 text-ink-faint transition-colors duration-fast hover:text-ink-soft"
           >
             <Icon name={revealed ? 'hide' : 'view'} size="sm" />
           </button>
         ) : (
           suffix && (
-            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-ink-muted">
+            <span className="pointer-events-none absolute inset-y-0 end-0 flex items-center pe-3 text-sm text-ink-muted">
               {suffix}
             </span>
           )

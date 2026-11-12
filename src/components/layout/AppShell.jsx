@@ -5,6 +5,7 @@ import { Button, Icon, cn } from '../ui';
 import InstallBanner from './InstallBanner';
 import PushBanner from './PushBanner';
 import logoMalka from '../../assets/logo-malka-positivo.png';
+import { SelectorIdioma, useIdioma } from '../../i18n';
 
 /* Cada sección con su icono. `exact` evita que "Panel" (/admin) quede activo
    en todas las subrutas de admin; `also` agrupa rutas hermanas bajo la misma
@@ -21,12 +22,14 @@ const ADMIN_LINKS = [
 ];
 const ADMIN_TAB_COUNT = 4;
 
-/* `tab` es la etiqueta corta para la barra inferior mobile. */
+/* `tab` es la etiqueta corta para la barra inferior mobile. Los textos del
+   participante salen del idioma elegido (`clave` en shell.links); el panel
+   del equipo queda en castellano. */
 const PARTICIPANT_LINKS = [
-  { to: '/activities', label: 'Actividades', tab: 'Cartelera', icon: 'activity' },
-  { to: '/my-inscriptions', label: 'Mis inscripciones', tab: 'Inscripciones', icon: 'document' },
-  { to: '/my-interests', label: 'Mis intereses', tab: 'Intereses', icon: 'tag' },
-  { to: '/my-profile', label: 'Mi perfil', tab: 'Perfil', icon: 'user' },
+  { to: '/activities', clave: 'actividades', icon: 'activity' },
+  { to: '/my-inscriptions', clave: 'inscripciones', icon: 'document' },
+  { to: '/my-interests', clave: 'intereses', icon: 'tag' },
+  { to: '/my-profile', clave: 'perfil', icon: 'user' },
 ];
 
 const SIDEBAR_KEY = 'malka.sidebar';
@@ -45,6 +48,7 @@ const SIDEBAR_KEY = 'malka.sidebar';
  */
 const AppShell = ({ children }) => {
   const { user, logout } = useAuth();
+  const { t } = useIdioma();
   const navigate = useNavigate();
   const location = useLocation();
   const panelId = useId();
@@ -55,10 +59,15 @@ const AppShell = ({ children }) => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isAdmin = user?.role === 'admin';
-  const links = isAdmin ? ADMIN_LINKS : PARTICIPANT_LINKS;
+  const participantLinks = PARTICIPANT_LINKS.map((l) => ({
+    ...l,
+    label: t(`shell.links.${l.clave}`),
+    tab: t(`shell.tabs.${l.clave}`),
+  }));
+  const links = isAdmin ? ADMIN_LINKS : participantLinks;
   /* Mobile app-like para ambos roles: los dos usan tab bar; admin no entra
      completo, así que sus últimas secciones (y el logout) viven en "Más". */
-  const tabLinks = isAdmin ? ADMIN_LINKS.slice(0, ADMIN_TAB_COUNT) : PARTICIPANT_LINKS;
+  const tabLinks = isAdmin ? ADMIN_LINKS.slice(0, ADMIN_TAB_COUNT) : participantLinks;
   const moreLinks = isAdmin ? ADMIN_LINKS.slice(ADMIN_TAB_COUNT) : [];
 
   const isActive = ({ to, exact, also = [] }) => {
@@ -112,7 +121,7 @@ const AppShell = ({ children }) => {
         title={iconOnly ? link.label : undefined}
         aria-current={active ? 'page' : undefined}
         className={cn(
-          'flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-sm font-medium',
+          'flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-start text-sm font-medium',
           'transition-control duration-fast motion-reduce:transition-none',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
           iconOnly && 'justify-center px-0',
@@ -131,9 +140,9 @@ const AppShell = ({ children }) => {
     <div className="min-h-screen">
       {/* ---------- Sidebar (desktop) ---------- */}
       <aside
-        aria-label="Principal"
+        aria-label={t('shell.principal')}
         className={cn(
-          'fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-surface-border bg-surface lg:flex',
+          'fixed inset-y-0 start-0 z-40 hidden flex-col border-e border-surface-border bg-surface lg:flex',
           'transition-[width] duration-slow ease-standard motion-reduce:transition-none',
           collapsed ? 'w-[4.75rem]' : 'w-64'
         )}
@@ -149,7 +158,7 @@ const AppShell = ({ children }) => {
             <button
               type="button"
               onClick={() => go(user?.role === 'admin' ? '/admin' : '/activities')}
-              aria-label="Ir al inicio"
+              aria-label={t('shell.irAlInicio')}
               className="flex h-9 w-9 items-center justify-center rounded-control bg-primary-50 font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               M
@@ -171,11 +180,11 @@ const AppShell = ({ children }) => {
         <button
           type="button"
           onClick={toggleCollapsed}
-          aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-          title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-          className="absolute -right-3 top-[4.5rem] z-10 flex h-6 w-6 items-center justify-center rounded-pill border border-surface-border bg-surface text-ink-faint shadow-subtle transition-chrome duration-fast hover:border-primary-300 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 motion-reduce:transition-none"
+          aria-label={collapsed ? t('shell.expandir') : t('shell.colapsar')}
+          title={collapsed ? t('shell.expandir') : t('shell.colapsar')}
+          className="absolute -end-3 top-[4.5rem] z-10 flex h-6 w-6 items-center justify-center rounded-pill border border-surface-border bg-surface text-ink-faint shadow-subtle transition-chrome duration-fast hover:border-primary-300 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 motion-reduce:transition-none"
         >
-          <Icon name={collapsed ? 'chevronRight' : 'chevronLeft'} size="xs" strokeWidth={2.5} />
+          <Icon name={collapsed ? 'chevronRight' : 'chevronLeft'} size="xs" strokeWidth={2.5} className="rtl:-scale-x-100" />
         </button>
 
         <nav className={cn('flex-1 space-y-1 overflow-y-auto py-4', collapsed ? 'px-3' : 'px-3')}>
@@ -193,8 +202,8 @@ const AppShell = ({ children }) => {
               <button
                 type="button"
                 onClick={handleLogout}
-                title="Salir"
-                aria-label="Salir"
+                title={t('comun.salir')}
+                aria-label={t('comun.salir')}
                 className="flex w-full items-center justify-center rounded-control py-2.5 text-ink-faint transition-control duration-fast hover:bg-danger-50 hover:text-danger-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 <Icon name="logout" size="md" />
@@ -202,16 +211,19 @@ const AppShell = ({ children }) => {
             </>
           ) : (
             <>
+              {/* El participante puede cambiar el idioma desde acá; el
+                  equipo no (el panel está en castellano). */}
+              {!isAdmin && <SelectorIdioma className="px-2" />}
               <p className="truncate px-3 text-sm font-medium text-ink-muted">
                 {user?.nombre} {user?.apellido}
               </p>
               <button
                 type="button"
                 onClick={handleLogout}
-                className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-sm font-medium text-ink-soft transition-control duration-fast hover:bg-danger-50 hover:text-danger-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-start text-sm font-medium text-ink-soft transition-control duration-fast hover:bg-danger-50 hover:text-danger-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
-                <Icon name="logout" size="md" className="text-ink-faint" />
-                Salir
+                <Icon name="logout" size="md" className="text-ink-faint rtl:-scale-x-100" />
+                {t('comun.salir')}
               </button>
             </>
           )}
@@ -277,7 +289,7 @@ const AppShell = ({ children }) => {
       <main
         className={cn(
           'transition-[padding] duration-slow ease-standard motion-reduce:transition-none',
-          collapsed ? 'lg:pl-[4.75rem]' : 'lg:pl-64',
+          collapsed ? 'lg:ps-[4.75rem]' : 'lg:ps-64',
           /* Aire para que la tab bar no tape el final del contenido. */
           'pb-[calc(4.25rem+env(safe-area-inset-bottom))] lg:pb-0'
         )}
@@ -289,7 +301,7 @@ const AppShell = ({ children }) => {
 
       {/* ---------- Tab bar (mobile) ---------- */}
       <nav
-        aria-label="Secciones"
+        aria-label={t('shell.secciones')}
         className="fixed inset-x-0 bottom-0 z-40 border-t border-surface-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
       >
         <div className={cn('grid', isAdmin ? 'grid-cols-5' : 'grid-cols-4')}>

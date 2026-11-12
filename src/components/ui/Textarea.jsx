@@ -60,7 +60,7 @@ const Textarea = forwardRef(
         {maxLength && (
           <div
             className={cn(
-              'mt-1 text-right text-xs tabular-nums',
+              'mt-1 text-end text-xs tabular-nums',
               nearLimit ? 'font-medium text-warning-600' : 'text-ink-faint'
             )}
           >

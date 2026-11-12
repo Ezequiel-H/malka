@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
+import { useIdioma } from './i18n';
 import AppShell from './components/layout/AppShell';
 import ErrorBoundary from './components/layout/ErrorBoundary';
 import LoadingScreen from './components/layout/LoadingScreen';
@@ -37,6 +38,7 @@ const RUTAS_VITRINA = ['/', '/en', '/he'];
 
 function App() {
   const { user, loading } = useAuth();
+  const { fundido } = useIdioma();
   const location = useLocation();
   const esVitrina = RUTAS_VITRINA.includes(location.pathname);
   const pantalla = esVitrina ? 'vitrina' : location.pathname;
@@ -240,7 +242,12 @@ function App() {
      app), y el shell alrededor del salto se vería un instante. */
   // Las rutas sin sesión (login, registro, /ds) no llevan el shell.
   return (
-    <div className="App min-h-screen">
+    /* Al cambiar de idioma la app se apaga, cambia el texto y vuelve. */
+    <div
+      className={`App min-h-screen transition-opacity duration-200 ease-standard motion-reduce:transition-none ${
+        fundido ? 'opacity-0' : 'opacity-100'
+      }`}
+    >
       {user && !esVitrina ? <AppShell>{routes}</AppShell> : routes}
     </div>
   );

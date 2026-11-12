@@ -6,6 +6,7 @@ import { useField } from './Field';
 import { controlBase, controlBorder, controlSizes } from './Input';
 import { computeAnchoredPosition } from './anchorPosition';
 import cn from './cn';
+import { useIdioma } from '../../i18n/IdiomaContext';
 
 /**
  * Selector de fecha.
@@ -21,26 +22,32 @@ import cn from './cn';
  *   <DatePicker value={mes} onChange={setMes} variant="month" />
  *   <DatePicker value={desde} onChange={setDesde} max={hasta} />
  */
-const formatLabel = (value, variant, monthLabels) => {
+const formatLabel = (value, variant, monthLabels, locale) => {
   const parts = value.split('-').map(Number);
   const [year, month, day] = parts;
   if (!year || !month) return value;
   if (variant === 'month') return `${monthLabels[month - 1]} ${year}`;
   if (!day) return value;
-  return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+  // El orden del día y el mes depende del idioma (15/05/1990 o 05/15/1990).
+  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString(locale, {
+    timeZone: 'UTC',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
 };
 
 const DatePicker = ({
   value,
   onChange,
   variant = 'date',
-  placeholder = 'Elegí una fecha',
+  placeholder: placeholderProp,
   size = 'md',
   clearable = false,
   disabled = false,
   invalid: invalidProp,
   weekdayLabels,
-  monthLabels = DEFAULT_MONTHS,
+  monthLabels: monthLabelsProp,
   min,
   max,
   className,
@@ -48,6 +55,9 @@ const DatePicker = ({
   name,
   ...props
 }) => {
+  const { t, locale } = useIdioma();
+  const placeholder = placeholderProp ?? t('ui.elegiFecha');
+  const monthLabels = monthLabelsProp ?? t('ui.meses') ?? DEFAULT_MONTHS;
   const field = useField();
   const invalid = invalidProp ?? field.invalid;
   const id = idProp ?? field.id;
@@ -102,7 +112,7 @@ const DatePicker = ({
     };
   }, [open, reposition, close]);
 
-  const label = value ? formatLabel(value, variant, monthLabels) : '';
+  const label = value ? formatLabel(value, variant, monthLabels, locale) : '';
 
   return (
     <div className={cn('relative', className)} {...props}>
@@ -124,7 +134,7 @@ const DatePicker = ({
           controlBase,
           controlSizes[size],
           controlBorder(invalid),
-          'flex items-center gap-2 text-left',
+          'flex items-center gap-2 text-start',
           open && 'border-primary ring-2 ring-primary/40',
           !label && 'text-ink-faint'
         )}
@@ -138,7 +148,7 @@ const DatePicker = ({
           <span
             role="button"
             tabIndex={-1}
-            aria-label="Limpiar fecha"
+            aria-label={t('ui.limpiarFecha')}
             onClick={(event) => {
               event.stopPropagation();
               onChange('');
@@ -166,7 +176,8 @@ const DatePicker = ({
           <div
             ref={panelRef}
             role="dialog"
-            aria-label="Calendario"
+            aria-label={t('ui.calendario')}
+            data-calendario
             style={{ position: 'fixed', top: pos.top, bottom: pos.bottom, left: pos.left }}
             className="z-[70] animate-scale-in motion-reduce:animate-none"
           >
@@ -174,7 +185,7 @@ const DatePicker = ({
               value={value}
               variant={variant}
               weekdayLabels={weekdayLabels}
-              monthLabels={monthLabels}
+              monthLabels={monthLabelsProp}
               min={min}
               max={max}
               onSelect={(next) => {

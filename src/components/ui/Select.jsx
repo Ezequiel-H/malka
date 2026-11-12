@@ -3,6 +3,7 @@ import Icon from './Icon';
 import { useField } from './Field';
 import { controlBase, controlBorder, controlSizes } from './Input';
 import cn from './cn';
+import { useIdioma } from '../../i18n/IdiomaContext';
 
 /**
  * Select propio, sin <select> nativo.
@@ -27,18 +28,21 @@ const Select = ({
   options = [],
   value,
   onChange,
-  placeholder = 'Seleccionar...',
+  placeholder: placeholderProp,
   size = 'md',
   searchable = false,
   clearable = false,
   disabled = false,
   invalid: invalidProp,
-  emptyMessage = 'Sin resultados',
+  emptyMessage: emptyMessageProp,
   className,
   id: idProp,
   name,
   ...props
 }) => {
+  const { t } = useIdioma();
+  const placeholder = placeholderProp ?? t('ui.seleccionar');
+  const emptyMessage = emptyMessageProp ?? t('ui.sinResultados');
   const field = useField();
   const invalid = invalidProp ?? field.invalid;
   const id = idProp ?? field.id;
@@ -254,7 +258,7 @@ const Select = ({
           controlBase,
           controlSizes[size],
           controlBorder(invalid),
-          'flex items-center justify-between gap-2 text-left',
+          'flex items-center justify-between gap-2 text-start',
           open && 'border-primary ring-2 ring-primary/40',
           !selected && 'text-ink-faint'
         )}
@@ -271,7 +275,7 @@ const Select = ({
             <span
               role="button"
               tabIndex={-1}
-              aria-label="Limpiar selección"
+              aria-label={t('ui.limpiarSeleccion')}
               onClick={(e) => {
                 e.stopPropagation();
                 onChange?.(null, null);
@@ -303,7 +307,7 @@ const Select = ({
           {searchable && (
             <div className="border-b border-surface-border p-2">
               <div className="relative">
-                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-ink-faint">
+                <span className="pointer-events-none absolute inset-y-0 start-0 flex items-center ps-2.5 text-ink-faint">
                   <Icon name="search" size="sm" />
                 </span>
                 <input
@@ -315,10 +319,10 @@ const Select = ({
                     setActiveIndex(0);
                   }}
                   onKeyDown={onKeyDown}
-                  placeholder="Buscar..."
-                  aria-label="Buscar opción"
+                  placeholder={t('ui.buscar')}
+                  aria-label={t('ui.buscarOpcion')}
                   aria-controls={listboxId}
-                  className="w-full rounded-control border border-surface-border bg-surface py-1.5 pl-8 pr-3 text-sm text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
+                  className="w-full rounded-control border border-surface-border bg-surface py-1.5 ps-8 pe-3 text-sm text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
                 />
               </div>
             </div>

@@ -1,5 +1,6 @@
 import { Component } from 'react';
 import { Alert, Button } from '../ui';
+import { useIdioma } from '../../i18n/IdiomaContext';
 
 /**
  * Red de contención para errores de render.
@@ -34,35 +35,41 @@ class ErrorBoundary extends Component {
   render() {
     if (!this.state.error) return this.props.children;
 
-    return (
-      <div className="flex min-h-screen items-start justify-center bg-surface-page px-4 py-16 sm:px-6">
-        <div className="w-full max-w-lg">
-          <Alert
-            tone="danger"
-            title="Algo salió mal en esta pantalla"
-            action={
-              <>
-                <Button size="sm" onClick={() => window.location.reload()}>
-                  Recargar
-                </Button>
-                <Button size="sm" variant="secondary" href="/">
-                  Ir al inicio
-                </Button>
-              </>
-            }
-          >
-            El resto del sistema sigue funcionando — probá recargar, o navegá a otra sección desde
-            el menú.
-            {import.meta.env.DEV && (
-              <pre className="mt-3 overflow-x-auto rounded-control bg-ink/[0.04] p-3 font-mono text-xs text-danger-700">
-                {String(this.state.error?.stack || this.state.error)}
-              </pre>
-            )}
-          </Alert>
-        </div>
-      </div>
-    );
+    return <AvisoDeError error={this.state.error} />;
   }
 }
+
+/* El aviso es una función aparte para poder usar el idioma (los hooks no
+   andan en una clase). */
+const AvisoDeError = ({ error }) => {
+  const { t } = useIdioma();
+  return (
+    <div className="flex min-h-screen items-start justify-center bg-surface-page px-4 py-16 sm:px-6">
+      <div className="w-full max-w-lg">
+        <Alert
+          tone="danger"
+          title={t('error.titulo')}
+          action={
+            <>
+              <Button size="sm" onClick={() => window.location.reload()}>
+                {t('error.recargar')}
+              </Button>
+              <Button size="sm" variant="secondary" href="/">
+                {t('error.inicio')}
+              </Button>
+            </>
+          }
+        >
+          {t('error.texto')}
+          {import.meta.env.DEV && (
+            <pre className="mt-3 overflow-x-auto rounded-control bg-ink/[0.04] p-3 font-mono text-xs text-danger-700">
+              {String(error?.stack || error)}
+            </pre>
+          )}
+        </Alert>
+      </div>
+    </div>
+  );
+};
 
 export default ErrorBoundary;

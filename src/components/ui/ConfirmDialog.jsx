@@ -5,6 +5,7 @@ import Icon from './Icon';
 import Field from './Field';
 import Textarea from './Textarea';
 import cn from './cn';
+import { useIdioma } from '../../i18n/IdiomaContext';
 
 const ConfirmContext = createContext(null);
 
@@ -38,21 +39,22 @@ const TONES = {
  * pieza que convierte un diálogo declarativo en una llamada imperativa.
  */
 export const ConfirmProvider = ({ children }) => {
+  const { t } = useIdioma();
   const [state, setState] = useState(null);
   const resolver = useRef(null);
 
   const confirm = useCallback((options = {}) => {
     setState({
-      title: '¿Confirmás la acción?',
-      confirmLabel: 'Confirmar',
-      cancelLabel: 'Cancelar',
+      title: t('ui.confirmarTitulo'),
+      confirmLabel: t('ui.confirmar'),
+      cancelLabel: t('ui.cancelar'),
       tone: 'danger',
       ...(typeof options === 'string' ? { title: options } : options),
     });
     return new Promise((resolve) => {
       resolver.current = resolve;
     });
-  }, []);
+  }, [t]);
 
   const [promptValue, setPromptValue] = useState('');
 
@@ -107,7 +109,7 @@ export const ConfirmProvider = ({ children }) => {
             {state?.prompt && (
               <Field
                 label={state.prompt.label}
-                hint={state.prompt.optional ? 'Opcional' : undefined}
+                hint={state.prompt.optional ? t('ui.opcional') : undefined}
                 className="mb-0 mt-3"
               >
                 <Textarea
