@@ -6,6 +6,7 @@ import PageContainer from '../../components/layout/PageContainer';
 import { Badge, Button, Card, EmptyState, useConfirm,
   SkeletonCards,
 } from '../../components/ui';
+import { etiquetaResidencia, nombrePais } from '../../utils/paises';
 
 const PendingUsers = () => {
   const { showSuccess, showError } = useToast();
@@ -111,7 +112,28 @@ const PendingUsers = () => {
                     <dd className="text-ink">{user.telefono}</dd>
                   </div>
                 )}
+                {user.nacionalidad && (
+                  <div className="flex gap-2">
+                    <dt className="font-medium text-ink-soft">Nacionalidad:</dt>
+                    <dd className="text-ink">{nombrePais(user.nacionalidad)}</dd>
+                  </div>
+                )}
+                {user.residencia && (
+                  <div className="flex gap-2">
+                    <dt className="font-medium text-ink-soft">Vive:</dt>
+                    <dd className="text-ink">
+                      {user.residencia === 'buenos_aires' ? 'En Buenos Aires' : user.ciudad || etiquetaResidencia(user.residencia)}
+                    </dd>
+                  </div>
+                )}
               </dl>
+              {/* Quien no vive en Buenos Aires termina el registro por
+                  WhatsApp: el aviso le recuerda al equipo que falta eso. */}
+              {user.residencia && user.residencia !== 'buenos_aires' && (
+                <Badge tone="warning" icon="whatsapp" className="mt-3">
+                  Termina el registro por WhatsApp
+                </Badge>
+              )}
 
               {user.tags && user.tags.length > 0 && (
                 <div className="mt-4">

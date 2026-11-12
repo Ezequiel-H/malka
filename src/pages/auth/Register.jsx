@@ -11,11 +11,14 @@ import {
   DatePicker,
   Field,
   Input,
+  RadioGroup,
+  Select,
   Spinner,
 } from '../../components/ui';
 import { DotsAccess, useDotsAccess } from '../../components/auth/dots_access';
 import logoMalka from '../../assets/logo-malka-positivo.png';
 import { invalidEs } from '../../utils/formValidation';
+import { RESIDENCIAS, opcionesPaises } from '../../utils/paises';
 
 const RESTRICCIONES = [
   'Vegetariano',
@@ -36,7 +39,10 @@ const RegisterForm = () => {
     dni: '',
     telefono: '',
     restriccionesAlimentarias: [],
-    comoSeEntero: ''
+    comoSeEntero: '',
+    nacionalidad: '',
+    residencia: '',
+    ciudad: ''
   });
   const [tags, setTags] = useState([]);
   const [availableTags, setAvailableTags] = useState([]);
@@ -46,6 +52,7 @@ const RegisterForm = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
   const dots = useDotsAccess();
+  const [paises] = useState(() => opcionesPaises('es'));
 
   useEffect(() => {
     let cancelled = false;
@@ -110,6 +117,12 @@ const RegisterForm = () => {
       dots.fail();
       return;
     }
+    // Igual que la fecha: el Select y los radios no los valida el navegador.
+    if (!formData.nacionalidad || !formData.residencia) {
+      setError('Contanos tu nacionalidad y dónde vivís.');
+      dots.fail();
+      return;
+    }
 
     setLoading(true);
 
@@ -121,6 +134,8 @@ const RegisterForm = () => {
     });
 
     if (result.success) {
+      // Fuera de Buenos Aires el registro sigue por WhatsApp: la pantalla de
+      // bienvenida le muestra el botón para escribirnos.
       navigate('/dashboard');
     } else {
       setError(result.message);
@@ -174,6 +189,46 @@ const RegisterForm = () => {
                 max={formatLocalDateToString(new Date())}
               />
             </Field>
+
+            <Field label="Nacionalidad" htmlFor="registro-nacionalidad" required>
+              <Select
+                id="registro-nacionalidad"
+                name="nacionalidad"
+                options={paises}
+                value={formData.nacionalidad}
+                onChange={(nacionalidad) => setFormData((previo) => ({ ...previo, nacionalidad: nacionalidad ?? '' }))}
+                placeholder="Elegí un país"
+                searchable
+              />
+            </Field>
+
+            <RadioGroup
+              label="¿Dónde vivís?"
+              name="residencia"
+              options={RESIDENCIAS}
+              value={formData.residencia}
+              onChange={(residencia) => setFormData((previo) => ({ ...previo, residencia }))}
+              className="mb-5"
+            />
+
+            {formData.residencia && formData.residencia !== 'buenos_aires' && (
+              <div className="mb-5 animate-fade-in-up">
+                <Field label="¿En qué ciudad?" htmlFor="registro-ciudad" required className="mb-3">
+                  <Input
+                    id="registro-ciudad"
+                    name="ciudad"
+                    value={formData.ciudad}
+                    onChange={handleChange}
+                    required
+                    maxLength={80}
+                    autoComplete="address-level2"
+                  />
+                </Field>
+                <Alert tone="info">
+                  Después de registrarte te vamos a pedir unos datos más por WhatsApp para terminar el registro.
+                </Alert>
+              </div>
+            )}
 
             <Field label="DNI" hint="Entre 7 y 10 dígitos, sin puntos" required>
               <Input

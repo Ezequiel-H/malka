@@ -14,6 +14,7 @@ const Settings = () => {
   const [whatsappNumero, setWhatsappNumero] = useState('');
   const [whatsappViajeMensaje, setWhatsappViajeMensaje] = useState('');
   const [whatsappCumpleanosMensaje, setWhatsappCumpleanosMensaje] = useState('');
+  const [whatsappRegistroMensaje, setWhatsappRegistroMensaje] = useState('');
   const [plantillas, setPlantillas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -31,6 +32,7 @@ const Settings = () => {
       setWhatsappNumero(s.whatsappNumero || '');
       setWhatsappViajeMensaje(s.whatsappViajeMensaje || '');
       setWhatsappCumpleanosMensaje(s.whatsappCumpleanosMensaje || '');
+      setWhatsappRegistroMensaje(s.whatsappRegistroMensaje || '');
       setPlantillas(s.plantillasWhatsApp || []);
     } catch (error) {
       showError('Error al cargar ajustes');
@@ -52,6 +54,7 @@ const Settings = () => {
         whatsappNumero,
         whatsappViajeMensaje,
         whatsappCumpleanosMensaje,
+        whatsappRegistroMensaje,
         plantillasWhatsApp: plantillas,
       });
       // El back limpia (descarta filas vacías, normaliza el número):
@@ -113,6 +116,17 @@ const Settings = () => {
             <Textarea
               value={whatsappViajeMensaje}
               onChange={(e) => setWhatsappViajeMensaje(e.target.value)}
+              rows={3}
+            />
+          </Field>
+
+          <Field
+            label="Terminar el registro (fuera de Buenos Aires)"
+            hint="Lo que sale prellenado cuando alguien que no vive en Buenos Aires se registra y toca «Escribirnos». Variables: {nombre} y {ciudad}."
+          >
+            <Textarea
+              value={whatsappRegistroMensaje}
+              onChange={(e) => setWhatsappRegistroMensaje(e.target.value)}
               rows={3}
             />
           </Field>

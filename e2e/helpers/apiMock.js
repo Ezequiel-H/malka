@@ -100,6 +100,7 @@ export async function installApiMock(page, options = {}) {
     }
 
     if (method === 'POST' && path === '/api/auth/register') {
+      const body = route.request().postDataJSON() || {};
       await route.fulfill(
         json(
           {
@@ -111,7 +112,10 @@ export async function installApiMock(page, options = {}) {
               apellido: 'Usuario',
               role: 'participant',
               estado: 'pending',
-              tags: []
+              tags: [],
+              nacionalidad: body.nacionalidad,
+              residencia: body.residencia,
+              ciudad: body.ciudad
             }
           },
           201
@@ -120,7 +124,20 @@ export async function installApiMock(page, options = {}) {
       return;
     }
 
+    if (method === 'GET' && path === '/api/auth/registro-whatsapp') {
+      await route.fulfill(
+        json({
+          completarPorWhatsapp: true,
+          numero: '5491134405730',
+          mensaje: 'Hola! Soy {nombre} y vivo en {ciudad}.'
+        })
+      );
+      return;
+    }
+
     if (method === 'POST' && path === '/api/users/onboarding') {
+      /* Como el back: devuelve el perfil con lo que se mandó. */
+      const body = route.request().postDataJSON() || {};
       await route.fulfill(
         json({
           user: {
@@ -130,7 +147,11 @@ export async function installApiMock(page, options = {}) {
             apellido: 'Usuario',
             role: 'participant',
             estado: 'pending',
-            tags: []
+            tags: [],
+            fechaNacimiento: body.fechaNacimiento,
+            nacionalidad: body.nacionalidad,
+            residencia: body.residencia,
+            ciudad: body.ciudad
           }
         })
       );

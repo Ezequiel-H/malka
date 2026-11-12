@@ -100,7 +100,10 @@ const Select = ({
   }, [open]);
 
   useEffect(() => {
-    if (open && searchable) searchRef.current?.focus();
+    /* Sin desplazar: si la lista abre cerca del borde de abajo, el foco
+       movería la página para mostrar el buscador, y ese scroll cierra la
+       lista apenas se abre. */
+    if (open && searchable) searchRef.current?.focus({ preventScroll: true });
   }, [open, searchable]);
 
   /* Mantiene la opción activa dentro del área visible del scroll.

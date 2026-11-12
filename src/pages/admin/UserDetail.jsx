@@ -21,6 +21,7 @@ import {
 } from '../../components/ui';
 import InscriptionStatusTag from '../../components/activities/InscriptionStatusTag';
 import TagAssigner from '../../components/tags/TagAssigner';
+import { etiquetaResidencia, nombrePais } from '../../utils/paises';
 const ESTADO_OPTIONS = [
   { value: 'pending', label: 'Pendiente' },
   { value: 'approved', label: 'Aprobado' },
@@ -558,6 +559,23 @@ const UserDetail = () => {
                   </div>
                 ) : (
                   <p className="italic text-ink-faint">No tiene restricciones alimentarias</p>
+                )}
+              </Field>
+              <Field label="Nacionalidad">
+                {user?.nacionalidad ? (
+                  <p className="text-ink">{nombrePais(user.nacionalidad)}</p>
+                ) : (
+                  <p className="italic text-ink-faint">No especificada</p>
+                )}
+              </Field>
+              <Field label="Dónde vive">
+                {user?.residencia ? (
+                  <p className="text-ink">
+                    {etiquetaResidencia(user.residencia)}
+                    {user.ciudad ? ` · ${user.ciudad}` : ''}
+                  </p>
+                ) : (
+                  <p className="italic text-ink-faint">No especificado</p>
                 )}
               </Field>
               <Field label="¿Cómo se enteró de esta propuesta?" className="md:col-span-2">

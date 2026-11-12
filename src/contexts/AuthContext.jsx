@@ -134,6 +134,9 @@ export const AuthProvider = ({ children }) => {
       restriccionesAlimentarias: registerPayload.restriccionesAlimentarias,
       comoSeEntero: registerPayload.comoSeEntero,
       fechaNacimiento: registerPayload.fechaNacimiento,
+      nacionalidad: registerPayload.nacionalidad,
+      residencia: registerPayload.residencia,
+      ciudad: registerPayload.ciudad,
       tags
     };
 
