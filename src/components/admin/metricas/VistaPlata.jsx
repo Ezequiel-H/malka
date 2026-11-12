@@ -40,7 +40,8 @@ const VistaPlata = ({ plata, participantes }) => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      {/* Montos en pesos: en un teléfono van de a uno por fila, si no no entran. */}
+      <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         <Kpi
           titulo="Cobertura de gastos"
           valor={sinGastos ? '—' : porciento(pl.cobertura)}
