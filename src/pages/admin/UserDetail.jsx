@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useToast } from '../../contexts/ToastContext';
 import { userPrivateTags } from '../../utils/tagFields';
@@ -22,6 +22,13 @@ import {
 import InscriptionStatusTag from '../../components/activities/InscriptionStatusTag';
 import TagAssigner from '../../components/tags/TagAssigner';
 import { etiquetaResidencia, nombrePais } from '../../utils/paises';
+import ResumenPersona from '../../components/admin/ResumenPersona';
+import { Segmentado } from '../../components/admin/metricas/piezas';
+
+const VISTAS_FICHA = [
+  { valor: 'resumen', etiqueta: 'Cómo viene' },
+  { valor: 'datos', etiqueta: 'Datos' },
+];
 const ESTADO_OPTIONS = [
   { value: 'pending', label: 'Pendiente' },
   { value: 'approved', label: 'Aprobado' },
@@ -60,6 +67,8 @@ const INSCRIPTION_COLUMNS = [
   },
 ];
 const UserDetail = () => {
+  const [params, setParams] = useSearchParams();
+  const vistaFicha = params.get('vista') === 'datos' ? 'datos' : 'resumen';
   const { id } = useParams();
   const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
@@ -419,7 +428,26 @@ const UserDetail = () => {
             {error}
           </Alert>
         )}
-        <Card as="form" onSubmit={handleSubmit}>
+        {/* La ficha abre en cómo viene la persona (estado, números e
+            historial); los datos para editar quedan en la otra pestaña. */}
+        <Segmentado
+          opciones={VISTAS_FICHA}
+          valor={vistaFicha}
+          onChange={(v) => setParams((p) => {
+            const n = new URLSearchParams(p);
+            if (v === 'resumen') n.delete('vista');
+            else n.set('vista', v);
+            return n;
+          }, { replace: true })}
+          etiqueta="Qué ver de la persona"
+          className="mb-6"
+        />
+        {vistaFicha === 'resumen' ? (
+          <div key="resumen" className="animate-fade-in">
+            <ResumenPersona userId={user._id} />
+          </div>
+        ) : (
+        <Card as="form" onSubmit={handleSubmit} key="datos" className="animate-fade-in">
           {/* Información Básica */}
           <div className="mb-8">
             <h2 className="mb-4 text-2xl font-semibold text-ink">Información Básica</h2>
@@ -696,6 +724,7 @@ const UserDetail = () => {
             </Button>
           </div>
         </Card>
+        )}
     </PageContainer>
   );
 };
