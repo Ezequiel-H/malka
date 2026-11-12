@@ -48,6 +48,7 @@ const Input = forwardRef(
       invalid: invalidProp,
       className,
       id: idProp,
+      dir,
       ...props
     },
     ref
@@ -74,6 +75,7 @@ const Input = forwardRef(
         aria-invalid={invalid || undefined}
         aria-describedby={field.describedBy}
         aria-required={field.required || undefined}
+        dir={dir}
         className={cn(
           controlBase,
           controlSizes[size],
@@ -88,8 +90,11 @@ const Input = forwardRef(
 
     if (!icon && !hasSuffix) return input;
 
+    /* `dir` va también en el contenedor: así el ícono y el relleno del campo
+       quedan del mismo lado (un teléfono se escribe de izquierda a derecha
+       aunque la página esté en hebreo). */
     return (
-      <div className="relative">
+      <div className="relative" dir={dir}>
         {icon && (
           <span className="pointer-events-none absolute inset-y-0 start-0 flex items-center ps-3 text-ink-faint">
             <Icon name={icon} size="sm" />

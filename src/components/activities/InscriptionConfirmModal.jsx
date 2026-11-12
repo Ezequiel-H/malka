@@ -70,9 +70,9 @@ const InscriptionConfirmModal = ({
     >
       <div className="space-y-4">
         <div>
-          <h3 className="mb-2 text-xl font-semibold text-ink">{activity.titulo}</h3>
+          <h3 dir="auto" className="mb-2 text-xl font-semibold text-ink">{activity.titulo}</h3>
           {activity.descripcion && (
-            <p className="mb-4 whitespace-pre-wrap text-ink-muted">{activity.descripcion}</p>
+            <p dir="auto" className="mb-4 whitespace-pre-wrap text-ink-muted">{activity.descripcion}</p>
           )}
         </div>
 
@@ -128,7 +128,7 @@ const InscriptionConfirmModal = ({
         {!activity.esGratuita && !esViaje && (
           <Alert tone="warning" title={t('confirmar.instruccionesPago')}>
             {activity.instruccionesPagoResueltas ? (
-              <p className="whitespace-pre-wrap">{activity.instruccionesPagoResueltas}</p>
+              <p dir="auto" className="whitespace-pre-wrap">{activity.instruccionesPagoResueltas}</p>
             ) : (
               <p>{t('confirmar.transferencia')}</p>
             )}

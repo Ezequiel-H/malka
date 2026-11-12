@@ -177,7 +177,7 @@ const ActivityDetail = () => {
 
         <Card padding="none" className="min-w-0">
           <div className="p-4 sm:p-6">
-            <h1 className="mb-6 text-xl font-bold text-ink sm:text-2xl md:text-3xl">
+            <h1 dir="auto" className="mb-6 text-xl font-bold text-ink sm:text-2xl md:text-3xl">
               {activity.titulo}
             </h1>
 
@@ -365,7 +365,7 @@ const ActivityDetail = () => {
           }
         >
           <div className="rounded-card border border-surface-border bg-surface p-4 sm:p-6">
-            <p className="whitespace-pre-wrap leading-relaxed text-ink-soft">
+            <p dir="auto" className="whitespace-pre-wrap leading-relaxed text-ink-soft">
               {activity.politicaCancelacion}
             </p>
           </div>

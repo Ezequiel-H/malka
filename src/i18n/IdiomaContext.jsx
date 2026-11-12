@@ -63,6 +63,10 @@ export const IdiomaProvider = ({ children }) => {
   const [elegido, setElegido] = useState(() => leerGuardado() ?? IDIOMA_POR_DEFECTO);
   const [fundido, setFundido] = useState(false);
   const espera = useRef(null);
+  /* La sesión va por referencia: si setIdioma dependiera de ella cambiaría
+     en cada render, y con él `t`, y todo efecto que use `t` se repetiría. */
+  const sesion = useRef({ user, updateUser });
+  sesion.current = { user, updateUser };
 
   /* Al entrar con una cuenta que ya tiene idioma, manda el de la cuenta. */
   const idiomaCuenta = user?.role === 'participant' && esIdioma(user?.idioma) ? user.idioma : null;
@@ -78,11 +82,11 @@ export const IdiomaProvider = ({ children }) => {
   const sinIdioma = user?.role === 'participant' && !esIdioma(user?.idioma);
   useEffect(() => {
     if (!sinIdioma) return;
-    updateUser?.({ idioma: elegido });
+    sesion.current.updateUser?.({ idioma: elegido });
     axios.patch('/users/me', { idioma: elegido }).catch(() => {
       /* sin guardar en la cuenta, queda en el navegador */
     });
-  }, [sinIdioma, elegido, updateUser]);
+  }, [sinIdioma, elegido]);
 
   const esEquipo = user?.role === 'admin';
   const idioma = esEquipo ? IDIOMA_POR_DEFECTO : elegido;
@@ -91,8 +95,9 @@ export const IdiomaProvider = ({ children }) => {
     (nuevo, { fundir = true } = {}) => {
       if (!esIdioma(nuevo)) return;
       guardar(nuevo);
-      if (user?.role === 'participant' && user.idioma !== nuevo) {
-        updateUser?.({ idioma: nuevo });
+      const { user: cuenta, updateUser: actualizar } = sesion.current;
+      if (cuenta?.role === 'participant' && cuenta.idioma !== nuevo) {
+        actualizar?.({ idioma: nuevo });
         axios.patch('/users/me', { idioma: nuevo }).catch(() => {
           /* si no se pudo guardar en la cuenta, queda en el navegador */
         });
@@ -109,7 +114,7 @@ export const IdiomaProvider = ({ children }) => {
         setFundido(false);
       }, FUNDIDO_MS);
     },
-    [user, updateUser]
+    []
   );
 
   useEffect(() => () => window.clearTimeout(espera.current), []);

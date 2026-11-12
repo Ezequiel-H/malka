@@ -55,6 +55,7 @@ const LoginForm = () => {
             <Input
               type="email"
               icon="mail"
+              dir="ltr"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required

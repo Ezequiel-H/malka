@@ -233,6 +233,7 @@ const RegisterForm = () => {
               <Input
                 type="text"
                 name="dni"
+                dir="ltr"
                 value={formData.dni}
                 onChange={handleChange}
                 required
@@ -251,6 +252,7 @@ const RegisterForm = () => {
                 type="email"
                 icon="mail"
                 name="email"
+                dir="ltr"
                 value={formData.email}
                 onChange={handleChange}
                 required
@@ -263,6 +265,7 @@ const RegisterForm = () => {
                 type="tel"
                 icon="phone"
                 name="telefono"
+                dir="ltr"
                 value={formData.telefono}
                 onChange={handleChange}
                 required

@@ -172,6 +172,7 @@ const MyProfile = () => {
             <Input
               type="text"
               name="dni"
+              dir="ltr"
               value={formData.dni}
               onChange={handleChange}
               required
@@ -190,7 +191,7 @@ const MyProfile = () => {
             htmlFor="my-profile-email"
             hint={t('perfil.emailAyuda')}
           >
-            <Input type="email" icon="mail" name="email" value={formData.email} disabled />
+            <Input type="email" icon="mail" name="email" dir="ltr" value={formData.email} disabled />
           </Field>
 
           <Field
@@ -203,6 +204,7 @@ const MyProfile = () => {
               type="tel"
               icon="phone"
               name="telefono"
+              dir="ltr"
               value={formData.telefono}
               onChange={handleChange}
               required

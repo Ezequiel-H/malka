@@ -487,7 +487,9 @@ const ActivitiesList = () => {
                   })()
                 )}
                 <div className="mb-3 flex items-start justify-between gap-3">
-                  <h2 className="min-w-0 text-lg font-bold leading-snug text-ink">
+                  {/* dir="auto": el título lo carga el equipo (en castellano) y
+                      tiene que leerse bien aunque la página esté en hebreo. */}
+                  <h2 dir="auto" className="min-w-0 text-lg font-bold leading-snug text-ink">
                     {activity.titulo}
                   </h2>
                   {activity.esGratuita ? (

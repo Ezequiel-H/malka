@@ -158,6 +158,7 @@ const MyInscriptions = () => {
                             {activity ? (
                               <Link
                                 to={`/activities/${activity._id}`}
+                                dir="auto"
                                 className="truncate text-base font-semibold text-ink transition-control duration-fast hover:text-primary hover:underline"
                               >
                                 {activity.titulo}
