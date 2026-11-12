@@ -16,21 +16,27 @@ const VISTAS = [
 ];
 
 const PERIODOS = [
-  { valor: '3m', etiqueta: '3 meses' },
-  { valor: '6m', etiqueta: '6 meses' },
-  { valor: '12m', etiqueta: '12 meses' },
+  { valor: '7d', etiqueta: 'Última semana' },
+  { valor: '30d', etiqueta: 'Último mes' },
+  { valor: '60d', etiqueta: 'Últimos 60 días' },
+  { valor: '90d', etiqueta: 'Últimos 90 días' },
+  { valor: '6m', etiqueta: 'Medio año' },
+  { valor: '12m', etiqueta: 'Último año' },
   { valor: 'anio', etiqueta: 'Este año' },
-  { valor: 'rango', etiqueta: 'Elegir fechas' },
+  { valor: 'rango', etiqueta: 'Personalizado' },
 ];
 
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-/* El rango de cada período, siempre hasta hoy. "3 meses" arranca el primer
-   día del mes, dos meses atrás: así los meses del gráfico vienen enteros. */
+/* El rango de cada período, siempre hasta hoy. Los de días cuentan días
+   corridos; medio año y el último año arrancan el primer día del mes, así los
+   meses del gráfico vienen enteros. */
 const rangoDe = (periodo) => {
   const hoy = new Date();
   if (periodo === 'anio') return { desde: `${hoy.getFullYear()}-01-01`, hasta: iso(hoy) };
-  const meses = { '3m': 3, '6m': 6, '12m': 12 }[periodo] ?? 12;
+  const dias = { '7d': 7, '30d': 30, '60d': 60, '90d': 90 }[periodo];
+  if (dias) return { desde: iso(new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - (dias - 1))), hasta: iso(hoy) };
+  const meses = periodo === '6m' ? 6 : 12;
   return { desde: iso(new Date(hoy.getFullYear(), hoy.getMonth() - (meses - 1), 1)), hasta: iso(hoy) };
 };
 
@@ -80,9 +86,7 @@ const Metricas = () => {
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <Segmentado opciones={VISTAS} valor={vista} onChange={(v) => cambiar({ vista: v === 'personas' ? null : v })} etiqueta="Qué mirar" />
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end lg:justify-end">
-          {/* Cinco períodos no entran en un teléfono: ahí es un desplegable. */}
-          <Segmentado opciones={PERIODOS} valor={periodo} onChange={elegirPeriodo} etiqueta="Período" className="hidden sm:inline-flex" />
-          <Field label="Período" htmlFor="metricas-periodo" className="mb-0 sm:hidden">
+          <Field label="Período" htmlFor="metricas-periodo" className="mb-0 sm:w-52">
             <Select
               id="metricas-periodo"
               options={PERIODOS.map((p) => ({ value: p.valor, label: p.etiqueta }))}
