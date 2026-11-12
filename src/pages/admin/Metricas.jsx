@@ -30,6 +30,29 @@ const PERIODOS = [
 
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
+const desdeIso = (s) => {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d);
+};
+
+/* El período anterior del mismo largo, pegado antes del elegido. */
+const rangoAnterior = (desde, hasta) => {
+  const inicio = desdeIso(desde);
+  const dias = Math.round((desdeIso(hasta) - inicio) / 86400000) + 1;
+  return {
+    desde: iso(new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() - dias)),
+    hasta: iso(new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() - 1)),
+  };
+};
+
+/* Un mes entero ("2026-03"), recortado a hoy si es el mes en curso. */
+const rangoDelMes = (mes) => {
+  const [y, m] = mes.split('-').map(Number);
+  const fin = new Date(y, m, 0);
+  const hoy = new Date();
+  return { desde: `${mes}-01`, hasta: iso(fin > hoy ? hoy : fin) };
+};
+
 /* El rango de cada período, siempre hasta hoy. Los de días cuentan días
    corridos; medio año y el último año arrancan el primer día del mes, así los
    meses del gráfico vienen enteros. */
@@ -78,10 +101,44 @@ const Metricas = () => {
     else cambiar({ periodo: p, desde: null, hasta: null });
   };
 
+  /* Con el período se pide también el anterior del mismo largo: es contra
+     lo que se compara cada número («12 % más que el período anterior»). */
+  const anterior = rangoAnterior(desde, hasta);
   const { datos, cargando, actualizando, error, recargar } = useCargaSuave(
-    (signal) => axios.get('/admin/metrics', { params: { from: desde, to: hasta }, signal }).then((r) => r.data),
+    (signal) =>
+      Promise.all([
+        axios.get('/admin/metrics', { params: { from: desde, to: hasta }, signal }),
+        axios.get('/admin/metrics', { params: { from: anterior.desde, to: anterior.hasta }, signal }).catch(() => null),
+      ]).then(([actual, previo]) => ({ ...actual.data, anterior: previo?.data ?? null })),
     `${desde}|${hasta}`
   );
+
+  /**
+   * Lleva a «En detalle» con una pregunta ya armada: los filtros y, si hace
+   * falta, otro período (p. ej. un mes puntual del gráfico).
+   */
+  const abrirDetalle = (filtros, rango) => {
+    setParams(
+      (actual) => {
+        const n = new URLSearchParams();
+        n.set('vista', 'detalle');
+        const p = rango ? 'rango' : actual.get('periodo');
+        if (p) n.set('periodo', p);
+        if (rango) {
+          n.set('desde', rango.desde);
+          n.set('hasta', rango.hasta);
+        } else if (p === 'rango') {
+          n.set('desde', actual.get('desde'));
+          n.set('hasta', actual.get('hasta'));
+        }
+        for (const [k, v] of Object.entries(filtros)) if (v?.length) n.set(`f_${k}`, v.join(','));
+        // «En detalle» baja sola hasta el resultado cuando llegan los datos.
+        n.set('ir', 'resultado');
+        return n;
+      },
+      { replace: false }
+    );
+  };
 
   return (
     <PageContainer title="Métricas">
@@ -145,9 +202,15 @@ const Metricas = () => {
         ) : (
           <div className={cn('transition-opacity duration-base', actualizando && 'pointer-events-none opacity-50')}>
             {vista === 'plata' ? (
-              <VistaPlata plata={datos.plata} participantes={datos.personas.participantes} />
+              <VistaPlata
+                plata={datos.plata}
+                anterior={datos.anterior?.plata}
+                participantes={datos.personas.participantes}
+                onMes={(mes) => cambiar({ vista: 'gastos', periodo: 'rango', ...rangoDelMes(mes) })}
+                onTipo={(tipo) => cambiar({ vista: 'gastos', tipo: [tipo] })}
+              />
             ) : (
-              <VistaPersonas personas={datos.personas} />
+              <VistaPersonas personas={datos.personas} anterior={datos.anterior?.personas} abrirDetalle={abrirDetalle} />
             )}
           </div>
         )}

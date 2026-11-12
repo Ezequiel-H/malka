@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
-import { Badge, Button, EmptyState, Field, Select, Skeleton, Table, cn } from '../../ui';
+import { Badge, Button, EmptyState, Field, Icon, Select, Skeleton, Table, cn } from '../../ui';
 import useCargaSuave from '../../../hooks/useCargaSuave';
 import { ESTADOS } from '../ResumenPersona';
 import { nombrePais } from '../../../utils/paises';
@@ -83,6 +83,12 @@ const armarDimensiones = (datos) => {
       de: (p) => p.categorias,
     },
     {
+      clave: 'tambien',
+      etiqueta: 'Hizo también la propuesta',
+      opciones: datos.categorias.map((c) => ({ value: c.nombre, label: c.nombre })),
+      de: (p) => p.categorias,
+    },
+    {
       clave: 'actividad',
       etiqueta: 'Vino a la actividad',
       opciones: datos.actividades.map((a) => ({ value: a.id, label: titulo(a.titulo) })).sort((a, b) => a.label.localeCompare(b.label)),
@@ -124,6 +130,40 @@ const pasa = (persona, dimensiones, filtros) =>
     if (d.solo) return propios.length > 0 && propios.every((v) => elegidos.includes(v));
     return propios.some((v) => elegidos.includes(v));
   });
+
+/* ---------- El grupo en una frase ---------- */
+
+/**
+ * Lo que tiene de particular el grupo filtrado, dicho como lo diría alguien
+ * del equipo: cuántas son, cómo vienen, qué hacen y qué edad tienen.
+ */
+const resumenGrupo = (gente, total) => {
+  const partes = [`Son ${numero(gente.length)} personas, ${Math.round((gente.length / total) * 100)} de cada 100 registradas.`];
+  const masComun = (de) => {
+    const cuenta = new Map();
+    for (const p of gente) for (const v of de(p)) cuenta.set(v, (cuenta.get(v) ?? 0) + 1);
+    return [...cuenta.entries()].sort((a, b) => b[1] - a[1])[0] ?? null;
+  };
+  const estado = masComun((p) => [p.estado]);
+  const COMO = {
+    frecuente: 'son frecuentes',
+    ocasional: 'vienen de vez en cuando',
+    nueva: 'son nuevas',
+    alejandose: 'se están alejando',
+    inactiva: 'están inactivas',
+    sin_participar: 'todavía no participaron',
+  };
+  if (estado) partes.push(`La mayoría (${numero(estado[1])}) ${COMO[estado[0]]}.`);
+  const propuesta = masComun((p) => p.categorias);
+  if (propuesta) partes.push(`Lo que más hacen es ${propuesta[0]} (${numero(propuesta[1])}).`);
+  const edades = gente.map((p) => p.edad).filter((e) => e !== null);
+  if (edades.length) partes.push(`Tienen ${numero(Math.round(edades.reduce((a, b) => a + b, 0) / edades.length))} años en promedio.`);
+  const vinieron = gente.filter((p) => p.veces > 0);
+  if (vinieron.length) {
+    partes.push(`Las que vinieron, vinieron ${numero(Math.round((vinieron.reduce((t, p) => t + p.veces, 0) / vinieron.length) * 10) / 10)} veces cada una.`);
+  }
+  return partes.join(' ');
+};
 
 /* ---------- Preguntas rápidas ---------- */
 
@@ -238,7 +278,30 @@ const VistaDetalle = ({ desde, hasta }) => {
       { replace: true }
     );
   };
+  /* Tocar una barra de los repartos suma ese valor como filtro. Los «sin
+     dato» de nacionalidad no tienen filtro propio: se usa el de origen. */
+  const sumarFiltro = (clave, valor) => {
+    if (clave === 'nacionalidad' && valor === SIN_DATO) return ponerFiltros({ origen: [...new Set([...filtros.origen, SIN_DATO])] });
+    if (!filtros[clave] || filtros[clave].includes(valor)) return;
+    ponerFiltros({ [clave]: [...filtros[clave], valor] });
+  };
   const limpiar = () => ponerFiltros(Object.fromEntries(dimensiones.map((d) => [d.clave, []])));
+
+  /* Si se llegó tocando un gráfico, la pregunta ya está armada: se baja al
+     resultado en vez de dejar a la persona frente a los filtros. */
+  const irAlResultado = params.get('ir') === 'resultado';
+  useEffect(() => {
+    if (!irAlResultado || !datos) return;
+    document.getElementById('detalle-resultado')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setParams(
+      (actual) => {
+        const n = new URLSearchParams(actual);
+        n.delete('ir');
+        return n;
+      },
+      { replace: true }
+    );
+  }, [irAlResultado, datos, setParams]);
 
   if (error) return <p className="text-sm text-danger-600">No se pudo armar el detalle de personas.</p>;
   if (cargando || !datos) {
@@ -259,7 +322,7 @@ const VistaDetalle = ({ desde, hasta }) => {
     return [...cuenta.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, limite)
-      .map(([v, n]) => ({ etiqueta: etiquetaDe(v), valor: n }));
+      .map(([v, n]) => ({ etiqueta: etiquetaDe(v), valor: n, clave: v }));
   };
   const lista = ordenar(elegidas, orden);
   const maxCohorte = Math.max(0, ...datos.cohortes.flatMap((c) => c.despues.filter((v) => v !== null)));
@@ -345,6 +408,14 @@ const VistaDetalle = ({ desde, hasta }) => {
         )}
       </Panel>
 
+      <div id="detalle-resultado" className="scroll-mt-24" />
+      {hayFiltros && elegidas.length > 0 && (
+        <p className="flex animate-fade-in items-start gap-2.5 rounded-control bg-primary-50 px-4 py-3 text-sm leading-relaxed text-ink">
+          <Icon name="idea" size="sm" className="mt-0.5 shrink-0 text-primary-700" />
+          <span>{resumenGrupo(elegidas, datos.personas.length)}</span>
+        </p>
+      )}
+
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <Kpi
           titulo="Personas"
@@ -368,10 +439,16 @@ const VistaDetalle = ({ desde, hasta }) => {
       {elegidas.length > 0 && (
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           <Panel titulo="Cómo vienen">
-            <BarrasHorizontales filas={reparto((p) => [p.estado], (v) => ESTADOS[v]?.etiqueta ?? v)} color={RAMPA[6]} />
+            <BarrasHorizontales
+              onFila={(f) => sumarFiltro('estado', f.clave)}
+              accionFila="Filtrar por esto"
+               filas={reparto((p) => [p.estado], (v) => ESTADOS[v]?.etiqueta ?? v)} color={RAMPA[6]} />
           </Panel>
           <Panel titulo="Qué propuestas hacen">
             <BarrasHorizontales
+              onFila={(f) => sumarFiltro('propuesta', f.clave)}
+              accionFila="Filtrar por esto"
+              
               filas={reparto((p) => p.categorias, primeraMayuscula)}
               color={RAMPA[6]}
               vacio="No hicieron ninguna en el período."
@@ -379,18 +456,30 @@ const VistaDetalle = ({ desde, hasta }) => {
           </Panel>
           <Panel titulo="Edad">
             <BarrasHorizontales
+              onFila={(f) => sumarFiltro('edad', f.clave)}
+              accionFila="Filtrar por esto"
+              
               filas={reparto((p) => [tramo(TRAMOS_EDAD, p.edad)], (v) => TRAMOS_EDAD.find((t) => t.valor === v)?.etiqueta ?? 'Sin dato', 7)}
               color={RAMPA[5]}
             />
           </Panel>
           <Panel titulo="Nacionalidad">
-            <BarrasHorizontales filas={reparto((p) => [p.nacionalidad ?? SIN_DATO], (v) => (v === SIN_DATO ? 'Sin dato' : nombrePais(v)))} color={RAMPA[5]} />
+            <BarrasHorizontales
+              onFila={(f) => sumarFiltro('nacionalidad', f.clave)}
+              accionFila="Filtrar por esto"
+               filas={reparto((p) => [p.nacionalidad ?? SIN_DATO], (v) => (v === SIN_DATO ? 'Sin dato' : nombrePais(v)))} color={RAMPA[5]} />
           </Panel>
           <Panel titulo="Dónde viven">
-            <BarrasHorizontales filas={reparto((p) => [p.residencia ?? SIN_DATO], (v) => RESIDENCIA[v] ?? 'Sin dato')} color={RAMPA[5]} />
+            <BarrasHorizontales
+              onFila={(f) => sumarFiltro('vive', f.clave)}
+              accionFila="Filtrar por esto"
+               filas={reparto((p) => [p.residencia ?? SIN_DATO], (v) => RESIDENCIA[v] ?? 'Sin dato')} color={RAMPA[5]} />
           </Panel>
           <Panel titulo="Cómo se enteraron">
-            <BarrasHorizontales filas={reparto((p) => (p.comoSeEntero ? [p.comoSeEntero] : []), (v) => v)} color={RAMPA[5]} vacio="Nadie lo contó." />
+            <BarrasHorizontales
+              onFila={(f) => sumarFiltro('entero', f.clave)}
+              accionFila="Filtrar por esto"
+               filas={reparto((p) => (p.comoSeEntero ? [p.comoSeEntero] : []), (v) => v)} color={RAMPA[5]} vacio="Nadie lo contó." />
           </Panel>
         </div>
       )}

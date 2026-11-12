@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Table } from '../../ui';
 import { EJE, RAMPA, SERIE } from './colores';
 import {
   BarrasHorizontales,
+  Cambio,
   Kpi,
   Leyenda,
   Panel,
@@ -29,24 +31,45 @@ const CATEGORIA_GASTO = {
 /* Sin prefijo de prueba en los títulos ("[M] Cena" → "Cena"). */
 const titulo = (t) => t.replace(/^\[[A-Z]\]\s*/, '');
 
+/* ---------- Lecturas ---------- */
+
+const lecturaMeses = (porMes) => {
+  const conGastos = porMes.filter((m) => m.gastado > 0);
+  if (!conGastos.length) return null;
+  const cubiertos = conGastos.filter((m) => m.recaudado >= m.gastado).length;
+  const peor = conGastos.reduce((a, b) => (b.recaudado / b.gastado < a.recaudado / a.gastado ? b : a));
+  return `${numero(cubiertos)} de ${numero(conGastos.length)} meses se cubrieron solos. El más difícil fue ${mesLargo(peor.mes)}: se cubrió el ${Math.round((peor.recaudado / peor.gastado) * 100)} %.`;
+};
+
+const lecturaEncuentros = (filas) => {
+  if (!filas.length) return null;
+  const caro = filas[0];
+  const porPersona = caro.personasPromedio ? Math.round(caro.costoPromedio / caro.personasPromedio) : null;
+  return `El encuentro más caro es ${titulo(caro.titulo)}: ${pesos(caro.costoPromedio)} cada uno${porPersona ? `, unos ${pesos(porPersona)} por persona` : ''}, y se cubre el ${porciento(caro.cobertura)}.`;
+};
+
 /**
  * Cuánto entra, cuánto sale y cuánto de cada encuentro se cubre con lo que
  * se cobra. Sólo pesos: lo que se cobra en dólares se informa aparte.
  */
-const VistaPlata = ({ plata, participantes }) => {
+const VistaPlata = ({ plata, anterior, participantes, onMes, onTipo }) => {
   const pl = plata;
   const porMes = pl.porMes.map((m) => ({ ...m, etiqueta: mesCorto(m.mes) }));
   const sinGastos = pl.gastado === 0;
+  const [ocultas, setOcultas] = useState([]);
+  const alternar = (serie) => setOcultas((o) => (o.includes(serie) ? o.filter((x) => x !== serie) : [...o, serie]));
 
   return (
     <div className="space-y-6">
       {/* Montos en pesos: en un teléfono van de a uno por fila, si no no entran. */}
-      <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 items-start gap-3 min-[480px]:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         <Kpi
           titulo="Cobertura de gastos"
           valor={sinGastos ? '—' : porciento(pl.cobertura)}
           detalle={sinGastos ? 'Cargá los gastos para ver cuánto se cubre' : 'De lo gastado, lo que se cubrió con ingresos propios'}
           destacado
+          cambio={<Cambio actual={pl.cobertura} anterior={anterior?.cobertura} enPuntos />}
+          ayuda="Lo recaudado dividido lo gastado en el período. 100 % quiere decir que lo que se cobró pagó todo lo que se gastó; menos, que el resto lo puso la comunidad. Sólo pesos."
         />
         <Kpi
           titulo="Recaudado"
@@ -54,8 +77,16 @@ const VistaPlata = ({ plata, participantes }) => {
           detalle={
             pl.recaudadoUsd ? `Más US$ ${numero(pl.recaudadoUsd)} en dólares` : `${numero(pl.pagos)} pagos aprobados`
           }
+          cambio={<Cambio actual={pl.recaudado} anterior={anterior?.recaudado} />}
+          ayuda="La suma de los pagos aprobados de inscripciones a encuentros del período. Lo que se cobra por fuera de la app no aparece."
         />
-        <Kpi titulo="Gastado" valor={pesos(pl.gastado)} detalle="Gastos cargados en el período" />
+        <Kpi
+          titulo="Gastado"
+          valor={pesos(pl.gastado)}
+          detalle="Gastos cargados en el período"
+          cambio={<Cambio actual={pl.gastado} anterior={anterior?.gastado} mejorSiSube={false} />}
+          ayuda="La suma de los gastos cargados en la pestaña Gastos con fecha dentro del período."
+        />
         <Kpi
           titulo="Personas que pagan"
           valor={numero(pl.pagantes)}
@@ -64,19 +95,35 @@ const VistaPlata = ({ plata, participantes }) => {
               ? `${porciento(pl.pagantesPorcentaje)} de las ${numero(participantes)} que vinieron. Promedio ${pesos(pl.promedioPorPagante)}`
               : 'Nadie pagó en el período'
           }
+          cambio={<Cambio actual={pl.pagantes} anterior={anterior?.pagantes} />}
+          ayuda="Personas distintas con al menos un pago aprobado en el período, y qué parte son de todas las que vinieron. El promedio es cuánto pagó cada una en total."
         />
       </div>
 
-      <Panel titulo="Entra y sale, mes a mes" descripcion="Lo recaudado por inscripciones pagas contra los gastos cargados.">
+      <Panel
+        titulo="Entra y sale, mes a mes"
+        lectura={lecturaMeses(porMes)}
+        ayuda="Para cada mes, la columna verde es lo recaudado por inscripciones pagas y la ámbar lo gastado. Si la verde supera a la ámbar, ese mes se cubrió solo. Tocá la leyenda para mirar una sola serie, y una columna para ver los gastos de ese mes."
+      >
         <Leyenda
           items={[
-            { etiqueta: 'Recaudado', color: SERIE.verde },
-            { etiqueta: 'Gastado', color: SERIE.ambar },
-          ]}
+            { clave: 'recaudado', etiqueta: 'Recaudado', color: SERIE.verde },
+            { clave: 'gastado', etiqueta: 'Gastado', color: SERIE.ambar },
+          ].map((it) => ({ ...it, activo: !ocultas.includes(it.clave), onToggle: () => alternar(it.clave) }))}
         />
         <div className="h-72 min-w-0">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={porMes} margin={{ top: 4, right: 4, bottom: 0, left: 0 }} barGap={2} barCategoryGap="24%">
+            <BarChart
+              data={porMes}
+              margin={{ top: 4, right: 4, bottom: 0, left: 0 }}
+              barGap={2}
+              barCategoryGap="24%"
+              className="cursor-pointer"
+              onClick={(e) => {
+                const d = e?.activePayload?.[0]?.payload;
+                if (d) onMes(d.mes);
+              }}
+            >
               <CartesianGrid vertical={false} stroke={EJE.grilla} />
               <XAxis dataKey="etiqueta" {...ejeX} interval="preserveStartEnd" minTickGap={12} />
               <YAxis {...ejeY} width={80} tickFormatter={pesosCorto} />
@@ -97,16 +144,18 @@ const VistaPlata = ({ plata, participantes }) => {
                   />
                 }
               />
-              <Bar dataKey="recaudado" name="Recaudado" fill={SERIE.verde} radius={[4, 4, 0, 0]} />
-              <Bar dataKey="gastado" name="Gastado" fill={SERIE.ambar} radius={[4, 4, 0, 0]} />
+              {!ocultas.includes('recaudado') && <Bar dataKey="recaudado" name="Recaudado" fill={SERIE.verde} radius={[4, 4, 0, 0]} />}
+              {!ocultas.includes('gastado') && <Bar dataKey="gastado" name="Gastado" fill={SERIE.ambar} radius={[4, 4, 0, 0]} />}
             </BarChart>
           </ResponsiveContainer>
         </div>
+        <p className="mt-2 text-xs text-ink-muted">Tocá una columna para ver los gastos de ese mes.</p>
       </Panel>
 
       <Panel
         titulo="Cuánto cuesta cada encuentro"
-        descripcion="Promedio por encuentro de las actividades con gastos cargados: lo que costó, lo que se recaudó ese día y cuánto se cubrió."
+        lectura={lecturaEncuentros(pl.costoPorEncuentro)}
+        ayuda="Para las actividades con gastos atados a un encuentro (por ejemplo, la comida de cada Shabat): cuántos encuentros hubo, cuánta gente vino en promedio, cuánto costó cada uno, cuánto se recaudó ese día y qué parte del costo se cubrió."
       >
         <Table
           stacked
@@ -145,7 +194,10 @@ const VistaPlata = ({ plata, participantes }) => {
       </Panel>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Panel titulo="Recaudado por actividad">
+        <Panel
+          titulo="Recaudado por actividad"
+          ayuda="Lo recaudado en el período por cada actividad paga, de mayor a menor, con la cantidad de pagos aprobados."
+        >
           <BarrasHorizontales
             filas={pl.porActividad.map((a) => ({
               etiqueta: titulo(a.titulo),
@@ -157,10 +209,12 @@ const VistaPlata = ({ plata, participantes }) => {
             vacio="No hubo pagos aprobados en el período."
           />
         </Panel>
-        <Panel titulo="Gastos por tipo">
+        <Panel titulo="Gastos por tipo" ayuda="Lo gastado en el período según el tipo con que se cargó cada gasto. Tocá un tipo para ver esos gastos.">
           <BarrasHorizontales
-            filas={pl.gastosPorCategoria.map((g) => ({ etiqueta: CATEGORIA_GASTO[g.categoria] ?? g.categoria, valor: g.total }))}
+            filas={pl.gastosPorCategoria.map((g) => ({ etiqueta: CATEGORIA_GASTO[g.categoria] ?? g.categoria, valor: g.total, categoria: g.categoria }))}
             formato={pesos}
+            onFila={(f) => onTipo(f.categoria)}
+            accionFila="Ver los gastos"
             color={RAMPA[6]}
             vacio="No hay gastos cargados en el período."
           />
