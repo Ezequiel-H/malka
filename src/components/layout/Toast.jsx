@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Alert } from '../ui';
+import { useIdioma } from '../../i18n/IdiomaContext';
 
 /* El tipo que emite ToastContext no coincide con el tono del Alert: 'error'
    se dibuja como 'danger'. El resto mapea uno a uno. */
@@ -17,20 +18,23 @@ const TONES = {
  * este archivo llevaba cuatro iconos SVG embebidos y su propia tabla de
  * colores, que ya se habían desincronizado de los del sistema.
  */
-const Toast = ({ toasts, removeToast }) => (
+const Toast = ({ toasts, removeToast }) => {
+  const { t } = useIdioma();
+  return (
   <div
     // aria-live en el contenedor y no en cada aviso: así el lector de pantalla
     // anuncia los que van entrando sin tener que re-registrar la región.
     role="region"
     aria-live="polite"
-    aria-label="Notificaciones"
-    className="pointer-events-none fixed left-4 right-4 top-4 z-[100] flex flex-col gap-2 sm:left-auto sm:right-4 sm:w-full sm:max-w-md"
+    aria-label={t('notificaciones.titulo')}
+    className="pointer-events-none fixed inset-x-4 top-4 z-[100] flex flex-col gap-2 sm:inset-x-auto sm:end-4 sm:w-full sm:max-w-md"
   >
     {toasts.map((toast) => (
       <ToastItem key={toast.id} toast={toast} removeToast={removeToast} />
     ))}
   </div>
-);
+  );
+};
 
 const ToastItem = ({ toast, removeToast }) => {
   useEffect(() => {

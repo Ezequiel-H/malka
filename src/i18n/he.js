@@ -17,6 +17,31 @@ const textos = {
     "misIntereses": "תחומי העניין שלי",
     "validandoTexto": "הצוות שלנו בודק את החשבון שלכם. זה יכול לקחת כמה ימים. אחרי האישור תוכלו להירשם לפעילויות."
   },
+  "cartelera": {
+    "titulo": "לוח פעילויות",
+    "todosLosPeriodos": "כל התאריכים",
+    "estaSemana": "השבוע ({desde} - {hasta})",
+    "semanaQueViene": "בשבוע הבא ({desde} - {hasta})",
+    "todosLosTags": "כל התגיות",
+    "inscripcionOk": "ההרשמה בוצעה בהצלחה",
+    "inscripcionError": "לא הצלחנו לרשום אתכם",
+    "faltaComprobante": "צריך להעלות אישור העברה בנקאית",
+    "errorFechas": "לא הצלחנו לטעון את התאריכים הפנויים",
+    "buscar": "חיפוש",
+    "buscarPlaceholder": "כותרת או תיאור...",
+    "periodo": "מתי",
+    "tags": "תגיות",
+    "sinTags": "אין תגיות זמינות",
+    "filtros": "סינון",
+    "sinResultados": "אין תוצאות",
+    "sinResultadosTexto": "לא מצאנו פעילויות עם הסינון שבחרתם.",
+    "confirmada": "מאושרת",
+    "inscriptoPara": "רשומים לתאריך: {fecha}",
+    "verDetalle": "לפרטים",
+    "comoLlego": "איך מגיעים?",
+    "comoLlegoTitulo": "איך מגיעים? המיקום בגוגל מפות",
+    "inscribirse": "הרשמה"
+  },
   "comun": {
     "idioma": "שפה",
     "volver": "חזרה",
@@ -28,11 +53,42 @@ const textos = {
     "salir": "יציאה",
     "cargando": "טוען..."
   },
+  "confirmar": {
+    "titulo": "אישור הרשמה",
+    "agregarCalendario": "הוספה ליומן",
+    "instruccionesPago": "הוראות תשלום",
+    "transferencia": "בצעו העברה בנקאית בסכום שמופיע והעלו את האישור.",
+    "comprobante": "אישור העברה",
+    "comprobanteAyuda": "גררו את האישור, הדביקו אותו או לחצו",
+    "pagoViaje": "תשלום על הטיול",
+    "pagoViajeTexto": "לא צריך להעביר כסף או להעלות אישור עכשיו. אחרי שהמקום שלכם יאושר, נתאם את התשלום בוואטסאפ.",
+    "escribinos": "כתבו לנו בוואטסאפ"
+  },
+  "detalle": {
+    "errorCarga": "לא הצלחנו לטעון את הפעילות",
+    "cargando": "טוען פעילות...",
+    "volver": "חזרה ללוח הפעילויות",
+    "fechasDisponibles": "תאריכים פנויים",
+    "masFechas": "ועוד {cantidad} תאריכים...",
+    "todasLasFechas": "לכל התאריכים",
+    "politica": "מדיניות ביטול"
+  },
   "error": {
     "titulo": "משהו השתבש במסך הזה",
     "recargar": "טעינה מחדש",
     "inicio": "לדף הבית",
     "texto": "שאר המערכת ממשיכה לעבוד — נסו לטעון מחדש, או עברו לחלק אחר מהתפריט."
+  },
+  "estadoInscripcion": {
+    "aceptada": "התקבלה",
+    "pendiente": "ממתינה",
+    "cancelada": "בוטלה",
+    "en_espera": "ברשימת המתנה",
+    "largo": {
+      "aceptada": "ההרשמה אושרה",
+      "pendiente": "ממתינה לאישור",
+      "en_espera": "ברשימת המתנה"
+    }
   },
   "fechaNacimiento": {
     "titulo": "השלימו את תאריך הלידה",
@@ -40,6 +96,34 @@ const textos = {
     "campo": "תאריך לידה",
     "guardada": "תאריך הלידה נשמר",
     "error": "לא הצלחנו לשמור את תאריך הלידה"
+  },
+  "fechas": {
+    "titulo": "בחרו תאריך — {actividad}",
+    "cargando": "טוען תאריכים פנויים...",
+    "sinFechas": "אין תאריכים פנויים",
+    "sinFechasTexto": "אין תאריכים ב־30 הימים הקרובים.",
+    "hora": "שעה: {hora}",
+    "cupos": "{cupos} מקומות פנויים",
+    "sinCupo": "מלא",
+    "sinLimite": "ללא הגבלת מקומות",
+    "yaInscripto": "נרשמתם",
+    "sinCupoDisponible": "אין מקומות פנויים"
+  },
+  "info": {
+    "titulo": "פרטים",
+    "proximaFecha": "המועד הבא",
+    "fechas": "תאריכים",
+    "rango": "{desde} ← {hasta}",
+    "inicio": "התחלה",
+    "fecha": "תאריך",
+    "finaliza": "סיום",
+    "hora": "שעה",
+    "duracion": "משך",
+    "minutos": "{minutos} דקות",
+    "lugar": "מקום",
+    "ubicacion": "מיקום",
+    "verEnMaps": "לצפייה בגוגל מפות",
+    "precio": "מחיר"
   },
   "instalar": {
     "titulo": "התקינו את Malka בטלפון",
@@ -64,6 +148,42 @@ const textos = {
     "registrate": "הירשמו כאן",
     "casaAbierta": "בית פתוח לקהילה"
   },
+  "misInscripciones": {
+    "cancelarTitulo": "לבטל את ההרשמה ל„{titulo}”?",
+    "cancelarEsta": "לבטל את ההרשמה הזו?",
+    "cancelarTexto": "אם תרצו לחזור אחר כך, תצטרכו להירשם מחדש.",
+    "cancelarInscripcion": "ביטול ההרשמה",
+    "cancelada": "ההרשמה בוטלה",
+    "errorCancelar": "לא הצלחנו לבטל את ההרשמה",
+    "elegiComprobante": "בחרו אישור להעלאה",
+    "comprobanteOk": "האישור עודכן",
+    "errorComprobante": "לא הצלחנו להעלות את האישור",
+    "vacioTitulo": "עדיין אין לכם הרשמות",
+    "vacioTexto": "כשתירשמו לפעילות, היא תופיע כאן.",
+    "verActividades": "לפעילויות",
+    "grupos": {
+      "pendiente": "ממתינות",
+      "aceptada": "מאושרות",
+      "en_espera": "ברשימת המתנה",
+      "cancelada": "בוטלו"
+    },
+    "eliminada": "הפעילות נמחקה",
+    "deNuevo": "הרשמה מחדש",
+    "motivo": "סיבה: {motivo}",
+    "enRevision": "האישור שלכם בבדיקה. נעדכן אתכם כשההרשמה תאושר.",
+    "enviarComprobante": "שליחת אישור חדש",
+    "volverASubir": "העלאת האישור מחדש"
+  },
+  "misIntereses": {
+    "errorTags": "לא הצלחנו לטעון את התגיות",
+    "guardados": "תחומי העניין שלכם נשמרו",
+    "errorGuardar": "לא הצלחנו לשמור",
+    "texto": "בחרו את התחומים שמעניינים אתכם. אנחנו משתמשים בהם כדי להציג לכם פעילויות שמתאימות לכם. אפשר לשנות את הרשימה מתי שתרצו.",
+    "sinCatalogo": "עדיין אין תגיות. הצוות יכול להוסיף אותן.",
+    "ninguno": "לא נבחרו תחומי עניין",
+    "uno": "נבחר תחום עניין {cantidad}",
+    "varios": "נבחרו {cantidad} תחומי עניין"
+  },
   "notificaciones": {
     "titulo": "התראות",
     "activadas": "ההתראות הופעלו במכשיר הזה",
@@ -74,6 +194,23 @@ const textos = {
     "bloqueadas": "ההתראות של Malka חסומות בדפדפן הזה. כדי לקבל אותן, אפשרו אותן בהגדרות האתר (המנעול ליד הכתובת).",
     "recibir": "קבלת התראות במכשיר הזה",
     "queLlega": "פעילויות חדשות, תזכורת ביום של פעילות שלא נרשמתם אליה ושינויים בהרשמות שלכם (אותן הודעות שמגיעות במייל)."
+  },
+  "pago": {
+    "pendiente": "התשלום בבדיקה",
+    "aprobado": "התשלום אושר",
+    "rechazado": "התשלום נדחה"
+  },
+  "perfil": {
+    "faltaFecha": "השלימו את תאריך הלידה לפני השמירה",
+    "guardado": "הפרופיל שלכם נשמר",
+    "error": "לא הצלחנו לשמור את הפרופיל",
+    "intro": "עדכנו את הפרטים שלכם. את תחומי העניין מנהלים ב",
+    "validandoTitulo": "החשבון שלכם בבדיקה",
+    "validandoTexto": "אפשר להשלים ולעדכן את הפרופיל בזמן שמחכים לאישור.",
+    "emailAyuda": "כדי לשנות את האימייל, כתבו לנו.",
+    "guardar": "שמירת השינויים",
+    "idiomaTexto": "השפה שבה אתם רואים את Malka. נשמרת בחשבון שלכם.",
+    "cerrarSesion": "יציאה"
   },
   "registro": {
     "titulo": "הרשמה",
@@ -196,7 +333,12 @@ const textos = {
     "confirmarTitulo": "לאשר את הפעולה?",
     "confirmar": "אישור",
     "cancelar": "ביטול",
-    "opcional": "לא חובה"
+    "opcional": "לא חובה",
+    "archivoAyuda": "גררו את הקובץ, הדביקו אותו או לחצו",
+    "archivoPesado": "הקובץ שוקל {peso}. המקסימום הוא {maximo}.",
+    "reemplazarArchivo": "החלפת קובץ",
+    "soltaArchivo": "שחררו את הקובץ כאן",
+    "archivoHasta": "עד {maximo}"
   },
   "whatsappRegistro": {
     "titulo": "השלימו את ההרשמה בוואטסאפ",

@@ -1,12 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
-import { IDIOMA_POR_DEFECTO, datosIdioma, esIdioma, setLocaleActual } from './idiomas';
-import es from './es';
-import en from './en';
-import he from './he';
+import { IDIOMA_POR_DEFECTO, datosIdioma, esIdioma, setIdiomaActual } from './idiomas';
+import { traducir } from './traducir';
 
-const DICCIONARIOS = { es, en, he };
 const CLAVE_GUARDADA = 'malka.idioma';
 const FUNDIDO_MS = 200;
 
@@ -29,22 +26,6 @@ const guardar = (valor) => {
   }
 };
 
-const buscar = (diccionario, clave) =>
-  clave.split('.').reduce((nodo, parte) => (nodo && typeof nodo === 'object' ? nodo[parte] : undefined), diccionario);
-
-/**
- * Traduce una clave ("registro.titulo") al idioma pedido. Si falta en ese
- * idioma usa el castellano, y si falta en los dos devuelve la clave (así se
- * nota enseguida). Las variables van entre llaves: t('x', { nombre: 'Ana' }).
- */
-export const traducir = (idioma, clave, variables) => {
-  const valor = buscar(DICCIONARIOS[idioma], clave) ?? buscar(DICCIONARIOS.es, clave) ?? clave;
-  if (typeof valor !== 'string' || !variables) return valor;
-  return valor.replace(/\{(\w+)\}/g, (crudo, nombre) =>
-    variables[nombre] !== undefined && variables[nombre] !== null ? String(variables[nombre]) : crudo
-  );
-};
-
 const contextoDe = (idioma, extra = {}) => {
   const datos = datosIdioma(idioma);
   return {
@@ -60,6 +41,8 @@ const contextoDe = (idioma, extra = {}) => {
 
 /* Sin proveedor (tests de componentes sueltos) todo sale en castellano. */
 const IdiomaContext = createContext(contextoDe(IDIOMA_POR_DEFECTO));
+
+export { traducir };
 
 export const useIdioma = () => useContext(IdiomaContext);
 
@@ -89,6 +72,17 @@ export const IdiomaProvider = ({ children }) => {
       guardar(idiomaCuenta);
     }
   }, [idiomaCuenta]);
+
+  /* Una cuenta sin idioma (de antes de que existiera) se queda con el que
+     eligió en el login o el registro. */
+  const sinIdioma = user?.role === 'participant' && !esIdioma(user?.idioma);
+  useEffect(() => {
+    if (!sinIdioma) return;
+    updateUser?.({ idioma: elegido });
+    axios.patch('/users/me', { idioma: elegido }).catch(() => {
+      /* sin guardar en la cuenta, queda en el navegador */
+    });
+  }, [sinIdioma, elegido, updateUser]);
 
   const esEquipo = user?.role === 'admin';
   const idioma = esEquipo ? IDIOMA_POR_DEFECTO : elegido;
@@ -124,7 +118,7 @@ export const IdiomaProvider = ({ children }) => {
 
   /* El idioma y la dirección de toda la página. La landing maneja los suyos
      mientras está montada (va por la dirección, no por lo elegido). */
-  setLocaleActual(valor.locale);
+  setIdiomaActual(idioma);
   useEffect(() => {
     const html = document.documentElement;
     html.lang = idioma;

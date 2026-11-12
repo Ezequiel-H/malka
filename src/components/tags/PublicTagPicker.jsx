@@ -112,7 +112,7 @@ const PublicTagPicker = ({
               style={isSelected ? { backgroundColor: tagColor } : undefined}
               title={tag.descripcion || tag.nombre}
             >
-              {tagIcon && <Icon name={tagIcon} size="xs" className="mr-1" />}
+              {tagIcon && <Icon name={tagIcon} size="xs" className="me-1" />}
               {label}
             </button>
           );

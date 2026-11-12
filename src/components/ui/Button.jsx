@@ -41,6 +41,11 @@ const ICON_ONLY_SIZES = {
  *   <Button to="/activities" variant="secondary">Ver actividades</Button>
  *   <Button icon="close" iconOnly label="Cerrar" variant="ghost" />
  */
+/* Los íconos que señalan una dirección se dan vuelta en hebreo: «adelante»
+   apunta a la izquierda cuando se lee de derecha a izquierda. */
+const DIRECCIONALES = new Set(['forward', 'back', 'chevronLeft', 'chevronRight', 'logout']);
+const espejo = (nombre) => (DIRECCIONALES.has(nombre) ? 'rtl:-scale-x-100' : undefined);
+
 const Button = forwardRef(
   (
     {
@@ -86,10 +91,10 @@ const Button = forwardRef(
         {loading ? (
           <Icon name="loading" size={ICON_SIZES[size]} className="animate-spin" />
         ) : (
-          icon && <Icon name={icon} size={ICON_SIZES[size]} />
+          icon && <Icon name={icon} size={ICON_SIZES[size]} className={espejo(icon)} />
         )}
         {!iconOnly && children}
-        {iconRight && !loading && <Icon name={iconRight} size={ICON_SIZES[size]} />}
+        {iconRight && !loading && <Icon name={iconRight} size={ICON_SIZES[size]} className={espejo(iconRight)} />}
       </>
     );
 

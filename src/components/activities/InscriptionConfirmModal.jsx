@@ -4,6 +4,7 @@ import { formatUtcCalendarDateEsAR } from '../../utils/dateUtils';
 import { formatActivityPrice } from '../../utils/priceUtils';
 import { renderPlantilla, plantillaContext, buildWaLink } from '../../utils/whatsapp';
 import { Alert, Button, Field, FileInput, Modal } from '../ui';
+import { useIdioma } from '../../i18n/IdiomaContext';
 
 const LONG_DATE_OPTS = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
 
@@ -30,6 +31,7 @@ const InscriptionConfirmModal = ({
      página sigue siendo la dueña del valor que se envía. */
   const [comprobante, setComprobante] = useState(null);
   const { user } = useAuth();
+  const { t } = useIdioma();
 
   if (!activity || !selectedDate) return null;
 
@@ -54,14 +56,14 @@ const InscriptionConfirmModal = ({
     <Modal
       open
       onClose={onClose}
-      title="Confirmar inscripción"
+      title={t('confirmar.titulo')}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
-            Cancelar
+            {t('comun.cancelar')}
           </Button>
           <Button icon="check" onClick={onConfirm}>
-            Confirmar inscripción
+            {t('confirmar.titulo')}
           </Button>
         </>
       }
@@ -75,25 +77,25 @@ const InscriptionConfirmModal = ({
         </div>
 
         <div className="space-y-3 rounded-card border border-surface-border bg-surface p-4">
-          <InfoRow label={esViaje ? 'Inicio:' : 'Fecha:'}>
+          <InfoRow label={esViaje ? t('info.inicio') : t('info.fecha')}>
             {formatUtcCalendarDateEsAR(selectedDate.fecha, LONG_DATE_OPTS)}
             {esViaje && selectedDate.hora ? ` · ${selectedDate.hora}` : ''}
           </InfoRow>
 
           {esViaje && activity.fechaFin && (
-            <InfoRow label="Finaliza:">
+            <InfoRow label={t('info.finaliza')}>
               {formatUtcCalendarDateEsAR(activity.fechaFin, LONG_DATE_OPTS)}
               {activity.horaFin ? ` · ${activity.horaFin}` : ''}
             </InfoRow>
           )}
 
-          {selectedDate.hora && !esViaje && <InfoRow label="Hora:">{selectedDate.hora}</InfoRow>}
+          {selectedDate.hora && !esViaje && <InfoRow label={t('info.hora')}>{selectedDate.hora}</InfoRow>}
 
-          {activity.lugar && <InfoRow label="Lugar:">{activity.lugar}</InfoRow>}
+          {activity.lugar && <InfoRow label={t('info.lugar')}>{activity.lugar}</InfoRow>}
 
-          <InfoRow label="Precio:">{formatActivityPrice(activity)}</InfoRow>
+          <InfoRow label={t('info.precio')}>{formatActivityPrice(activity)}</InfoRow>
 
-          {activity.duracion && <InfoRow label="Duración:">{activity.duracion} minutos</InfoRow>}
+          {activity.duracion && <InfoRow label={t('info.duracion')}>{t('info.minutos', { minutos: activity.duracion })}</InfoRow>}
 
           {/* Las acciones sobre la fecha y el lugar viven junto a los datos a
               los que refieren, no sueltas al pie del modal. */}
@@ -106,9 +108,9 @@ const InscriptionConfirmModal = ({
                 href={activity.ubicacionOnline}
                 target="_blank"
                 rel="noopener noreferrer"
-                title="Ver ubicación en Google Maps"
+                title={t('cartelera.comoLlegoTitulo')}
               >
-                ¿Cómo llego?
+                {t('cartelera.comoLlego')}
               </Button>
             )}
             <Button
@@ -116,37 +118,36 @@ const InscriptionConfirmModal = ({
               size="sm"
               icon="addToCalendar"
               onClick={onAddToCalendar}
-              title="Agregar al calendario"
+              title={t('confirmar.agregarCalendario')}
             >
-              Agregar al calendario
+              {t('confirmar.agregarCalendario')}
             </Button>
           </div>
         </div>
 
         {!activity.esGratuita && !esViaje && (
-          <Alert tone="warning" title="Instrucciones de pago">
+          <Alert tone="warning" title={t('confirmar.instruccionesPago')}>
             {activity.instruccionesPagoResueltas ? (
               <p className="whitespace-pre-wrap">{activity.instruccionesPagoResueltas}</p>
             ) : (
-              <p>Realizá la transferencia por el monto indicado y subí el comprobante.</p>
+              <p>{t('confirmar.transferencia')}</p>
             )}
 
-            <Field label="Comprobante de transferencia" className="mb-0 mt-3" required>
+            <Field label={t('confirmar.comprobante')} className="mb-0 mt-3" required>
               <FileInput
                 accept="image/*,application/pdf"
                 value={comprobante}
                 onChange={handleComprobante}
                 maxSize={5 * 1024 * 1024}
-                hint="Arrastrá el comprobante, pegalo o hacé click"
+                hint={t('confirmar.comprobanteAyuda')}
               />
             </Field>
           </Alert>
         )}
 
         {!activity.esGratuita && esViaje && (
-          <Alert tone="warning" title="Pago del viaje">
-            No necesitás transferir ni subir comprobante ahora. Una vez confirmado tu cupo,
-            coordinamos el pago por WhatsApp.
+          <Alert tone="warning" title={t('confirmar.pagoViaje')}>
+            {t('confirmar.pagoViajeTexto')}
             {waViajeLink && (
               <div className="mt-3">
                 <Button
@@ -157,7 +158,7 @@ const InscriptionConfirmModal = ({
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Escribinos por WhatsApp
+                  {t('confirmar.escribinos')}
                 </Button>
               </div>
             )}

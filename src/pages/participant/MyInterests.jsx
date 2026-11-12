@@ -7,10 +7,12 @@ import { userPublicTags } from '../../utils/tagFields';
 import LoadingScreen from '../../components/layout/LoadingScreen';
 import PageContainer from '../../components/layout/PageContainer';
 import { Button, Card } from '../../components/ui';
+import { useIdioma } from '../../i18n';
 
 const MyInterests = () => {
   const { user, fetchUser, updateMyTags } = useAuth();
   const { showSuccess, showError } = useToast();
+  const { t } = useIdioma();
   const [availableTags, setAvailableTags] = useState([]);
   const [tags, setTags] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,13 +25,13 @@ const MyInterests = () => {
         setAvailableTags(res.data.tags || []);
       } catch (e) {
         console.error(e);
-        showError('No se pudieron cargar las tags');
+        showError(t('misIntereses.errorTags'));
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, [showError]);
+  }, [showError, t]);
 
   useEffect(() => {
     if (user) {
@@ -43,10 +45,10 @@ const MyInterests = () => {
     const result = await updateMyTags(tags);
     setSaving(false);
     if (result.success) {
-      showSuccess('Tus intereses se guardaron correctamente');
+      showSuccess(t('misIntereses.guardados'));
       await fetchUser();
     } else {
-      showError(result.message || 'Error al guardar');
+      showError(result.message || t('misIntereses.errorGuardar'));
     }
   };
 
@@ -55,11 +57,10 @@ const MyInterests = () => {
   }
 
   return (
-    <PageContainer title="Mis intereses" maxWidth="4xl">
+    <PageContainer title={t('shell.links.intereses')} maxWidth="4xl">
       <Card>
         <p className="mb-6 text-ink-muted">
-          Elegí las áreas que te interesan. Las usamos para mostrarte actividades alineadas a tus
-          preferencias. Podés cambiar esta lista cuando quieras.
+          {t('misIntereses.texto')}
         </p>
 
         <form onSubmit={handleSubmit}>
@@ -70,7 +71,7 @@ const MyInterests = () => {
             onChange={setTags}
             emptyHint={
               <p className="mt-2 text-sm text-ink-muted">
-                No hay tags en el catálogo. Un administrador puede cargarlas en Tags públicos.
+                {t('misIntereses.sinCatalogo')}
               </p>
             }
           />
@@ -78,11 +79,11 @@ const MyInterests = () => {
           <div className="mt-6 flex items-center justify-between gap-3">
             <p className="text-sm text-ink-muted">
               {tags.length === 0
-                ? 'Sin intereses elegidos'
-                : `${tags.length} ${tags.length === 1 ? 'interés elegido' : 'intereses elegidos'}`}
+                ? t('misIntereses.ninguno')
+                : t(tags.length === 1 ? 'misIntereses.uno' : 'misIntereses.varios', { cantidad: tags.length })}
             </p>
             <Button type="submit" loading={saving}>
-              {saving ? 'Guardando...' : 'Guardar'}
+              {saving ? t('comun.guardando') : t('comun.guardar')}
             </Button>
           </div>
         </form>

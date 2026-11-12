@@ -20,17 +20,8 @@ import logoMalka from '../../assets/logo-malka-positivo.png';
 import { invalidEs } from '../../utils/formValidation';
 import { RESIDENCIAS, opcionesPaises } from '../../utils/paises';
 import { SelectorIdioma, useIdioma } from '../../i18n';
+import { RESTRICCIONES } from '../../utils/restricciones';
 
-/* El valor se guarda en castellano (lo lee el equipo); lo que se ve, en el
-   idioma de quien se registra. */
-const RESTRICCIONES = [
-  { valor: 'Vegetariano', clave: 'vegetariano' },
-  { valor: 'Vegano', clave: 'vegano' },
-  { valor: 'Sin TACC', clave: 'sinTacc' },
-  { valor: 'Sin lactosa', clave: 'sinLactosa' },
-  { valor: 'Sin nueces', clave: 'sinNueces' },
-  { valor: 'Diabético', clave: 'diabetico' },
-];
 
 const RegisterForm = () => {
   const [formData, setFormData] = useState({

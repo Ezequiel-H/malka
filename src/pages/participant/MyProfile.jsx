@@ -9,19 +9,14 @@ import PageContainer from '../../components/layout/PageContainer';
 import NotificationSettings from '../../components/profile/NotificationSettings';
 import { Alert, Button, Card, Checkbox, DatePicker, Field, Input } from '../../components/ui';
 import { invalidEs } from '../../utils/formValidation';
+import { SelectorIdioma, useIdioma } from '../../i18n';
+import { RESTRICCIONES } from '../../utils/restricciones';
 
-const RESTRICCIONES = [
-  'Vegetariano',
-  'Vegano',
-  'Sin TACC',
-  'Sin lactosa',
-  'Sin nueces',
-  'Diabético'
-];
 
 const MyProfile = () => {
   const { user, updateUser, fetchUser, logout } = useAuth();
   const { showSuccess, showError } = useToast();
+  const { t } = useIdioma();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
 
@@ -82,7 +77,7 @@ const MyProfile = () => {
     // El DatePicker guarda en un input hidden y el navegador no valida hidden:
     // el `required` del Field es sólo visual, así que la fecha va a mano.
     if (!formData.fechaNacimiento) {
-      showError('Completá tu fecha de nacimiento antes de guardar');
+      showError(t('perfil.faltaFecha'));
       return;
     }
 
@@ -106,9 +101,9 @@ const MyProfile = () => {
         updateUser(payload);
         await fetchUser();
       }
-      showSuccess('Tu perfil se guardó correctamente');
+      showSuccess(t('perfil.guardado'));
     } catch (error) {
-      showError(formatAuthError(error, 'No se pudo guardar tu perfil'));
+      showError(formatAuthError(error, t('perfil.error')));
     } finally {
       setSaving(false);
     }
@@ -117,24 +112,24 @@ const MyProfile = () => {
   if (!user) return null;
 
   return (
-    <PageContainer title="Mi perfil" maxWidth="2xl">
+    <PageContainer title={t('shell.links.perfil')} maxWidth="2xl">
       <Card>
         <p className="mb-6 text-ink-muted">
-          Actualizá tus datos. Tus intereses se administran desde{' '}
+          {t('perfil.intro')}{' '}
           <Button variant="link" size="sm" to="/my-interests" className="min-h-0 px-0 py-0 align-baseline">
-            Mis intereses
+            {t('shell.links.intereses')}
           </Button>
           .
         </p>
 
         {user.estado === 'pending' && (
-          <Alert tone="info" className="mb-6" title="Tu usuario está en validación">
-            Podés completar y ajustar tu perfil mientras esperás la aprobación.
+          <Alert tone="info" className="mb-6" title={t('perfil.validandoTitulo')}>
+            {t('perfil.validandoTexto')}
           </Alert>
         )}
 
         <form onSubmit={handleSubmit}>
-          <Field label="Nombre" htmlFor="my-profile-nombre" required>
+          <Field label={t('registro.nombre')} htmlFor="my-profile-nombre" required>
             <Input
               type="text"
               name="nombre"
@@ -145,7 +140,7 @@ const MyProfile = () => {
             />
           </Field>
 
-          <Field label="Apellido" htmlFor="my-profile-apellido" required>
+          <Field label={t('registro.apellido')} htmlFor="my-profile-apellido" required>
             <Input
               type="text"
               name="apellido"
@@ -156,7 +151,7 @@ const MyProfile = () => {
             />
           </Field>
 
-          <Field label="Fecha de nacimiento" htmlFor="my-profile-fechaNacimiento" required>
+          <Field label={t('registro.fechaNacimiento')} htmlFor="my-profile-fechaNacimiento" required>
             <DatePicker
               id="my-profile-fechaNacimiento"
               name="fechaNacimiento"
@@ -169,9 +164,9 @@ const MyProfile = () => {
           </Field>
 
           <Field
-            label="DNI"
+            label={t('registro.dni')}
             htmlFor="my-profile-dni"
-            hint="Entre 7 y 10 dígitos, sin puntos"
+            hint={t('registro.dniAyuda')}
             required
           >
             <Input
@@ -185,23 +180,23 @@ const MyProfile = () => {
               minLength={7}
               maxLength={10}
               pattern="\d{7,10}"
-              title="Ingresá entre 7 y 10 dígitos"
-              {...invalidEs('Ingresá entre 7 y 10 dígitos, sin puntos')}
+              title={t('registro.dniInvalido')}
+              {...invalidEs(t('registro.dniAyuda'))}
             />
           </Field>
 
           <Field
-            label="Email"
+            label={t('registro.email')}
             htmlFor="my-profile-email"
-            hint="Para cambiar tu email, escribinos."
+            hint={t('perfil.emailAyuda')}
           >
             <Input type="email" icon="mail" name="email" value={formData.email} disabled />
           </Field>
 
           <Field
-            label="Teléfono"
+            label={t('registro.telefono')}
             htmlFor="my-profile-telefono"
-            hint="Al menos 8 dígitos. Podés incluir + y código de país"
+            hint={t('registro.telefonoAyuda')}
             required
           >
             <Input
@@ -216,8 +211,8 @@ const MyProfile = () => {
               minLength={8}
               maxLength={22}
               pattern="^[+]?[0-9]{8,20}$"
-              title="Ingresá un teléfono con al menos 8 dígitos (podés usar + y código de país)"
-              {...invalidEs('Ingresá un teléfono con al menos 8 dígitos (podés usar + y código de país)')}
+              title={t('registro.telefonoInvalido')}
+              {...invalidEs(t('registro.telefonoInvalido'))}
             />
           </Field>
 
@@ -225,22 +220,22 @@ const MyProfile = () => {
               antes del grupo, en vez de repetirse en cada casilla. */}
           <fieldset className="mb-5">
             <legend className="mb-2 block text-sm font-medium text-ink-soft">
-              Toda la comida es Kosher. ¿Tenés algún tipo de restricción?
+              {t('registro.restriccionesPregunta')}
             </legend>
             <div className="space-y-2.5">
-              {RESTRICCIONES.map((restriccion) => (
+              {RESTRICCIONES.map(({ valor, clave }) => (
                 <Checkbox
-                  key={restriccion}
-                  label={restriccion}
-                  checked={formData.restriccionesAlimentarias?.includes(restriccion) || false}
-                  onChange={() => handleRestriccionChange(restriccion)}
+                  key={valor}
+                  label={t(`registro.restricciones.${clave}`)}
+                  checked={formData.restriccionesAlimentarias?.includes(valor) || false}
+                  onChange={() => handleRestriccionChange(valor)}
                 />
               ))}
             </div>
           </fieldset>
 
           <Field
-            label="¿Cómo te enteraste de esta propuesta?"
+            label={t('registro.comoTeEnteraste')}
             htmlFor="my-profile-comoSeEntero"
             required
           >
@@ -249,20 +244,29 @@ const MyProfile = () => {
               name="comoSeEntero"
               value={formData.comoSeEntero}
               onChange={handleChange}
-              placeholder="Escribí cómo te enteraste..."
+              placeholder={t('registro.comoTeEnterastePlaceholder')}
               required
             />
           </Field>
 
           <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Button variant="secondary" to="/my-interests" className="w-full sm:w-auto">
-              Mis intereses
+              {t('shell.links.intereses')}
             </Button>
             <Button type="submit" loading={saving} className="w-full sm:w-auto">
-              {saving ? 'Guardando...' : 'Guardar cambios'}
+              {saving ? t('comun.guardando') : t('perfil.guardar')}
             </Button>
           </div>
         </form>
+
+        {/* El idioma se guarda en la cuenta: vale en cualquier dispositivo. */}
+        <section className="mt-6 border-t border-surface-border pt-6" aria-labelledby="perfil-idioma">
+          <h2 id="perfil-idioma" className="mb-1 text-lg font-semibold text-ink">
+            {t('comun.idioma')}
+          </h2>
+          <p className="mb-3 text-sm text-ink-muted">{t('perfil.idiomaTexto')}</p>
+          <SelectorIdioma className="-ms-2" />
+        </section>
 
         <NotificationSettings className="mt-6 border-t border-surface-border pt-6" />
 
@@ -275,7 +279,7 @@ const MyProfile = () => {
             fullWidth
             className="text-danger-600 hover:bg-danger-50 hover:text-danger-700"
           >
-            Cerrar sesión
+            {t('perfil.cerrarSesion')}
           </Button>
         </div>
       </Card>

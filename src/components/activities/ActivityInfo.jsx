@@ -1,6 +1,7 @@
 import { formatUtcCalendarDateEsAR } from '../../utils/dateUtils';
 import { formatActivityPrice } from '../../utils/priceUtils';
 import { Badge, Icon } from '../ui';
+import { useIdioma } from '../../i18n/IdiomaContext';
 
 const LONG_DATE_OPTS = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
 
@@ -17,6 +18,7 @@ const LONG_DATE_OPTS = { weekday: 'long', year: 'numeric', month: 'long', day: '
  * - variant "detail": grilla con título "Información" para la vista de detalle.
  */
 const ActivityInfo = ({ activity, variant = 'detail', showPrice = true }) => {
+  const { t } = useIdioma();
   if (!activity) return null;
 
   const isDetail = variant === 'detail';
@@ -26,18 +28,19 @@ const ActivityInfo = ({ activity, variant = 'detail', showPrice = true }) => {
   const items = [];
 
   if (activity.tipo === 'recurrente' && activity.proximaOcurrencia) {
-    items.push({ icon: 'activity', label: 'Próxima fecha', value: fmtDate(activity.proximaOcurrencia) });
+    items.push({ icon: 'activity', label: t('info.proximaFecha'), value: fmtDate(activity.proximaOcurrencia) });
   } else if (activity.tipo === 'viaje' && !isDetail && activity.fecha && activity.fechaFin) {
     /* En la card los dos extremos del viaje van como un solo rango: dos items
        con el mismo icono de calendario y sin label se leían como fecha
        repetida. */
     items.push({
       icon: 'activity',
-      label: 'Fechas',
-      value: `${fmtDate(activity.fecha)} → ${fmtDate(activity.fechaFin)}`,
+      label: t('info.fechas'),
+      // La flecha va en el diccionario: en hebreo apunta para el otro lado.
+      value: t('info.rango', { desde: fmtDate(activity.fecha), hasta: fmtDate(activity.fechaFin) }),
     });
   } else if (activity.fecha) {
-    const label = activity.tipo === 'viaje' ? 'Inicio' : 'Fecha';
+    const label = activity.tipo === 'viaje' ? t('info.inicio') : t('info.fecha');
     let value = fmtDate(activity.fecha);
     if (isDetail && activity.tipo === 'viaje' && activity.hora) {
       value = `${value} · ${activity.hora}`;
@@ -50,25 +53,25 @@ const ActivityInfo = ({ activity, variant = 'detail', showPrice = true }) => {
     if (isDetail && activity.horaFin) {
       value = `${value} · ${activity.horaFin}`;
     }
-    items.push({ icon: 'activity', label: 'Finaliza', value });
+    items.push({ icon: 'activity', label: t('info.finaliza'), value });
   }
 
   if (activity.hora && activity.tipo !== 'viaje') {
-    items.push({ icon: 'time', label: 'Hora', value: activity.hora });
+    items.push({ icon: 'time', label: t('info.hora'), value: activity.hora });
   }
 
   if (isDetail && activity.duracion) {
-    items.push({ icon: 'time', label: 'Duración', value: `${activity.duracion} minutos` });
+    items.push({ icon: 'time', label: t('info.duracion'), value: t('info.minutos', { minutos: activity.duracion }) });
   }
 
   if (activity.lugar) {
-    items.push({ icon: 'location', label: 'Lugar', value: activity.lugar });
+    items.push({ icon: 'location', label: t('info.lugar'), value: activity.lugar });
   }
 
   if (isDetail && activity.ubicacionOnline) {
     items.push({
       icon: 'location',
-      label: 'Ubicación',
+      label: t('info.ubicacion'),
       value: (
         <a
           href={activity.ubicacionOnline}
@@ -76,7 +79,7 @@ const ActivityInfo = ({ activity, variant = 'detail', showPrice = true }) => {
           rel="noopener noreferrer"
           className="font-medium text-primary hover:underline"
         >
-          Ver en Google Maps
+          {t('info.verEnMaps')}
         </a>
       ),
     });
@@ -84,7 +87,7 @@ const ActivityInfo = ({ activity, variant = 'detail', showPrice = true }) => {
 
   /* El precio se destaca aparte: es el dato que decide la inscripción. */
   const precio = activity.esGratuita ? (
-    <Badge tone="success">Gratis</Badge>
+    <Badge tone="success">{t('comun.gratis')}</Badge>
   ) : (
     <span className="font-semibold text-ink">{formatActivityPrice(activity)}</span>
   );
@@ -112,7 +115,7 @@ const ActivityInfo = ({ activity, variant = 'detail', showPrice = true }) => {
 
   return (
     <div className="mb-6 rounded-card border border-surface-border bg-surface p-6">
-      <h2 className="mb-4 text-xl font-semibold text-ink">Información</h2>
+      <h2 className="mb-4 text-xl font-semibold text-ink">{t('info.titulo')}</h2>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {items.map(({ icon, label, value }) => (
           <div key={label} className="flex items-start gap-3">
@@ -131,7 +134,7 @@ const ActivityInfo = ({ activity, variant = 'detail', showPrice = true }) => {
             <Icon name="payment" size="sm" />
           </span>
           <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">Precio</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">{t('info.precio')}</p>
             <p className="text-ink">{precio}</p>
           </div>
         </div>

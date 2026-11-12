@@ -1,6 +1,7 @@
 import { formatUtcCalendarDateEsAR } from '../../utils/dateUtils';
 import InscriptionStatusBadge from './InscriptionStatusBadge';
 import { Button, EmptyState, Modal, Spinner, cn } from '../ui';
+import { useIdioma } from '../../i18n/IdiomaContext';
 
 const LONG_DATE_OPTS = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
 
@@ -25,20 +26,21 @@ const cardBorderClass = (dateOption) => {
  * El reseteo de estado al cerrar lo decide la página vía `onClose`.
  */
 const DateSelectionModal = ({ activity, availableDates, loading, onClose, onSelect }) => {
+  const { t } = useIdioma();
   if (!activity) return null;
 
   return (
-    <Modal open onClose={onClose} title={`Elegí una fecha — ${activity.titulo}`}>
+    <Modal open onClose={onClose} title={t('fechas.titulo', { actividad: activity.titulo })}>
       {loading ? (
         <div className="flex flex-col items-center py-8">
-          <Spinner size="lg" label="Cargando fechas disponibles" />
-          <p className="mt-4 text-ink-muted">Cargando fechas disponibles...</p>
+          <Spinner size="lg" label={t('fechas.cargando')} />
+          <p className="mt-4 text-ink-muted">{t('fechas.cargando')}</p>
         </div>
       ) : availableDates.length === 0 ? (
         <EmptyState
           icon="activity"
-          title="Sin fechas disponibles"
-          description="No hay fechas en los próximos 30 días."
+          title={t('fechas.sinFechas')}
+          description={t('fechas.sinFechasTexto')}
         />
       ) : (
         <div className="space-y-2">
@@ -56,11 +58,11 @@ const DateSelectionModal = ({ activity, availableDates, loading, onClose, onSele
                       {formatUtcCalendarDateEsAR(dateOption.fecha, LONG_DATE_OPTS)}
                     </p>
                     {dateOption.hora && (
-                      <p className="mb-2 text-sm text-ink-muted">Hora: {dateOption.hora}</p>
+                      <p className="mb-2 text-sm text-ink-muted">{t('fechas.hora', { hora: dateOption.hora })}</p>
                     )}
                   </div>
 
-                  <div className="flex shrink-0 flex-col items-stretch gap-2 text-left sm:ml-4 sm:items-end sm:text-right">
+                  <div className="flex shrink-0 flex-col items-stretch gap-2 text-start sm:ms-4 sm:items-end sm:text-end">
                     {dateOption.cuposDisponibles !== null ? (
                       <p
                         className={cn(
@@ -69,11 +71,11 @@ const DateSelectionModal = ({ activity, availableDates, loading, onClose, onSele
                         )}
                       >
                         {dateOption.cuposDisponibles > 0
-                          ? `${dateOption.cuposDisponibles} cupos disponibles`
-                          : 'Sin cupo'}
+                          ? t('fechas.cupos', { cupos: dateOption.cuposDisponibles })
+                          : t('fechas.sinCupo')}
                       </p>
                     ) : (
-                      <p className="text-sm text-ink-muted">Sin límite de cupo</p>
+                      <p className="text-sm text-ink-muted">{t('fechas.sinLimite')}</p>
                     )}
                     <InscriptionStatusBadge estado={dateOption.estadoInscripcion} />
                   </div>
@@ -81,14 +83,14 @@ const DateSelectionModal = ({ activity, availableDates, loading, onClose, onSele
 
                 {isInscribed ? (
                   <Button disabled fullWidth icon="check">
-                    Inscripción realizada
+                    {t('fechas.yaInscripto')}
                   </Button>
                 ) : dateOption.tieneCupo ? (
                   <Button fullWidth icon="check" onClick={() => onSelect(dateOption)}>
-                    Inscribirse
+                    {t('cartelera.inscribirse')}
                   </Button>
                 ) : (
-                  <p className="text-sm font-semibold text-danger-600">Sin cupo disponible</p>
+                  <p className="text-sm font-semibold text-danger-600">{t('fechas.sinCupoDisponible')}</p>
                 )}
               </div>
             );

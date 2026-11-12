@@ -14,11 +14,13 @@ import LoadingScreen from '../../components/layout/LoadingScreen';
 import PageContainer from '../../components/layout/PageContainer';
 import InscriptionConfirmModal from '../../components/activities/InscriptionConfirmModal';
 import { Button, Card, EmptyState, Icon, Modal, Spinner } from '../../components/ui';
+import { useIdioma } from '../../i18n';
 
 const ActivityDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
+  const { t, idioma } = useIdioma();
 
   const [activity, setActivity] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -74,7 +76,7 @@ const ActivityDetail = () => {
       }
     } catch (error) {
       console.error('Error fetching activity:', error);
-      showError(error.response?.data?.message || 'No se pudo cargar la actividad');
+      showError(error.response?.data?.message || t('detalle.errorCarga'));
       navigate('/activities');
     } finally {
       setLoading(false);
@@ -90,14 +92,15 @@ const ActivityDetail = () => {
         esGratuita: activityData.esGratuita,
         tipo: activityData.tipo,
       });
-      showSuccess(response.data.message || 'Inscripción realizada exitosamente');
+      // El mensaje del back está en castellano: en otro idioma va el propio.
+      showSuccess((idioma === 'es' && response.data.message) || t('cartelera.inscripcionOk'));
       setShowConfirmModal(false);
       setShowDateModal(false);
       setSelectedDate(null);
       setComprobanteFile(null);
       await fetchActivity();
     } catch (error) {
-      showError(error.response?.data?.message || 'Error al inscribirse');
+      showError(error.response?.data?.message || t('cartelera.inscripcionError'));
     }
   };
 
@@ -131,7 +134,7 @@ const ActivityDetail = () => {
         setAvailableDates(response.data.availableDates);
       } catch (error) {
         console.error('Error fetching available dates:', error);
-        showError('Error al cargar fechas disponibles');
+        showError(t('cartelera.errorFechas'));
         setShowDateModal(false);
       } finally {
         setLoadingDates(false);
@@ -148,7 +151,7 @@ const ActivityDetail = () => {
   const handleConfirmInscription = () => {
     if (!selectedDate || !activity) return;
     if (!activity.esGratuita && activity.tipo !== 'viaje' && !comprobanteFile) {
-      showError('Debes subir un comprobante de transferencia');
+      showError(t('cartelera.faltaComprobante'));
       return;
     }
     handleInscribe(activity, selectedDate.fechaStr, comprobanteFile);
@@ -161,7 +164,7 @@ const ActivityDetail = () => {
   };
 
   if (loading) {
-    return <LoadingScreen message="Cargando actividad..." />;
+    return <LoadingScreen message={t('detalle.cargando')} />;
   }
 
   if (!activity) return null;
@@ -169,7 +172,7 @@ const ActivityDetail = () => {
   return (
     <PageContainer maxWidth="4xl">
         <Button variant="link" size="sm" icon="back" to="/activities" className="mb-6 min-h-0 px-0">
-          Volver a la cartelera
+          {t('detalle.volver')}
         </Button>
 
         <Card padding="none" className="min-w-0">
@@ -222,17 +225,17 @@ const ActivityDetail = () => {
 
             {activity.tipo === 'recurrente' && (
               <div className="mb-6">
-                <h2 className="mb-4 text-xl font-semibold text-ink">Fechas disponibles</h2>
+                <h2 className="mb-4 text-xl font-semibold text-ink">{t('detalle.fechasDisponibles')}</h2>
                 {loadingDates ? (
                   <div className="flex flex-col items-center py-8">
-                    <Spinner size="lg" label="Cargando fechas disponibles" />
-                    <p className="mt-4 text-ink-muted">Cargando fechas disponibles...</p>
+                    <Spinner size="lg" label={t('fechas.cargando')} />
+                    <p className="mt-4 text-ink-muted">{t('fechas.cargando')}</p>
                   </div>
                 ) : availableDates.length === 0 ? (
                   <EmptyState
                     icon="activity"
-                    title="Sin fechas disponibles"
-                    description="No hay fechas en los próximos 30 días."
+                    title={t('fechas.sinFechas')}
+                    description={t('fechas.sinFechasTexto')}
                   />
                 ) : (
                   <div className="space-y-2">
@@ -262,15 +265,15 @@ const ActivityDetail = () => {
                               })}
                             </p>
                             {dateOption.hora && (
-                              <p className="text-sm text-ink-muted">Hora: {dateOption.hora}</p>
+                              <p className="text-sm text-ink-muted">{t('fechas.hora', { hora: dateOption.hora })}</p>
                             )}
                             {dateOption.cuposDisponibles !== null && (
                               <p className={`text-sm font-semibold ${
                                 dateOption.cuposDisponibles > 0 ? 'text-success-600' : 'text-danger-600'
                               }`}>
                                 {dateOption.cuposDisponibles > 0
-                                  ? `${dateOption.cuposDisponibles} cupos disponibles`
-                                  : 'Sin cupo'}
+                                  ? t('fechas.cupos', { cupos: dateOption.cuposDisponibles })
+                                  : t('fechas.sinCupo')}
                               </p>
                             )}
                           </div>
@@ -282,7 +285,7 @@ const ActivityDetail = () => {
                     ))}
                     {availableDates.length > 5 && (
                       <p className="mt-2 text-center text-sm text-ink-muted">
-                        Y {availableDates.length - 5} fecha(s) más...
+                        {t('detalle.masFechas', { cantidad: availableDates.length - 5 })}
                       </p>
                     )}
                   </div>
@@ -297,7 +300,7 @@ const ActivityDetail = () => {
                 </div>
               ) : (
                 <Button onClick={handleInscribeClick} icon="check" className="w-full sm:w-auto">
-                  Inscribirse
+                  {t('cartelera.inscribirse')}
                 </Button>
               )}
 
@@ -307,10 +310,10 @@ const ActivityDetail = () => {
                   size="sm"
                   icon="addToCalendar"
                   onClick={() => handleAddToCalendar()}
-                  title="Agregar al calendario"
+                  title={t('confirmar.agregarCalendario')}
                   className="w-full sm:w-auto"
                 >
-                  Agregar al calendario
+                  {t('confirmar.agregarCalendario')}
                 </Button>
               )}
 
@@ -321,10 +324,10 @@ const ActivityDetail = () => {
                   href={activity.ubicacionOnline}
                   target="_blank"
                   rel="noopener noreferrer"
-                  title="Ver ubicación en Google Maps"
+                  title={t('cartelera.comoLlegoTitulo')}
                   className="w-full sm:w-auto sm:whitespace-nowrap"
                 >
-                  ¿Cómo llego?
+                  {t('cartelera.comoLlego')}
                 </Button>
               )}
 
@@ -335,7 +338,7 @@ const ActivityDetail = () => {
                   onClick={() => setShowDateModal(true)}
                   className="w-full sm:w-auto"
                 >
-                  Ver todas las fechas
+                  {t('detalle.todasLasFechas')}
                 </Button>
               )}
 
@@ -346,7 +349,7 @@ const ActivityDetail = () => {
                   onClick={() => setShowCancelPolicyModal(true)}
                   className="w-full sm:w-auto"
                 >
-                  Política de cancelación
+                  {t('detalle.politica')}
                 </Button>
               )}
             </div>
@@ -356,9 +359,9 @@ const ActivityDetail = () => {
         <Modal
           open={showCancelPolicyModal}
           onClose={() => setShowCancelPolicyModal(false)}
-          title="Política de cancelación"
+          title={t('detalle.politica')}
           footer={
-            <Button onClick={() => setShowCancelPolicyModal(false)}>Cerrar</Button>
+            <Button onClick={() => setShowCancelPolicyModal(false)}>{t('comun.cerrar')}</Button>
           }
         >
           <div className="rounded-card border border-surface-border bg-surface p-4 sm:p-6">

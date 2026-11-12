@@ -17,6 +17,31 @@ const textos = {
     "misIntereses": "My interests",
     "validandoTexto": "Our team is reviewing your account. This can take a few days. Once it’s approved, you’ll be able to sign up for activities."
   },
+  "cartelera": {
+    "titulo": "What’s on",
+    "todosLosPeriodos": "Any time",
+    "estaSemana": "This week ({desde} - {hasta})",
+    "semanaQueViene": "Next week ({desde} - {hasta})",
+    "todosLosTags": "All tags",
+    "inscripcionOk": "You’re signed up",
+    "inscripcionError": "We couldn’t sign you up",
+    "faltaComprobante": "Please upload a bank transfer receipt",
+    "errorFechas": "We couldn’t load the available dates",
+    "buscar": "Search",
+    "buscarPlaceholder": "Title or description...",
+    "periodo": "When",
+    "tags": "Tags",
+    "sinTags": "No tags available",
+    "filtros": "Filters",
+    "sinResultados": "No results",
+    "sinResultadosTexto": "We didn’t find activities with these filters.",
+    "confirmada": "Confirmed",
+    "inscriptoPara": "Signed up for: {fecha}",
+    "verDetalle": "See details",
+    "comoLlego": "How do I get there?",
+    "comoLlegoTitulo": "How do I get there? See the location on Google Maps",
+    "inscribirse": "Sign up"
+  },
   "comun": {
     "idioma": "Language",
     "volver": "Back",
@@ -28,11 +53,42 @@ const textos = {
     "salir": "Log out",
     "cargando": "Loading..."
   },
+  "confirmar": {
+    "titulo": "Confirm registration",
+    "agregarCalendario": "Add to calendar",
+    "instruccionesPago": "Payment instructions",
+    "transferencia": "Make the bank transfer for the amount shown and upload the receipt.",
+    "comprobante": "Transfer receipt",
+    "comprobanteAyuda": "Drag the receipt, paste it or click",
+    "pagoViaje": "Trip payment",
+    "pagoViajeTexto": "You don’t need to transfer or upload a receipt now. Once your spot is confirmed, we’ll sort out the payment on WhatsApp.",
+    "escribinos": "Message us on WhatsApp"
+  },
+  "detalle": {
+    "errorCarga": "We couldn’t load the activity",
+    "cargando": "Loading activity...",
+    "volver": "Back to activities",
+    "fechasDisponibles": "Available dates",
+    "masFechas": "And {cantidad} more date(s)...",
+    "todasLasFechas": "See all dates",
+    "politica": "Cancellation policy"
+  },
   "error": {
     "titulo": "Something went wrong on this screen",
     "recargar": "Reload",
     "inicio": "Go to start",
     "texto": "The rest of the app still works — try reloading, or go to another section from the menu."
+  },
+  "estadoInscripcion": {
+    "aceptada": "Accepted",
+    "pendiente": "Pending",
+    "cancelada": "Cancelled",
+    "en_espera": "On the waitlist",
+    "largo": {
+      "aceptada": "Registration confirmed",
+      "pendiente": "Waiting for confirmation",
+      "en_espera": "On the waitlist"
+    }
   },
   "fechaNacimiento": {
     "titulo": "Add your date of birth",
@@ -40,6 +96,34 @@ const textos = {
     "campo": "Date of birth",
     "guardada": "Date of birth saved",
     "error": "We couldn’t save your date of birth"
+  },
+  "fechas": {
+    "titulo": "Pick a date — {actividad}",
+    "cargando": "Loading available dates...",
+    "sinFechas": "No dates available",
+    "sinFechasTexto": "There are no dates in the next 30 days.",
+    "hora": "Time: {hora}",
+    "cupos": "{cupos} spots left",
+    "sinCupo": "Full",
+    "sinLimite": "No spot limit",
+    "yaInscripto": "You’re signed up",
+    "sinCupoDisponible": "No spots left"
+  },
+  "info": {
+    "titulo": "Details",
+    "proximaFecha": "Next date",
+    "fechas": "Dates",
+    "rango": "{desde} → {hasta}",
+    "inicio": "Starts",
+    "fecha": "Date",
+    "finaliza": "Ends",
+    "hora": "Time",
+    "duracion": "Length",
+    "minutos": "{minutos} minutes",
+    "lugar": "Place",
+    "ubicacion": "Location",
+    "verEnMaps": "See on Google Maps",
+    "precio": "Price"
   },
   "instalar": {
     "titulo": "Install Malka on your phone",
@@ -64,6 +148,42 @@ const textos = {
     "registrate": "Sign up here",
     "casaAbierta": "An open house for the community"
   },
+  "misInscripciones": {
+    "cancelarTitulo": "Cancel your registration for “{titulo}”?",
+    "cancelarEsta": "Cancel this registration?",
+    "cancelarTexto": "If you change your mind later, you’ll have to sign up again.",
+    "cancelarInscripcion": "Cancel registration",
+    "cancelada": "Registration cancelled",
+    "errorCancelar": "We couldn’t cancel the registration",
+    "elegiComprobante": "Choose a receipt to upload",
+    "comprobanteOk": "Receipt updated",
+    "errorComprobante": "We couldn’t upload the receipt",
+    "vacioTitulo": "You don’t have any registrations yet",
+    "vacioTexto": "When you sign up for an activity, it will show up here.",
+    "verActividades": "See activities",
+    "grupos": {
+      "pendiente": "Pending",
+      "aceptada": "Confirmed",
+      "en_espera": "On the waitlist",
+      "cancelada": "Cancelled"
+    },
+    "eliminada": "Activity removed",
+    "deNuevo": "Sign up again",
+    "motivo": "Reason: {motivo}",
+    "enRevision": "We’re reviewing your receipt. We’ll let you know when your registration is confirmed.",
+    "enviarComprobante": "Send new receipt",
+    "volverASubir": "Upload the receipt again"
+  },
+  "misIntereses": {
+    "errorTags": "We couldn’t load the tags",
+    "guardados": "Your interests were saved",
+    "errorGuardar": "We couldn’t save",
+    "texto": "Choose the areas you’re interested in. We use them to show you activities that match what you like. You can change this list anytime.",
+    "sinCatalogo": "There are no tags yet. The team can add them.",
+    "ninguno": "No interests chosen",
+    "uno": "{cantidad} interest chosen",
+    "varios": "{cantidad} interests chosen"
+  },
   "notificaciones": {
     "titulo": "Notifications",
     "activadas": "Notifications turned on for this device",
@@ -74,6 +194,23 @@ const textos = {
     "bloqueadas": "Notifications are blocked for Malka in this browser. To get them, allow them in the site settings (the lock next to the address).",
     "recibir": "Get notifications on this device",
     "queLlega": "New activities, a reminder on the day of an activity you didn’t sign up for, and changes to your registrations (the same updates you get by email)."
+  },
+  "pago": {
+    "pendiente": "Payment under review",
+    "aprobado": "Payment approved",
+    "rechazado": "Payment rejected"
+  },
+  "perfil": {
+    "faltaFecha": "Add your date of birth before saving",
+    "guardado": "Your profile was saved",
+    "error": "We couldn’t save your profile",
+    "intro": "Update your details. Your interests are managed in",
+    "validandoTitulo": "Your account is being reviewed",
+    "validandoTexto": "You can fill in and adjust your profile while you wait for approval.",
+    "emailAyuda": "To change your email, message us.",
+    "guardar": "Save changes",
+    "idiomaTexto": "The language you see Malka in. It’s saved to your account.",
+    "cerrarSesion": "Log out"
   },
   "registro": {
     "titulo": "Sign up",
@@ -196,7 +333,12 @@ const textos = {
     "confirmarTitulo": "Confirm this action?",
     "confirmar": "Confirm",
     "cancelar": "Cancel",
-    "opcional": "Optional"
+    "opcional": "Optional",
+    "archivoAyuda": "Drag the file, paste it or click",
+    "archivoPesado": "The file is {peso}. The maximum is {maximo}.",
+    "reemplazarArchivo": "Replace file",
+    "soltaArchivo": "Drop the file here",
+    "archivoHasta": "up to {maximo}"
   },
   "whatsappRegistro": {
     "titulo": "Finish signing up on WhatsApp",

@@ -20,18 +20,15 @@ import {
   useConfirm,
   SkeletonRows,
 } from '../../components/ui';
+import { useIdioma } from '../../i18n';
 
 /* Secciones en orden de urgencia: lo pendiente puede requerir acción (un
    comprobante rechazado), lo cancelado es archivo. */
-const GRUPOS = [
-  { estado: 'pendiente', label: 'Pendientes' },
-  { estado: 'aceptada', label: 'Confirmadas' },
-  { estado: 'en_espera', label: 'En lista de espera' },
-  { estado: 'cancelada', label: 'Canceladas' },
-];
+const GRUPOS = ['pendiente', 'aceptada', 'en_espera', 'cancelada'];
 
 const MyInscriptions = () => {
   const { showSuccess, showError } = useToast();
+  const { t, idioma } = useIdioma();
   const confirm = useConfirm();
   const [inscriptions, setInscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -71,64 +68,65 @@ const MyInscriptions = () => {
   const handleCancel = async (inscription) => {
     const titulo = inscription.activityId?.titulo;
     const ok = await confirm({
-      title: titulo ? `¿Cancelar tu inscripción a «${titulo}»?` : '¿Cancelar esta inscripción?',
-      description: 'Si después querés volver, vas a tener que inscribirte de nuevo.',
-      confirmLabel: 'Cancelar inscripción',
-      cancelLabel: 'Volver',
+      title: titulo ? t('misInscripciones.cancelarTitulo', { titulo }) : t('misInscripciones.cancelarEsta'),
+      description: t('misInscripciones.cancelarTexto'),
+      confirmLabel: t('misInscripciones.cancelarInscripcion'),
+      cancelLabel: t('comun.volver'),
     });
     if (!ok) return;
 
     try {
       await axios.put(`/inscriptions/${inscription._id}/cancel`);
-      showSuccess('Inscripción cancelada exitosamente');
+      showSuccess(t('misInscripciones.cancelada'));
       fetchInscriptions();
     } catch (error) {
-      showError(error.response?.data?.message || 'Error al cancelar inscripción');
+      showError(error.response?.data?.message || t('misInscripciones.errorCancelar'));
     }
   };
 
   const handleReupload = async (inscriptionId) => {
     if (!reuploadFile) {
-      showError('Seleccioná un comprobante para subir');
+      showError(t('misInscripciones.elegiComprobante'));
       return;
     }
     try {
       const response = await putComprobante(axios, inscriptionId, reuploadFile);
-      showSuccess(response.data.message || 'Comprobante actualizado');
+      showSuccess((idioma === 'es' && response.data.message) || t('misInscripciones.comprobanteOk'));
       setReuploadingId(null);
       setReuploadFile(null);
       fetchInscriptions();
     } catch (error) {
-      showError(error.response?.data?.message || 'Error al subir comprobante');
+      showError(error.response?.data?.message || t('misInscripciones.errorComprobante'));
     }
   };
 
   if (loading) {
     return (
-      <PageContainer title="Mis inscripciones">
+      <PageContainer title={t('shell.links.inscripciones')}>
         <SkeletonRows count={5} />
       </PageContainer>
     );
   }
 
   return (
-    <PageContainer title="Mis inscripciones">
+    <PageContainer title={t('shell.links.inscripciones')}>
       {inscriptions.length === 0 ? (
         <Card padding="none">
           <EmptyState
             icon="activity"
-            title="Todavía no tenés inscripciones"
-            description="Cuando te anotes en una actividad, va a aparecer acá."
+            title={t('misInscripciones.vacioTitulo')}
+            description={t('misInscripciones.vacioTexto')}
             action={
               <Button to="/activities" icon="activity" size="sm">
-                Ver actividades
+                {t('misInscripciones.verActividades')}
               </Button>
             }
           />
         </Card>
       ) : (
         <div className="space-y-8">
-          {GRUPOS.map(({ estado, label }) => {
+          {GRUPOS.map((estado) => {
+            const label = t(`misInscripciones.grupos.${estado}`);
             const grupo = inscriptions.filter((i) => i.estado === estado);
             if (grupo.length === 0) return null;
             const cancelada = estado === 'cancelada';
@@ -166,7 +164,7 @@ const MyInscriptions = () => {
                               </Link>
                             ) : (
                               <span className="truncate text-base font-semibold text-ink-muted">
-                                Actividad eliminada
+                                {t('misInscripciones.eliminada')}
                               </span>
                             )}
                             <span className="flex shrink-0 items-center gap-1.5 text-sm tabular-nums text-ink-soft">
@@ -184,7 +182,7 @@ const MyInscriptions = () => {
                                 to={`/activities/${activity._id}`}
                                 className="min-h-0 shrink-0 px-0"
                               >
-                                Inscribirse de nuevo
+                                {t('misInscripciones.deNuevo')}
                               </Button>
                             )
                           ) : (
@@ -198,7 +196,7 @@ const MyInscriptions = () => {
                               onClick={() => handleCancel(inscription)}
                               className="min-h-0 shrink-0 px-2 py-1 text-danger-600 hover:bg-danger-50 hover:text-danger-700"
                             >
-                              Cancelar
+                              {t('comun.cancelar')}
                             </Button>
                           )}
                         </div>
@@ -211,14 +209,13 @@ const MyInscriptions = () => {
                             {inscription.pago.estadoPago === 'rechazado' &&
                               inscription.pago.motivoRechazo && (
                                 <span className="text-danger-600">
-                                  Motivo: {inscription.pago.motivoRechazo}
+                                  {t('misInscripciones.motivo', { motivo: inscription.pago.motivoRechazo })}
                                 </span>
                               )}
                             {inscription.pago.estadoPago === 'pendiente' &&
                               inscription.estado === 'pendiente' && (
                                 <span>
-                                  Tu comprobante está en revisión. Te avisaremos cuando se confirme la
-                                  inscripción.
+                                  {t('misInscripciones.enRevision')}
                                 </span>
                               )}
                           </div>
@@ -233,7 +230,7 @@ const MyInscriptions = () => {
                                   value={reuploadFile}
                                   onChange={setReuploadFile}
                                   maxSize={5 * 1024 * 1024}
-                                  hint="Arrastrá el comprobante, pegalo o hacé click"
+                                  hint={t('confirmar.comprobanteAyuda')}
                                 />
                                 <div className="flex flex-wrap gap-2">
                                   <Button
@@ -241,7 +238,7 @@ const MyInscriptions = () => {
                                     icon="upload"
                                     onClick={() => handleReupload(inscription._id)}
                                   >
-                                    Enviar nuevo comprobante
+                                    {t('misInscripciones.enviarComprobante')}
                                   </Button>
                                   <Button
                                     size="sm"
@@ -251,7 +248,7 @@ const MyInscriptions = () => {
                                       setReuploadFile(null);
                                     }}
                                   >
-                                    Cancelar
+                                    {t('comun.cancelar')}
                                   </Button>
                                 </div>
                               </div>
@@ -265,7 +262,7 @@ const MyInscriptions = () => {
                                   setReuploadFile(null);
                                 }}
                               >
-                                Volver a subir comprobante
+                                {t('misInscripciones.volverASubir')}
                               </Button>
                             )}
                           </div>

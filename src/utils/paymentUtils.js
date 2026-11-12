@@ -1,11 +1,11 @@
-export const getPagoEstadoLabel = (estadoPago) => {
-  const labels = {
-    pendiente: 'Pago en revisión',
-    aprobado: 'Pago aprobado',
-    rechazado: 'Pago rechazado',
-  };
-  return labels[estadoPago] || estadoPago;
-};
+import { getIdiomaActual } from '../i18n/idiomas';
+import { traducir } from '../i18n/traducir';
+
+/* En el idioma activo (el panel del equipo siempre en castellano). */
+export const getPagoEstadoLabel = (estadoPago) =>
+  ['pendiente', 'aprobado', 'rechazado'].includes(estadoPago)
+    ? traducir(getIdiomaActual(), `pago.${estadoPago}`)
+    : estadoPago;
 
 /** Tono del Badge del design system según el estado de pago. */
 export const getPagoEstadoTone = (estadoPago) => {

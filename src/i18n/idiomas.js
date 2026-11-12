@@ -13,10 +13,12 @@ export const IDIOMA_POR_DEFECTO = 'es';
 export const esIdioma = (valor) => IDIOMAS.some((i) => i.id === valor);
 export const datosIdioma = (id) => IDIOMAS.find((i) => i.id === id) ?? IDIOMAS[0];
 
-/* El locale con el que se formatean fechas y números fuera de React (utils).
-   Lo actualiza el IdiomaProvider; el panel del equipo siempre queda en es-AR. */
-let localeActual = 'es-AR';
-export const getLocale = () => localeActual;
-export const setLocaleActual = (locale) => {
-  localeActual = locale;
+/* El idioma y el locale con que se formatean fechas, números y precios fuera
+   de React (utils). Los actualiza el IdiomaProvider; el panel del equipo
+   siempre queda en castellano y es-AR. */
+let idiomaActual = IDIOMA_POR_DEFECTO;
+export const getIdiomaActual = () => idiomaActual;
+export const getLocale = () => datosIdioma(idiomaActual).locale;
+export const setIdiomaActual = (idioma) => {
+  idiomaActual = esIdioma(idioma) ? idioma : IDIOMA_POR_DEFECTO;
 };

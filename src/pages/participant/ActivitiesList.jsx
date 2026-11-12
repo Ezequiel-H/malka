@@ -16,6 +16,7 @@ import InscriptionStatusTag from '../../components/activities/InscriptionStatusT
 import DateSelectionModal from '../../components/activities/DateSelectionModal';
 import InscriptionConfirmModal from '../../components/activities/InscriptionConfirmModal';
 import BirthDatePrompt from '../../components/profile/BirthDatePrompt';
+import { useIdioma } from '../../i18n';
 import {
   Badge,
   Button, Card, EmptyState, Field, Input, Select,
@@ -26,6 +27,7 @@ import {
 
 const ActivitiesList = () => {
   const { showSuccess, showError } = useToast();
+  const { t, idioma, locale } = useIdioma();
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
@@ -161,10 +163,10 @@ const ActivitiesList = () => {
   };
 
   const getPeriodLabel = (periodo) => {
-    if (!periodo) return 'Todos los períodos';
+    if (!periodo) return t('cartelera.todosLosPeriodos');
     
     const { fechaDesde, fechaHasta } = getDateRange(periodo);
-    if (!fechaDesde || !fechaHasta) return 'Todos los períodos';
+    if (!fechaDesde || !fechaHasta) return t('cartelera.todosLosPeriodos');
     
     const formatDate = (dateStr) => {
       return formatDateEsAR(dateStr, { day: '2-digit', month: '2-digit' });
@@ -175,24 +177,24 @@ const ActivitiesList = () => {
     
     switch (periodo) {
       case 'esta-semana':
-        return `Esta semana (${desde} - ${hasta})`;
+        return t('cartelera.estaSemana', { desde, hasta });
       case 'semana-que-viene':
-        return `Semana que viene (${desde} - ${hasta})`;
+        return t('cartelera.semanaQueViene', { desde, hasta });
       case 'este-mes': {
         const today = new Date();
-        const monthName = today.toLocaleDateString('es-AR', { month: 'long' });
+        const monthName = today.toLocaleDateString(locale, { month: 'long' });
         const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
         return capitalizedMonth;
       }
       case 'siguiente-mes': {
         const today = new Date();
         const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-        const monthName = nextMonth.toLocaleDateString('es-AR', { month: 'long' });
+        const monthName = nextMonth.toLocaleDateString(locale, { month: 'long' });
         const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
         return capitalizedMonth;
       }
       default:
-        return 'Todos los períodos';
+        return t('cartelera.todosLosPeriodos');
     }
   };
 
@@ -249,7 +251,8 @@ const ActivitiesList = () => {
         esGratuita: activityData.esGratuita,
         tipo: activityData.tipo,
       });
-      showSuccess(response.data.message || 'Inscripción realizada exitosamente');
+      // El mensaje del back está en castellano: en otro idioma va el propio.
+      showSuccess((idioma === 'es' && response.data.message) || t('cartelera.inscripcionOk'));
       setShowConfirmModal(false);
       setSelectedDate(null);
       setComprobanteFile(null);
@@ -271,7 +274,7 @@ const ActivitiesList = () => {
         setAvailableDates([]);
       }
     } catch (error) {
-      showError(error.response?.data?.message || 'Error al inscribirse');
+      showError(error.response?.data?.message || t('cartelera.inscripcionError'));
     }
   };
 
@@ -296,7 +299,7 @@ const ActivitiesList = () => {
   const handleConfirmInscription = () => {
     if (!selectedDate || !selectedActivity) return;
     if (!selectedActivity.esGratuita && selectedActivity.tipo !== 'viaje' && !comprobanteFile) {
-      showError('Debes subir un comprobante de transferencia');
+      showError(t('cartelera.faltaComprobante'));
       return;
     }
     handleInscribe(selectedActivity, selectedDate.fechaStr, comprobanteFile);
@@ -340,7 +343,7 @@ const ActivitiesList = () => {
         setAvailableDates(response.data.availableDates);
       } catch (error) {
         console.error('Error fetching available dates:', error);
-        showError('Error al cargar fechas disponibles');
+        showError(t('cartelera.errorFechas'));
         setShowDateModal(false);
         setSelectedActivity(null);
       } finally {
@@ -353,7 +356,7 @@ const ActivitiesList = () => {
   // getPeriodLabel arma la etiqueta con el rango de fechas real, así que las
   // opciones se derivan en cada render y no pueden vivir fuera del componente.
   const PERIODO_OPTIONS = [
-    { value: '', label: 'Todos los períodos' },
+    { value: '', label: t('cartelera.todosLosPeriodos') },
     { value: 'esta-semana', label: getPeriodLabel('esta-semana') },
     { value: 'semana-que-viene', label: getPeriodLabel('semana-que-viene') },
     { value: 'este-mes', label: getPeriodLabel('este-mes') },
@@ -361,7 +364,7 @@ const ActivitiesList = () => {
   ];
 
   const tagOptions = [
-    { value: '', label: 'Todos los tags' },
+    { value: '', label: t('cartelera.todosLosTags') },
     ...categoriasOptions.map((cat) => ({
       value: cat,
       label: cat.charAt(0).toUpperCase() + cat.slice(1),
@@ -372,32 +375,32 @@ const ActivitiesList = () => {
 
   if (initialLoad) {
     return (
-      <PageContainer title="Cartelera">
+      <PageContainer title={t('cartelera.titulo')}>
         <SkeletonCards />
       </PageContainer>
     );
   }
 
   return (
-    <PageContainer title="Cartelera">
+    <PageContainer title={t('cartelera.titulo')}>
       <BirthDatePrompt className="mb-6" />
 
         {/* Filtros. En mobile los selects viven detrás de un toggle: la card
             entera ocupaba la primera pantalla y la cartelera quedaba abajo. */}
         <Card className="mb-6 sm:mb-8">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label="Buscar" className="mb-0">
+            <Field label={t('cartelera.buscar')} className="mb-0">
               <Input
                 type="search"
                 icon="search"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Título o descripción..."
+                placeholder={t('cartelera.buscarPlaceholder')}
               />
             </Field>
 
             <div className={cn(filtersOpen ? 'contents' : 'max-sm:hidden sm:contents')}>
-              <Field label="Período" className="mb-0">
+              <Field label={t('cartelera.periodo')} className="mb-0">
                 <Select
                   options={PERIODO_OPTIONS}
                   value={filters.periodo}
@@ -405,13 +408,13 @@ const ActivitiesList = () => {
                 />
               </Field>
 
-              <Field label="Tags" className="mb-0">
+              <Field label={t('cartelera.tags')} className="mb-0">
                 <Select
                   options={tagOptions}
                   value={filters.categoria}
                   onChange={(value) => setFilters({ ...filters, categoria: value ?? '' })}
                   searchable={tagOptions.length > 8}
-                  emptyMessage="No hay tags disponibles"
+                  emptyMessage={t('cartelera.sinTags')}
                 />
               </Field>
             </div>
@@ -426,7 +429,7 @@ const ActivitiesList = () => {
             onClick={() => setFiltersOpen((o) => !o)}
             className="mt-3 min-h-0 px-2 py-1 sm:hidden"
           >
-            Filtros{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ''}
+            {t('cartelera.filtros')}{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ''}
           </Button>
         </Card>
 
@@ -436,8 +439,8 @@ const ActivitiesList = () => {
           <Card padding="none">
             <EmptyState
               icon="search"
-              title="Sin resultados"
-              description="No encontramos actividades con los filtros seleccionados."
+              title={t('cartelera.sinResultados')}
+              description={t('cartelera.sinResultadosTexto')}
             />
           </Card>
         ) : (
@@ -489,7 +492,7 @@ const ActivitiesList = () => {
                   </h2>
                   {activity.esGratuita ? (
                     <Badge tone="success" className="shrink-0">
-                      Gratis
+                      {t('comun.gratis')}
                     </Badge>
                   ) : (
                     <span className="shrink-0 font-semibold tabular-nums text-ink">
@@ -511,11 +514,11 @@ const ActivitiesList = () => {
                     <div className="flex min-w-0 flex-col gap-1">
                       <InscriptionStatusTag
                         estado={activity.estadoInscripcion}
-                        aceptadaLabel="Confirmada"
+                        aceptadaLabel={t('cartelera.confirmada')}
                       />
                       {activity.tipo === 'recurrente' && activity.fechaInscripcion && (
                         <p className="text-xs text-ink-muted">
-                          Inscrito para: {formatUtcCalendarDateEsAR(activity.fechaInscripcion)}
+                          {t('cartelera.inscriptoPara', { fecha: formatUtcCalendarDateEsAR(activity.fechaInscripcion) })}
                         </p>
                       )}
                     </div>
@@ -527,7 +530,7 @@ const ActivitiesList = () => {
                       to={`/activities/${activity._id}`}
                       className="min-h-0 px-0"
                     >
-                      Ver detalle
+                      {t('cartelera.verDetalle')}
                     </Button>
                   )}
 
@@ -538,8 +541,8 @@ const ActivitiesList = () => {
                         size="sm"
                         icon="location"
                         iconOnly
-                        label="¿Cómo llego?"
-                        title="¿Cómo llego? Ver ubicación en Google Maps"
+                        label={t('cartelera.comoLlego')}
+                        title={t('cartelera.comoLlegoTitulo')}
                         href={activity.ubicacionOnline}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -547,7 +550,7 @@ const ActivitiesList = () => {
                     )}
                     {!activity.estadoInscripcion && (
                       <Button size="sm" icon="check" onClick={(e) => handleInscribeClick(activity, e)}>
-                        Inscribirse
+                        {t('cartelera.inscribirse')}
                       </Button>
                     )}
                   </div>

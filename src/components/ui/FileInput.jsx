@@ -3,6 +3,7 @@ import Icon from './Icon';
 import Button from './Button';
 import { useField } from './Field';
 import cn from './cn';
+import { useIdioma } from '../../i18n/IdiomaContext';
 
 const formatSize = (bytes) => {
   if (bytes < 1024) return `${bytes} B`;
@@ -33,7 +34,7 @@ const FileInput = forwardRef(
       onChange,
       value,
       maxSize,
-      hint = 'Arrastrá el archivo, pegalo o hacé click',
+      hint: hintProp,
       disabled = false,
       invalid: invalidProp,
       progress,
@@ -43,6 +44,8 @@ const FileInput = forwardRef(
     },
     ref
   ) => {
+    const { t } = useIdioma();
+    const hint = hintProp ?? t('ui.archivoAyuda');
     const field = useField();
     const invalid = invalidProp ?? field.invalid;
     const id = idProp ?? field.id;
@@ -68,7 +71,7 @@ const FileInput = forwardRef(
     const accept_ = (file) => {
       if (!file) return;
       if (maxSize && file.size > maxSize) {
-        setSizeError(`El archivo pesa ${formatSize(file.size)}. El máximo es ${formatSize(maxSize)}.`);
+        setSizeError(t('ui.archivoPesado', { peso: formatSize(file.size), maximo: formatSize(maxSize) }));
         return;
       }
       setSizeError(null);
@@ -172,7 +175,7 @@ const FileInput = forwardRef(
                   size="sm"
                   icon="upload"
                   iconOnly
-                  label="Reemplazar archivo"
+                  label={t('ui.reemplazarArchivo')}
                   onClick={() => inputRef.current?.click()}
                 />
                 <Button
@@ -255,10 +258,10 @@ const FileInput = forwardRef(
 
           <span>
             <span className="block text-sm font-medium text-ink">
-              {dragging ? 'Soltá el archivo acá' : hint}
+              {dragging ? t('ui.soltaArchivo') : hint}
             </span>
             <span className="mt-0.5 block text-xs text-ink-muted">
-              {[accept?.replace(/,/g, ', '), maxSize && `hasta ${formatSize(maxSize)}`]
+              {[accept?.replace(/,/g, ', '), maxSize && t('ui.archivoHasta', { maximo: formatSize(maxSize) })]
                 .filter(Boolean)
                 .join(' · ')}
             </span>

@@ -17,6 +17,31 @@ const textos = {
     "misIntereses": "Mis intereses",
     "validandoTexto": "Tu cuenta está siendo validada por nuestro equipo. Este proceso puede tardar unos días. Una vez aprobada, vas a poder inscribirte en las actividades."
   },
+  "cartelera": {
+    "titulo": "Cartelera",
+    "todosLosPeriodos": "Todos los períodos",
+    "estaSemana": "Esta semana ({desde} - {hasta})",
+    "semanaQueViene": "Semana que viene ({desde} - {hasta})",
+    "todosLosTags": "Todos los tags",
+    "inscripcionOk": "Inscripción realizada exitosamente",
+    "inscripcionError": "Error al inscribirse",
+    "faltaComprobante": "Debes subir un comprobante de transferencia",
+    "errorFechas": "Error al cargar fechas disponibles",
+    "buscar": "Buscar",
+    "buscarPlaceholder": "Título o descripción...",
+    "periodo": "Período",
+    "tags": "Tags",
+    "sinTags": "No hay tags disponibles",
+    "filtros": "Filtros",
+    "sinResultados": "Sin resultados",
+    "sinResultadosTexto": "No encontramos actividades con los filtros seleccionados.",
+    "confirmada": "Confirmada",
+    "inscriptoPara": "Inscrito para: {fecha}",
+    "verDetalle": "Ver detalle",
+    "comoLlego": "¿Cómo llego?",
+    "comoLlegoTitulo": "¿Cómo llego? Ver ubicación en Google Maps",
+    "inscribirse": "Inscribirse"
+  },
   "comun": {
     "idioma": "Idioma",
     "volver": "Volver",
@@ -28,11 +53,42 @@ const textos = {
     "salir": "Salir",
     "cargando": "Cargando..."
   },
+  "confirmar": {
+    "titulo": "Confirmar inscripción",
+    "agregarCalendario": "Agregar al calendario",
+    "instruccionesPago": "Instrucciones de pago",
+    "transferencia": "Realizá la transferencia por el monto indicado y subí el comprobante.",
+    "comprobante": "Comprobante de transferencia",
+    "comprobanteAyuda": "Arrastrá el comprobante, pegalo o hacé click",
+    "pagoViaje": "Pago del viaje",
+    "pagoViajeTexto": "No necesitás transferir ni subir comprobante ahora. Una vez confirmado tu cupo, coordinamos el pago por WhatsApp.",
+    "escribinos": "Escribinos por WhatsApp"
+  },
+  "detalle": {
+    "errorCarga": "No se pudo cargar la actividad",
+    "cargando": "Cargando actividad...",
+    "volver": "Volver a la cartelera",
+    "fechasDisponibles": "Fechas disponibles",
+    "masFechas": "Y {cantidad} fecha(s) más...",
+    "todasLasFechas": "Ver todas las fechas",
+    "politica": "Política de cancelación"
+  },
   "error": {
     "titulo": "Algo salió mal en esta pantalla",
     "recargar": "Recargar",
     "inicio": "Ir al inicio",
     "texto": "El resto del sistema sigue funcionando — probá recargar, o navegá a otra sección desde el menú."
+  },
+  "estadoInscripcion": {
+    "aceptada": "Aceptada",
+    "pendiente": "Pendiente",
+    "cancelada": "Cancelada",
+    "en_espera": "En lista de espera",
+    "largo": {
+      "aceptada": "Inscripción confirmada",
+      "pendiente": "Pendiente de confirmación",
+      "en_espera": "En lista de espera"
+    }
   },
   "fechaNacimiento": {
     "titulo": "Completá tu fecha de nacimiento",
@@ -40,6 +96,34 @@ const textos = {
     "campo": "Fecha de nacimiento",
     "guardada": "Fecha de nacimiento guardada",
     "error": "No se pudo guardar la fecha de nacimiento"
+  },
+  "fechas": {
+    "titulo": "Elegí una fecha — {actividad}",
+    "cargando": "Cargando fechas disponibles...",
+    "sinFechas": "Sin fechas disponibles",
+    "sinFechasTexto": "No hay fechas en los próximos 30 días.",
+    "hora": "Hora: {hora}",
+    "cupos": "{cupos} cupos disponibles",
+    "sinCupo": "Sin cupo",
+    "sinLimite": "Sin límite de cupo",
+    "yaInscripto": "Inscripción realizada",
+    "sinCupoDisponible": "Sin cupo disponible"
+  },
+  "info": {
+    "titulo": "Información",
+    "proximaFecha": "Próxima fecha",
+    "fechas": "Fechas",
+    "rango": "{desde} → {hasta}",
+    "inicio": "Inicio",
+    "fecha": "Fecha",
+    "finaliza": "Finaliza",
+    "hora": "Hora",
+    "duracion": "Duración",
+    "minutos": "{minutos} minutos",
+    "lugar": "Lugar",
+    "ubicacion": "Ubicación",
+    "verEnMaps": "Ver en Google Maps",
+    "precio": "Precio"
   },
   "instalar": {
     "titulo": "Instalá Malka en tu teléfono",
@@ -64,6 +148,42 @@ const textos = {
     "registrate": "Registrate aquí",
     "casaAbierta": "Casa abierta para la comunidad"
   },
+  "misInscripciones": {
+    "cancelarTitulo": "¿Cancelar tu inscripción a «{titulo}»?",
+    "cancelarEsta": "¿Cancelar esta inscripción?",
+    "cancelarTexto": "Si después querés volver, vas a tener que inscribirte de nuevo.",
+    "cancelarInscripcion": "Cancelar inscripción",
+    "cancelada": "Inscripción cancelada exitosamente",
+    "errorCancelar": "Error al cancelar inscripción",
+    "elegiComprobante": "Seleccioná un comprobante para subir",
+    "comprobanteOk": "Comprobante actualizado",
+    "errorComprobante": "Error al subir comprobante",
+    "vacioTitulo": "Todavía no tenés inscripciones",
+    "vacioTexto": "Cuando te anotes en una actividad, va a aparecer acá.",
+    "verActividades": "Ver actividades",
+    "grupos": {
+      "pendiente": "Pendientes",
+      "aceptada": "Confirmadas",
+      "en_espera": "En lista de espera",
+      "cancelada": "Canceladas"
+    },
+    "eliminada": "Actividad eliminada",
+    "deNuevo": "Inscribirse de nuevo",
+    "motivo": "Motivo: {motivo}",
+    "enRevision": "Tu comprobante está en revisión. Te avisaremos cuando se confirme la inscripción.",
+    "enviarComprobante": "Enviar nuevo comprobante",
+    "volverASubir": "Volver a subir comprobante"
+  },
+  "misIntereses": {
+    "errorTags": "No se pudieron cargar las tags",
+    "guardados": "Tus intereses se guardaron correctamente",
+    "errorGuardar": "Error al guardar",
+    "texto": "Elegí las áreas que te interesan. Las usamos para mostrarte actividades alineadas a tus preferencias. Podés cambiar esta lista cuando quieras.",
+    "sinCatalogo": "No hay tags en el catálogo. Un administrador puede cargarlas en Tags públicos.",
+    "ninguno": "Sin intereses elegidos",
+    "uno": "{cantidad} interés elegido",
+    "varios": "{cantidad} intereses elegidos"
+  },
   "notificaciones": {
     "titulo": "Notificaciones",
     "activadas": "Notificaciones activadas en este dispositivo",
@@ -74,6 +194,23 @@ const textos = {
     "bloqueadas": "Las notificaciones están bloqueadas para Malka en este navegador. Para recibirlas, habilitalas desde la configuración del sitio (el candado al lado de la dirección).",
     "recibir": "Recibir notificaciones en este dispositivo",
     "queLlega": "Actividades nuevas, recordatorio el día de una actividad a la que no te anotaste y cambios en tus inscripciones (los mismos avisos que te llegan por mail)."
+  },
+  "pago": {
+    "pendiente": "Pago en revisión",
+    "aprobado": "Pago aprobado",
+    "rechazado": "Pago rechazado"
+  },
+  "perfil": {
+    "faltaFecha": "Completá tu fecha de nacimiento antes de guardar",
+    "guardado": "Tu perfil se guardó correctamente",
+    "error": "No se pudo guardar tu perfil",
+    "intro": "Actualizá tus datos. Tus intereses se administran desde",
+    "validandoTitulo": "Tu usuario está en validación",
+    "validandoTexto": "Podés completar y ajustar tu perfil mientras esperás la aprobación.",
+    "emailAyuda": "Para cambiar tu email, escribinos.",
+    "guardar": "Guardar cambios",
+    "idiomaTexto": "En qué idioma ves Malka. Se guarda en tu cuenta.",
+    "cerrarSesion": "Cerrar sesión"
   },
   "registro": {
     "titulo": "Registro",
@@ -196,7 +333,12 @@ const textos = {
     "confirmarTitulo": "¿Confirmás la acción?",
     "confirmar": "Confirmar",
     "cancelar": "Cancelar",
-    "opcional": "Opcional"
+    "opcional": "Opcional",
+    "archivoAyuda": "Arrastrá el archivo, pegalo o hacé click",
+    "archivoPesado": "El archivo pesa {peso}. El máximo es {maximo}.",
+    "reemplazarArchivo": "Reemplazar archivo",
+    "soltaArchivo": "Soltá el archivo acá",
+    "archivoHasta": "hasta {maximo}"
   },
   "whatsappRegistro": {
     "titulo": "Terminá tu registro por WhatsApp",
