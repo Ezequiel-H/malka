@@ -24,7 +24,9 @@ import {
   ImageLightbox,
   Modal,
   Select,
+  Switch,
   useConfirm,
+  cn,
 } from '../../components/ui';
 import { renderPlantilla, plantillaContext, buildWaLink } from '../../utils/whatsapp';
 import { formatActivityPrice, formatPrice } from '../../utils/priceUtils';
@@ -214,6 +216,9 @@ const ActivityInscriptions = () => {
   const [activity, setActivity] = useState(null);
   const [inscriptions, setInscriptions] = useState([]);
   const [allInscriptions, setAllInscriptions] = useState([]);
+  /* Por defecto se ven los encuentros desde ayer; para tomar asistencia de
+     uno de la semana pasada se prenden los anteriores. */
+  const [verAnteriores, setVerAnteriores] = useState(false);
   const [loading, setLoading] = useState(true);
   const [groupedInscriptions, setGroupedInscriptions] = useState({});
   const [comprobanteAbierto, setComprobanteAbierto] = useState(null);
@@ -238,7 +243,7 @@ const ActivityInscriptions = () => {
     if (activity) {
       fetchInscriptions();
     }
-  }, [activity, id]);
+  }, [activity, id, verAnteriores]);
 
   useEffect(() => {
     if (loading || !fechaHighlight) return;
@@ -286,7 +291,7 @@ const ActivityInscriptions = () => {
       const filteredInscriptions = allInscriptions.filter((inscription) => {
         const dayStr = formatUtcCalendarDateToString(inscription.fecha);
         if (!dayStr) return false;
-        return dayStr >= yesterdayStr;
+        return verAnteriores || dayStr >= yesterdayStr;
       });
 
       setAllInscriptions(filteredInscriptions);
@@ -482,6 +487,24 @@ const ActivityInscriptions = () => {
     </div>
   );
 
+  /* Vino / faltó. Se actualiza en el lugar, sin recargar la lista: tomar
+     asistencia es tocar una fila tras otra. */
+  const handleAttendance = async (inscription, asistencia) => {
+    const siguiente = inscription.asistencia === asistencia ? null : asistencia;
+    try {
+      await axios.put(`/inscriptions/${inscription._id}/attendance`, { asistencia: siguiente });
+      const aplicar = (lista) =>
+        lista.map((i) => (i._id === inscription._id ? { ...i, asistencia: siguiente ?? undefined } : i));
+      setAllInscriptions(aplicar);
+      setInscriptions(aplicar);
+      setGroupedInscriptions((grupos) =>
+        Object.fromEntries(Object.entries(grupos).map(([fecha, lista]) => [fecha, aplicar(lista)]))
+      );
+    } catch (error) {
+      showError(error.response?.data?.message || 'No se pudo marcar la asistencia');
+    }
+  };
+
   const renderInscriptionCard = (inscription) => {
     const nombreCompleto =
       [inscription.userId?.nombre, inscription.userId?.apellido].filter(Boolean).join(' ').trim();
@@ -569,6 +592,28 @@ const ActivityInscriptions = () => {
               onClick={() => setWaTarget(inscription)}
             />
           )}
+          {inscription.estado === 'aceptada' &&
+            formatUtcCalendarDateToString(inscription.fecha) <= formatLocalDateToString(new Date()) && (
+              <div role="group" aria-label="Asistencia" className="inline-flex rounded-pill border border-surface-border bg-surface p-0.5">
+                {[
+                  { valor: 'vino', etiqueta: 'Vino', activo: 'bg-success-600 text-surface' },
+                  { valor: 'falto', etiqueta: 'Faltó', activo: 'bg-ink text-surface' },
+                ].map((o) => (
+                  <button
+                    key={o.valor}
+                    type="button"
+                    aria-pressed={inscription.asistencia === o.valor}
+                    onClick={() => handleAttendance(inscription, o.valor)}
+                    className={cn(
+                      'min-h-[30px] rounded-pill px-3 text-xs font-semibold transition-colors duration-base',
+                      inscription.asistencia === o.valor ? o.activo : 'text-ink-soft hover:bg-ink/5 hover:text-ink'
+                    )}
+                  >
+                    {o.etiqueta}
+                  </button>
+                ))}
+              </div>
+            )}
           <Select
             options={ESTADO_OPTIONS}
             value={inscription.estado}
@@ -796,6 +841,12 @@ const ActivityInscriptions = () => {
               </div>
             </div>
             <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 md:w-auto">
+              <Switch
+                checked={verAnteriores}
+                onChange={(e) => setVerAnteriores(e.target.checked)}
+                label="Ver encuentros anteriores"
+                className="shrink-0"
+              />
               <Field label="Filtrar por estado" className="mb-0 w-full min-w-0 sm:w-56">
                 <Select
                   options={FILTRO_OPTIONS}
