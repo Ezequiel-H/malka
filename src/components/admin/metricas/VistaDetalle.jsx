@@ -248,9 +248,10 @@ const VistaDetalle = ({ desde, hasta }) => {
   const [params, setParams] = useSearchParams();
   const [orden, setOrden] = useState('veces');
   const [visibles, setVisibles] = useState(POR_TANDA);
-  /* En el teléfono los doce filtros son varias pantallas: se despliegan a
-     pedido. Los chips de lo elegido se ven siempre. */
-  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
+  /* Los filtros se abren a pedido, en un panel con borrador: se arma la
+     pregunta y se aplica de una vez. */
+  const [panelAbierto, setPanelAbierto] = useState(false);
+  const [borrador, setBorrador] = useState({});
 
   const { datos, cargando, actualizando, error } = useCargaSuave(
     (signal) => axios.get('/admin/metrics/people', { params: { from: desde, to: hasta }, signal }).then((r) => r.data),
@@ -263,6 +264,11 @@ const VistaDetalle = ({ desde, hasta }) => {
     [dimensiones, params]
   );
   const hayFiltros = Object.values(filtros).some((v) => v.length);
+  const cantidadFiltros = Object.values(filtros).reduce((t, v) => t + v.length, 0);
+  const abrirPanel = () => {
+    setBorrador(filtros);
+    setPanelAbierto(true);
+  };
 
   const ponerFiltros = (nuevos) => {
     setVisibles(POR_TANDA);
@@ -330,8 +336,23 @@ const VistaDetalle = ({ desde, hasta }) => {
 
   return (
     <div className={cn('space-y-6 transition-opacity duration-base', actualizando && 'pointer-events-none opacity-50')}>
-      <Panel titulo="Preguntas rápidas" descripcion="Un toque arma la pregunta; después se puede afinar con los filtros.">
-        <div className="flex flex-wrap gap-2">
+      {/* Arriba, sólo una barra: el botón de filtros (que se abre a pedido),
+          las preguntas rápidas y lo que está aplicado. Lo que importa ver
+          —los números y los gráficos— queda a la vista de entrada. */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <Button
+            variant={panelAbierto ? 'primary' : 'secondary'}
+            size="sm"
+            icon="filter"
+            onClick={() => (panelAbierto ? setPanelAbierto(false) : abrirPanel())}
+            aria-expanded={panelAbierto}
+            aria-controls="panel-filtros"
+            className="shrink-0"
+          >
+            Filtros{cantidadFiltros ? ` (${cantidadFiltros})` : ''}
+          </Button>
+          <span className="shrink-0 pl-1 text-xs font-medium text-ink-muted">Preguntas rápidas</span>
           {preguntasRapidas(datos).map((q) => (
             <button
               key={q.etiqueta}
@@ -339,55 +360,17 @@ const VistaDetalle = ({ desde, hasta }) => {
               onClick={() => {
                 limpiar();
                 ponerFiltros(q.filtros);
+                setPanelAbierto(false);
               }}
-              className="min-h-[36px] rounded-pill border border-surface-border bg-surface px-3.5 text-sm font-medium text-ink-soft transition-colors duration-base hover:border-ink/30 hover:text-ink"
+              className="min-h-[32px] shrink-0 whitespace-nowrap rounded-pill border border-surface-border bg-surface px-3 text-sm text-ink-soft transition-colors duration-base hover:border-ink/30 hover:text-ink"
             >
               {q.etiqueta}
             </button>
           ))}
         </div>
-      </Panel>
 
-      <Panel
-        titulo="Filtros"
-        descripcion="Se suman: tiene que cumplir todos. Dentro de un mismo filtro alcanza con uno de los valores."
-        accion={
-          hayFiltros && (
-            <Button variant="link" size="sm" onClick={limpiar}>
-              Sacar todos
-            </Button>
-          )
-        }
-      >
-        <Button
-          variant="secondary"
-          size="sm"
-          iconRight={filtrosAbiertos ? 'chevronUp' : 'chevronDown'}
-          onClick={() => setFiltrosAbiertos((a) => !a)}
-          aria-expanded={filtrosAbiertos}
-          className="mb-3 sm:hidden"
-        >
-          {filtrosAbiertos ? 'Ocultar filtros' : 'Mostrar filtros'}
-        </Button>
-        <div className={cn('gap-x-4 sm:grid sm:grid-cols-2 lg:grid-cols-4', filtrosAbiertos ? 'grid animate-fade-in-up' : 'hidden')}>
-          {dimensiones
-            .filter((d) => d.opciones.length)
-            .map((d) => (
-              <Field key={d.clave} label={d.etiqueta} htmlFor={`filtro-${d.clave}`} className="mb-3">
-                <Select
-                  id={`filtro-${d.clave}`}
-                  options={d.opciones.filter((o) => !filtros[d.clave].includes(o.value))}
-                  value={null}
-                  onChange={(v) => v && ponerFiltros({ [d.clave]: [...filtros[d.clave], v] })}
-                  placeholder={filtros[d.clave].length ? 'Sumar otro…' : 'Todos'}
-                  searchable={d.opciones.length > 8}
-                  size="sm"
-                />
-              </Field>
-            ))}
-        </div>
         {hayFiltros && (
-          <ul className="mt-2 flex flex-wrap gap-2" aria-label="Filtros activos">
+          <ul className="flex flex-wrap items-center gap-2" aria-label="Filtros aplicados">
             {dimensiones.flatMap((d) =>
               filtros[d.clave].map((v) => (
                 <li key={`${d.clave}-${v}`} className="animate-fade-in">
@@ -404,9 +387,80 @@ const VistaDetalle = ({ desde, hasta }) => {
                 </li>
               ))
             )}
+            <li>
+              <Button variant="link" size="sm" onClick={limpiar}>
+                Sacar todos
+              </Button>
+            </li>
           </ul>
         )}
-      </Panel>
+
+        {/* El panel trabaja sobre un borrador: se elige con calma y recién
+            «Aplicar» cambia los números. */}
+        {panelAbierto && (
+          <section
+            id="panel-filtros"
+            aria-label="Filtros"
+            className="animate-fade-in-up rounded-card border border-surface-border bg-surface p-5 shadow-card"
+          >
+            <p className="mb-4 text-sm text-ink-muted">
+              Se suman: tiene que cumplir todos. Dentro de un mismo filtro alcanza con uno de los valores.
+            </p>
+            <div className="grid gap-x-4 sm:grid-cols-2 lg:grid-cols-4">
+              {dimensiones
+                .filter((d) => d.opciones.length)
+                .map((d) => (
+                  <Field key={d.clave} label={d.etiqueta} htmlFor={`filtro-${d.clave}`} className="mb-3">
+                    <Select
+                      id={`filtro-${d.clave}`}
+                      options={d.opciones.filter((o) => !(borrador[d.clave] ?? []).includes(o.value))}
+                      value={null}
+                      onChange={(v) => v && setBorrador((b) => ({ ...b, [d.clave]: [...(b[d.clave] ?? []), v] }))}
+                      placeholder={(borrador[d.clave] ?? []).length ? 'Sumar otro…' : 'Todos'}
+                      searchable={d.opciones.length > 8}
+                      size="sm"
+                    />
+                    {(borrador[d.clave] ?? []).length > 0 && (
+                      <ul className="mt-2 flex flex-wrap gap-1.5">
+                        {borrador[d.clave].map((v) => (
+                          <li key={v}>
+                            <button
+                              type="button"
+                              onClick={() => setBorrador((b) => ({ ...b, [d.clave]: b[d.clave].filter((x) => x !== v) }))}
+                              className="inline-flex min-h-[28px] items-center gap-1 rounded-pill bg-ink/10 px-2.5 text-xs text-ink transition-colors duration-base hover:bg-ink/15"
+                              aria-label={`Sacar ${etiquetaValor(d, v)}`}
+                            >
+                              {primeraMayuscula(etiquetaValor(d, v))}
+                              <span aria-hidden>×</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </Field>
+                ))}
+            </div>
+            <div className="mt-2 flex flex-wrap items-center justify-end gap-2 border-t border-surface-border pt-4">
+              <Button variant="link" size="sm" onClick={() => setBorrador({})}>
+                Vaciar
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setPanelAbierto(false)}>
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                icon="check"
+                onClick={() => {
+                  ponerFiltros(Object.fromEntries(dimensiones.map((d) => [d.clave, borrador[d.clave] ?? []])));
+                  setPanelAbierto(false);
+                }}
+              >
+                Aplicar
+              </Button>
+            </div>
+          </section>
+        )}
+      </div>
 
       <div id="detalle-resultado" className="scroll-mt-24" />
       {hayFiltros && elegidas.length > 0 && (
