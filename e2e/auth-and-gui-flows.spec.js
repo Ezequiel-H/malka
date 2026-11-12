@@ -13,7 +13,7 @@ test.describe('Rutas públicas', () => {
     await page.goto('/');
     await expect(page).toHaveURL(/\/$/);
     await expect(
-      page.getByRole('heading', { name: 'El punto de encuentro para tu identidad judía', level: 1 })
+      page.getByRole('heading', { name: 'Una casa para compartir nuestra espiritualidad judía', level: 1 })
     ).toBeVisible();
     // La vitrina no lleva el shell de la app: tiene su propia barra.
     await expect(page.getByRole('navigation', { name: 'Principal' })).toBeVisible();
@@ -36,9 +36,9 @@ test.describe('Rutas públicas', () => {
   test('las preguntas frecuentes contestan al tocarlas', async ({ page }) => {
     await installApiMock(page);
     await page.goto('/');
-    const respuesta = page.getByText('Te registrás una sola vez y es gratis.', { exact: false });
+    const respuesta = page.getByText('Algunas actividades son gratuitas', { exact: false });
     await expect(respuesta).toHaveCount(0);
-    await page.getByRole('button', { name: '¿Tengo que registrarme?' }).click();
+    await page.getByRole('button', { name: '¿Hay que poner plata?' }).click();
     /* La respuesta se escribe dos veces: pegada a la pregunta para el teléfono
        y en la columna de al lado para pantallas grandes. En escritorio la
        visible es la segunda. */

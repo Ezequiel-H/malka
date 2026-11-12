@@ -65,7 +65,7 @@ const SECCIONES = [
     titulo: 'Esto es Malka',
     entrada: 'Una casa abierta donde siempre hay un mate esperándote.',
     texto:
-      'Un espacio de reunión, intercambio y actividades para jóvenes judíos de 18 a 35 que buscan un lugar de pertenencia que los identifique. Podés caer de lunes a viernes, entre las 14 y las 21: no hace falta asociarse ni anotarse.',
+      'Para quienes buscan un lugar de pertenencia que los identifique. Un espacio de reunión, intercambio y actividades que se vuelve tuyo sencillamente anotándote.',
     /* Cada espacio lleva su encuadre: tocarlo lleva la cámara ahí. Es la forma
        más directa de mostrar una casa —dejar que el otro elija por dónde
        empieza— y de paso convierte la lista en el índice del dibujo. */
@@ -118,24 +118,16 @@ const PROPUESTAS = [
    eran una pared, por más bien escrita que estuviera. */
 const PREGUNTAS = [
   {
-    pregunta: '¿Hay que ser socio?',
-    veredicto: 'No',
-    detalle: 'De nada. Se entra y ya.',
-  },
-  {
     pregunta: '¿Tengo que registrarme?',
     veredicto: 'Sí, una vez',
-    detalle: 'La agenda vive acá adentro. Te registrás una sola vez y es gratis.',
+    detalle:
+      'Registrarte en la app es lo que te hace socio de Malka, y es gratis. Te registrás una sola vez y desde ahí ves la agenda y te anotás a las actividades.',
   },
   {
-    pregunta: '¿Y además me inscribo?',
-    veredicto: 'A algunas',
-    detalle: 'Algunas actividades piden inscripción, desde adentro y en un toque.',
-  },
-  {
-    pregunta: '¿Cuánto tengo que saber?',
-    veredicto: 'Nada',
-    detalle: 'Nuestra movida es judía y pluralista, abierta a distintas miradas.',
+    pregunta: '¿Hay que poner plata?',
+    veredicto: 'Depende',
+    detalle: 'Algunas actividades son gratuitas y otras aranceladas. Siempre te avisamos antes.',
+    nota: 'Lo que se cobra nos permite mantener la casa y seguir construyéndola juntos.',
   },
   {
     pregunta: '¿Puedo venir solo?',
@@ -148,11 +140,19 @@ const PREGUNTAS = [
     detalle: 'Contanos la idea. Nos encanta que sumen.',
   },
   {
-    pregunta: '¿Hay que poner plata?',
-    veredicto: 'Casi nunca',
-    detalle: 'Alguna actividad cubre materiales. Siempre te avisamos antes.',
+    pregunta: '¿Puedo sumarme aunque sepa poco de judaísmo?',
+    veredicto: 'Claro',
+    detalle: 'Nuestra movida es judía y pluralista, abierta a distintas miradas. Venís con lo que sabés.',
   },
 ];
+
+/* El cartelito de una respuesta: lo que conviene decir con buena onda y aparte,
+   para que no se lea como letra chica. */
+const NotaPregunta = ({ children }) => (
+  <p className="mt-4 rounded-card bg-primary/10 px-4 py-3 text-sm leading-relaxed text-primary-700">
+    {children}
+  </p>
+);
 
 /* Los cuatro que te reciben, con sus caras. Las fotos llegaron de Malka y están
    recortadas al mismo alto y a la misma proporción: cuatro retratos con encuadres
@@ -782,10 +782,10 @@ const Landing = () => {
                       el logo es una imagen y el h1 tiene que ser texto, que es
                       lo que leen Google y un lector de pantalla. */}
                   <h1 className="mt-7 max-w-xl animate-fade-in-up font-grotesk text-[clamp(1.7rem,3.4vw,2.4rem)] font-semibold leading-[1.1] tracking-tight text-ink [animation-delay:1400ms] [animation-duration:700ms] [animation-fill-mode:backwards]">
-                    El punto de encuentro para tu identidad judía.
+                    Una casa para compartir nuestra espiritualidad judía.
                   </h1>
                   <ul className="mt-7 flex animate-fade-in-up flex-col items-start gap-1.5 text-[0.68rem] sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-2 sm:text-[0.68rem] font-semibold uppercase tracking-label text-ink-soft [animation-delay:1520ms] [animation-fill-mode:backwards]">
-                    {['18 a 35 años', 'Lunes a viernes, 14 a 21', '3 de Febrero 1325'].map((d, i) => (
+                    {['18 a 35 años', 'Lunes a viernes', '3 de Febrero 1325'].map((d, i) => (
                       <li key={d} className="flex items-center gap-3">
                         {i > 0 && <span className="hidden h-1 w-1 rounded-pill bg-ink-faint sm:block" />}
                         {d}
@@ -830,6 +830,22 @@ const Landing = () => {
                 </h2>
                 <p className="mt-6 text-2xl leading-snug sm:text-3xl">{p.entrada}</p>
                 <p className="mt-5 max-w-xl leading-relaxed text-ink-soft sm:text-lg">{p.texto}</p>
+                {/* Esto es Malka termina en la acción que acaba de nombrar:
+                    si el texto dice que alcanza con anotarse, el botón va ahí. */}
+                {p.id === 'quienes' && (
+                  <div className="mt-8 flex flex-wrap items-center gap-3">
+                    {user ? (
+                      <LandingButton to="/activities">Ver la agenda</LandingButton>
+                    ) : (
+                      <>
+                        <LandingButton to="/register">Anotarme</LandingButton>
+                        <LandingButton to="/login" variant="outline">
+                          Ingresar
+                        </LandingButton>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 {/* Los espacios de la casa, en una lista corta. Antes cada uno
                     tenía su sección y la página se hacía interminable: nombrarlos
@@ -897,10 +913,10 @@ const Landing = () => {
                                 type="button"
                                 onClick={() => setPregunta(i)}
                                 aria-pressed={abierta}
-                                className="group flex w-full items-center gap-3 py-2 text-left"
+                                className="group flex w-full items-start gap-3 py-2 text-left"
                               >
                                 <span
-                                  className={`h-px shrink-0 transition-all duration-base ${
+                                  className={`mt-[0.7em] h-px shrink-0 transition-all duration-base ${
                                     abierta ? 'w-7 bg-primary' : 'w-3 bg-ink/20 group-hover:w-5 group-hover:bg-primary/50'
                                   }`}
                                 />
@@ -923,6 +939,7 @@ const Landing = () => {
                                     {q.veredicto}
                                   </p>
                                   <p className="mt-2 text-sm leading-relaxed text-ink-soft">{q.detalle}</p>
+                                  {q.nota && <NotaPregunta>{q.nota}</NotaPregunta>}
                                 </div>
                               )}
                             </li>
@@ -937,6 +954,7 @@ const Landing = () => {
                         <p className="mt-3 leading-relaxed text-ink-soft">
                           {PREGUNTAS[pregunta].detalle}
                         </p>
+                        {PREGUNTAS[pregunta].nota && <NotaPregunta>{PREGUNTAS[pregunta].nota}</NotaPregunta>}
                       </div>
                     </div>
                   </>
@@ -961,9 +979,9 @@ const Landing = () => {
                 Te esperamos con una sonrisa
               </h2>
               <p className="mt-6 max-w-xl leading-relaxed text-ink-soft sm:text-lg">
-                Alguien de nuestro staff te va a estar esperando. Si es tu primera vez, decíselo:
-                de eso se trata. A la mayoría los vas a encontrar arriba, en la terraza, cuando hay
-                música.
+                Alguien de nuestro staff te va a estar esperando. Si es tu primera vez, avisanos y
+                te mostramos la casa. A la mayoría los vas a encontrar arriba, en la terraza, cuando
+                hay música.
               </p>
 
               <ul className="mt-10 grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-4">
@@ -1012,12 +1030,12 @@ const Landing = () => {
               <p className="mt-6 text-2xl leading-snug sm:text-3xl">
                 {user
                   ? 'La agenda te está esperando.'
-                  : 'Te esperamos para que abras la puerta que elijas.'}
+                  : 'Te esperamos en la casa.'}
               </p>
               <p className="mt-5 max-w-xl leading-relaxed text-ink-soft sm:text-lg">
                 {user
                   ? 'Todo lo que pasa cada semana está adentro, y te inscribís en un toque.'
-                  : 'La agenda con todas las actividades vive adentro, y desde ahí mismo te inscribís. Para venir a malkear un martes no hace falta ni eso: la puerta está abierta de 14 a 21.'}
+                  : 'Te anotás una vez en la app y desde ahí ves la agenda con todas las actividades y te inscribís a las que quieras.'}
               </p>
 
               <div className="mt-9">
