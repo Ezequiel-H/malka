@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Alert, Button, Field, Input } from '../../components/ui';
 import { DotsAccess, useDotsAccess } from '../../components/auth/dots_access';
 import logoMalka from '../../assets/logo-malka-positivo.png';
+import { SelectorIdioma, useIdioma } from '../../i18n';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
@@ -11,6 +12,7 @@ const LoginForm = () => {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const dots = useDotsAccess();
+  const { t } = useIdioma();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,12 +31,16 @@ const LoginForm = () => {
 
   return (
     <>
-      <img src={logoMalka} alt="Malka" className="h-12 w-auto self-start sm:h-14" />
+      {/* El logo es latino en todos los idiomas; el selector va enfrente. */}
+      <div className="flex items-center justify-between gap-4">
+        <img src={logoMalka} alt="Malka" className="h-12 w-auto sm:h-14" />
+        <SelectorIdioma />
+      </div>
       <header>
         <h1 className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
-          Iniciar sesión
+          {t('login.titulo')}
         </h1>
-        <p className="mt-2 text-base text-ink-soft">El punto de encuentro para tu identidad judía</p>
+        <p className="mt-2 text-base text-ink-soft">{t('login.subtitulo')}</p>
       </header>
 
       <div>
@@ -45,7 +51,7 @@ const LoginForm = () => {
         )}
 
         <form onSubmit={handleSubmit}>
-          <Field label="Email" htmlFor="login-email">
+          <Field label={t('login.email')} htmlFor="login-email">
             <Input
               type="email"
               icon="mail"
@@ -56,7 +62,7 @@ const LoginForm = () => {
             />
           </Field>
 
-          <Field label="Contraseña" htmlFor="login-password">
+          <Field label={t('login.contrasena')} htmlFor="login-password">
             <Input
               type="password"
               value={password}
@@ -67,16 +73,16 @@ const LoginForm = () => {
           </Field>
 
           <Button type="submit" size="lg" fullWidth loading={loading}>
-            {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
+            {loading ? t('login.entrando') : t('login.entrar')}
           </Button>
         </form>
       </div>
 
       <div className="flex flex-col gap-2 text-sm text-ink-muted">
         <p>
-          ¿No tenés cuenta?{' '}
+          {t('login.sinCuenta')}{' '}
           <Button variant="link" size="sm" to="/register" className="px-0 py-0 min-h-0 align-baseline">
-            Registrate aquí
+            {t('login.registrate')}
           </Button>
         </p>
         <p className="hidden text-xs sm:block">
@@ -89,7 +95,7 @@ const LoginForm = () => {
             casamalka.org
           </a>
           {' · '}
-          Casa abierta para la comunidad
+          {t('login.casaAbierta')}
         </p>
       </div>
     </>

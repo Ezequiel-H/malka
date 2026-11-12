@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
@@ -19,14 +19,17 @@ import { DotsAccess, useDotsAccess } from '../../components/auth/dots_access';
 import logoMalka from '../../assets/logo-malka-positivo.png';
 import { invalidEs } from '../../utils/formValidation';
 import { RESIDENCIAS, opcionesPaises } from '../../utils/paises';
+import { SelectorIdioma, useIdioma } from '../../i18n';
 
+/* El valor se guarda en castellano (lo lee el equipo); lo que se ve, en el
+   idioma de quien se registra. */
 const RESTRICCIONES = [
-  'Vegetariano',
-  'Vegano',
-  'Sin TACC',
-  'Sin lactosa',
-  'Sin nueces',
-  'Diabético',
+  { valor: 'Vegetariano', clave: 'vegetariano' },
+  { valor: 'Vegano', clave: 'vegano' },
+  { valor: 'Sin TACC', clave: 'sinTacc' },
+  { valor: 'Sin lactosa', clave: 'sinLactosa' },
+  { valor: 'Sin nueces', clave: 'sinNueces' },
+  { valor: 'Diabético', clave: 'diabetico' },
 ];
 
 const RegisterForm = () => {
@@ -52,7 +55,8 @@ const RegisterForm = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
   const dots = useDotsAccess();
-  const [paises] = useState(() => opcionesPaises('es'));
+  const { t, idioma } = useIdioma();
+  const paises = useMemo(() => opcionesPaises(idioma), [idioma]);
 
   useEffect(() => {
     let cancelled = false;
@@ -113,13 +117,13 @@ const RegisterForm = () => {
     // los hidden: el `required` del Field es sólo la marca visual, así que la
     // fecha se chequea acá a mano.
     if (!formData.fechaNacimiento) {
-      setError('Decinos tu fecha de nacimiento para completar el registro.');
+      setError(t('registro.faltaFecha'));
       dots.fail();
       return;
     }
     // Igual que la fecha: el Select y los radios no los valida el navegador.
     if (!formData.nacionalidad || !formData.residencia) {
-      setError('Contanos tu nacionalidad y dónde vivís.');
+      setError(t('registro.faltaResidencia'));
       dots.fail();
       return;
     }
@@ -130,7 +134,8 @@ const RegisterForm = () => {
       ...formData,
       dni: formData.dni.replace(/ /g, '').trim(),
       telefono: formData.telefono.replace(/\s/g, '').trim(),
-      tags
+      tags,
+      idioma
     });
 
     if (result.success) {
@@ -147,9 +152,12 @@ const RegisterForm = () => {
 
   return (
     <>
-      <img src={logoMalka} alt="Malka" className="h-12 w-auto self-start sm:h-14" />
+      <div className="flex items-center justify-between gap-4">
+        <img src={logoMalka} alt="Malka" className="h-12 w-auto sm:h-14" />
+        <SelectorIdioma />
+      </div>
       <h1 className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
-        Registro
+        {t('registro.titulo')}
       </h1>
       <div>
           {error && (
@@ -159,7 +167,7 @@ const RegisterForm = () => {
           )}
 
           <form onSubmit={handleSubmit}>
-            <Field label="Nombre" required>
+            <Field label={t('registro.nombre')} required>
               <Input
                 type="text"
                 name="nombre"
@@ -169,7 +177,7 @@ const RegisterForm = () => {
               />
             </Field>
 
-            <Field label="Apellido" required>
+            <Field label={t('registro.apellido')} required>
               <Input
                 type="text"
                 name="apellido"
@@ -179,7 +187,7 @@ const RegisterForm = () => {
               />
             </Field>
 
-            <Field label="Fecha de nacimiento" required>
+            <Field label={t('registro.fechaNacimiento')} required>
               <DatePicker
                 name="fechaNacimiento"
                 value={formData.fechaNacimiento}
@@ -190,22 +198,22 @@ const RegisterForm = () => {
               />
             </Field>
 
-            <Field label="Nacionalidad" htmlFor="registro-nacionalidad" required>
+            <Field label={t('registro.nacionalidad')} htmlFor="registro-nacionalidad" required>
               <Select
                 id="registro-nacionalidad"
                 name="nacionalidad"
                 options={paises}
                 value={formData.nacionalidad}
                 onChange={(nacionalidad) => setFormData((previo) => ({ ...previo, nacionalidad: nacionalidad ?? '' }))}
-                placeholder="Elegí un país"
+                placeholder={t('registro.elegiPais')}
                 searchable
               />
             </Field>
 
             <RadioGroup
-              label="¿Dónde vivís?"
+              label={t('registro.dondeVivis')}
               name="residencia"
-              options={RESIDENCIAS}
+              options={RESIDENCIAS.map((r) => ({ value: r.value, label: t(`registro.residencias.${r.value}`) }))}
               value={formData.residencia}
               onChange={(residencia) => setFormData((previo) => ({ ...previo, residencia }))}
               className="mb-5"
@@ -213,7 +221,7 @@ const RegisterForm = () => {
 
             {formData.residencia && formData.residencia !== 'buenos_aires' && (
               <div className="mb-5 animate-fade-in-up">
-                <Field label="¿En qué ciudad?" htmlFor="registro-ciudad" required className="mb-3">
+                <Field label={t('registro.ciudad')} htmlFor="registro-ciudad" required className="mb-3">
                   <Input
                     id="registro-ciudad"
                     name="ciudad"
@@ -225,12 +233,12 @@ const RegisterForm = () => {
                   />
                 </Field>
                 <Alert tone="info">
-                  Después de registrarte te vamos a pedir unos datos más por WhatsApp para terminar el registro.
+                  {t('registro.avisoWhatsapp')}
                 </Alert>
               </div>
             )}
 
-            <Field label="DNI" hint="Entre 7 y 10 dígitos, sin puntos" required>
+            <Field label={t('registro.dni')} hint={t('registro.dniAyuda')} required>
               <Input
                 type="text"
                 name="dni"
@@ -242,12 +250,12 @@ const RegisterForm = () => {
                 minLength={7}
                 maxLength={10}
                 pattern="\d{7,10}"
-                title="Ingresá entre 7 y 10 dígitos"
-                {...invalidEs('Ingresá entre 7 y 10 dígitos, sin puntos')}
+                title={t('registro.dniInvalido')}
+                {...invalidEs(t('registro.dniAyuda'))}
               />
             </Field>
 
-            <Field label="Email" required>
+            <Field label={t('registro.email')} required>
               <Input
                 type="email"
                 icon="mail"
@@ -259,7 +267,7 @@ const RegisterForm = () => {
               />
             </Field>
 
-            <Field label="Teléfono" hint="Al menos 8 dígitos. Podés incluir + y código de país" required>
+            <Field label={t('registro.telefono')} hint={t('registro.telefonoAyuda')} required>
               <Input
                 type="tel"
                 icon="phone"
@@ -272,12 +280,12 @@ const RegisterForm = () => {
                 minLength={8}
                 maxLength={22}
                 pattern="^[+]?[0-9]{8,20}$"
-                title="Ingresá un teléfono con al menos 8 dígitos (podés usar + y código de país)"
-                {...invalidEs('Ingresá un teléfono con al menos 8 dígitos (podés usar + y código de país)')}
+                title={t('registro.telefonoInvalido')}
+                {...invalidEs(t('registro.telefonoInvalido'))}
               />
             </Field>
 
-            <Field label="Contraseña" hint="Mínimo 6 caracteres" required>
+            <Field label={t('registro.contrasena')} hint={t('registro.contrasenaAyuda')} required>
               <Input
                 type="password"
                 name="password"
@@ -293,39 +301,39 @@ const RegisterForm = () => {
                 de pantalla anuncie la pregunta antes de cada opción. */}
             <fieldset className="mb-5">
               <legend className="mb-2 block text-sm font-medium text-ink-soft">
-                Toda la comida es Kosher. ¿Tenés algún tipo de restricción?
+                {t('registro.restriccionesPregunta')}
               </legend>
               <div className="space-y-2.5">
-                {RESTRICCIONES.map((restriccion) => (
+                {RESTRICCIONES.map(({ valor, clave }) => (
                   <Checkbox
-                    key={restriccion}
-                    label={restriccion}
-                    checked={formData.restriccionesAlimentarias?.includes(restriccion) || false}
-                    onChange={() => handleRestriccionChange(restriccion)}
+                    key={valor}
+                    label={t(`registro.restricciones.${clave}`)}
+                    checked={formData.restriccionesAlimentarias?.includes(valor) || false}
+                    onChange={() => handleRestriccionChange(valor)}
                   />
                 ))}
               </div>
             </fieldset>
 
-            <Field label="¿Cómo te enteraste de esta propuesta?" required>
+            <Field label={t('registro.comoTeEnteraste')} required>
               <Input
                 type="text"
                 name="comoSeEntero"
                 value={formData.comoSeEntero}
                 onChange={handleChange}
-                placeholder="Escribí cómo te enteraste..."
+                placeholder={t('registro.comoTeEnterastePlaceholder')}
                 required
               />
             </Field>
 
             <Field
-              label="¿Qué te interesa?"
-              hint="Elegí una o más áreas. Podés cambiarlas después en «Mis intereses»."
+              label={t('registro.intereses')}
+              hint={t('registro.interesesAyuda')}
             >
               {tagsLoading ? (
                 <div className="flex items-center gap-2 py-2 text-sm text-ink-muted">
-                  <Spinner size="sm" label="Cargando intereses" />
-                  Cargando intereses...
+                  <Spinner size="sm" label={t('registro.cargandoIntereses')} />
+                  {t('registro.cargandoIntereses')}
                 </div>
               ) : (
                 <PublicTagPicker
@@ -334,7 +342,7 @@ const RegisterForm = () => {
                   onChange={setTags}
                   emptyHint={
                     <p className="mt-2 text-sm text-ink-muted">
-                      Si no aparecen opciones, podés completar tus intereses luego desde tu cuenta.
+                      {t('registro.sinIntereses')}
                     </p>
                   }
                 />
@@ -342,14 +350,14 @@ const RegisterForm = () => {
             </Field>
 
             <Button type="submit" size="lg" fullWidth loading={loading}>
-              {loading ? 'Registrando...' : 'Registrarse'}
+              {loading ? t('registro.registrando') : t('registro.registrarse')}
             </Button>
           </form>
 
           <p className="mt-6 text-center text-sm text-ink-muted">
-            ¿Ya tenés cuenta?{' '}
+            {t('registro.yaTenesCuenta')}{' '}
             <Button variant="link" size="sm" to="/login" className="min-h-0 px-0 py-0 align-baseline">
-              Iniciá sesión aquí
+              {t('registro.iniciaSesion')}
             </Button>
           </p>
       </div>

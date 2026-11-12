@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { buildWaLink, renderPlantilla } from '../../utils/whatsapp';
 import { Alert, Button } from '../ui';
+import { useIdioma } from '../../i18n/IdiomaContext';
 
 /**
  * El paso que sigue al registro para quien no vive en Buenos Aires: el equipo
@@ -11,6 +12,7 @@ import { Alert, Button } from '../ui';
  */
 const CompletarPorWhatsapp = ({ className = '' }) => {
   const { user } = useAuth();
+  const { t } = useIdioma();
   const [contacto, setContacto] = useState(null);
   const aplica = user?.estado === 'pending' && user?.residencia && user.residencia !== 'buenos_aires';
 
@@ -38,17 +40,16 @@ const CompletarPorWhatsapp = ({ className = '' }) => {
   return (
     <Alert
       tone="warning"
-      title="Terminá tu registro por WhatsApp"
+      title={t('whatsappRegistro.titulo')}
       titleAs="h2"
       className={className}
       action={
         <Button href={href} target="_blank" rel="noopener noreferrer" icon="whatsapp" size="sm">
-          Escribirnos
+          {t('whatsappRegistro.boton')}
         </Button>
       }
     >
-      Como no vivís en Buenos Aires, necesitamos pedirte unos datos más. Escribinos por WhatsApp y te contamos qué
-      falta.
+      {t('whatsappRegistro.texto')}
     </Alert>
   );
 };

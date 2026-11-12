@@ -5,9 +5,11 @@ import PageContainer from '../components/layout/PageContainer';
 import BirthDatePrompt from '../components/profile/BirthDatePrompt';
 import CompletarPorWhatsapp from '../components/profile/CompletarPorWhatsapp';
 import { Alert, Button, Card } from '../components/ui';
+import { useIdioma } from '../i18n';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { t } = useIdioma();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,7 +26,7 @@ const Dashboard = () => {
     <PageContainer maxWidth="4xl">
       <Card>
         <h1 className="mb-5 break-words text-2xl font-semibold tracking-tight text-ink sm:mb-6 sm:text-3xl">
-          Te damos la bienvenida, {user?.nombre} {user?.apellido}
+          {t('bienvenida.titulo', { nombre: [user?.nombre, user?.apellido].filter(Boolean).join(' ') })}
         </h1>
 
         <BirthDatePrompt className="mb-5 sm:mb-6" />
@@ -34,16 +36,15 @@ const Dashboard = () => {
         {user?.estado === 'pending' && (
           <Alert
             tone="info"
-            title="Tu usuario está siendo validado"
+            title={t('bienvenida.validandoTitulo')}
             titleAs="h2"
             action={
               <Button variant="secondary" size="sm" to="/my-interests">
-                Mis intereses
+                {t('bienvenida.misIntereses')}
               </Button>
             }
           >
-            Tu cuenta está siendo validada por nuestro equipo. Este proceso puede tardar unos días.
-            Una vez aprobada, vas a poder inscribirte en las actividades.
+            {t('bienvenida.validandoTexto')}
           </Alert>
         )}
       </Card>

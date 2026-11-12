@@ -1,58 +1,55 @@
 import usePushNotifications from '../../hooks/usePushNotifications';
 import { useToast } from '../../contexts/ToastContext';
 import { Alert, Switch } from '../ui';
-
-const QUE_LLEGA =
-  'Actividades nuevas, recordatorio el día de una actividad a la que no te anotaste y cambios en tus inscripciones (los mismos avisos que te llegan por mail).';
+import { useIdioma } from '../../i18n/IdiomaContext';
 
 /** Mi perfil → Notificaciones en este dispositivo. */
 const NotificationSettings = ({ className }) => {
   const { status, busy, enable, disable } = usePushNotifications();
   const { showSuccess, showError } = useToast();
+  const { t } = useIdioma();
 
   if (status === 'loading') return null;
 
   const handleToggle = async (e) => {
     try {
       if (e.target.checked) {
-        if (await enable()) showSuccess('Notificaciones activadas en este dispositivo');
+        if (await enable()) showSuccess(t('notificaciones.activadas'));
       } else {
         await disable();
-        showSuccess('Notificaciones desactivadas en este dispositivo');
+        showSuccess(t('notificaciones.desactivadas'));
       }
     } catch (error) {
-      showError(error.message || 'No se pudo cambiar la configuración');
+      showError(error.message || t('notificaciones.error'));
     }
   };
 
   return (
     <section className={className} aria-labelledby="notificaciones-titulo">
       <h2 id="notificaciones-titulo" className="mb-3 text-lg font-semibold text-ink">
-        Notificaciones
+        {t('notificaciones.titulo')}
       </h2>
 
       {status === 'needs-install' && (
         <Alert tone="info">
-          En iPhone y iPad las notificaciones llegan sólo con la app instalada: abrí Malka en Safari,
-          tocá Compartir y elegí «Agregar a pantalla de inicio». Después activalas desde acá.
+          {t('notificaciones.instalar')}
         </Alert>
       )}
 
       {status === 'unsupported' && (
-        <Alert tone="info">Este navegador no puede recibir notificaciones.</Alert>
+        <Alert tone="info">{t('notificaciones.noSoporta')}</Alert>
       )}
 
       {status === 'denied' && (
         <Alert tone="warning">
-          Las notificaciones están bloqueadas para Malka en este navegador. Para recibirlas,
-          habilitalas desde la configuración del sitio (el candado al lado de la dirección).
+          {t('notificaciones.bloqueadas')}
         </Alert>
       )}
 
       {(status === 'on' || status === 'off') && (
         <Switch
-          label="Recibir notificaciones en este dispositivo"
-          description={QUE_LLEGA}
+          label={t('notificaciones.recibir')}
+          description={t('notificaciones.queLlega')}
           checked={status === 'on'}
           onChange={handleToggle}
           disabled={busy}

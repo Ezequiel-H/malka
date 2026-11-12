@@ -5,6 +5,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { formatAuthError } from '../../utils/authErrors';
 import { formatLocalDateToString } from '../../utils/dateUtils';
 import { Alert, Button, DatePicker, Field } from '../ui';
+import { useIdioma } from '../../i18n/IdiomaContext';
 
 export const userNeedsBirthDate = (user) =>
   user?.role === 'participant' && !user?.fechaNacimiento;
@@ -16,6 +17,7 @@ export const userNeedsBirthDate = (user) =>
  */
 const BirthDatePrompt = ({ className = '' }) => {
   const { user, updateUser, fetchUser } = useAuth();
+  const { t } = useIdioma();
   const { showSuccess, showError } = useToast();
   const [fechaNacimiento, setFechaNacimiento] = useState('');
   const [saving, setSaving] = useState(false);
@@ -38,9 +40,9 @@ const BirthDatePrompt = ({ className = '' }) => {
         updateUser({ fechaNacimiento });
         await fetchUser();
       }
-      showSuccess('Fecha de nacimiento guardada');
+      showSuccess(t('fechaNacimiento.guardada'));
     } catch (error) {
-      showError(formatAuthError(error, 'No se pudo guardar la fecha de nacimiento'));
+      showError(formatAuthError(error, t('fechaNacimiento.error')));
     } finally {
       setSaving(false);
     }
@@ -49,15 +51,15 @@ const BirthDatePrompt = ({ className = '' }) => {
   return (
     <Alert
       tone="info"
-      title="Completá tu fecha de nacimiento"
+      title={t('fechaNacimiento.titulo')}
       titleAs="h2"
       className={`min-w-0 ${className}`.trim()}
     >
       <p className="mb-4">
-        Necesitamos esta información para completar tu perfil. Solo tenés que ingresarla una vez.
+        {t('fechaNacimiento.texto')}
       </p>
       <form onSubmit={handleSubmit} className="flex w-full flex-col gap-3">
-        <Field label="Fecha de nacimiento" htmlFor="birth-date-prompt" required className="mb-0">
+        <Field label={t('fechaNacimiento.campo')} htmlFor="birth-date-prompt" required className="mb-0">
           <DatePicker
             id="birth-date-prompt"
             name="fechaNacimiento"
@@ -67,7 +69,7 @@ const BirthDatePrompt = ({ className = '' }) => {
           />
         </Field>
         <Button type="submit" className="w-full justify-center" disabled={saving || !fechaNacimiento}>
-          {saving ? 'Guardando...' : 'Guardar'}
+          {saving ? t('comun.guardando') : t('comun.guardar')}
         </Button>
       </form>
     </Alert>
