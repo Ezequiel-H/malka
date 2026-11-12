@@ -6,6 +6,7 @@ import Grano from '../components/landing/Grano';
 import { useAuth } from '../contexts/AuthContext';
 import CasaDibujada, { PROPORCION } from '../components/landing/casa/CasaDibujada';
 import LandingButton from '../components/landing/LandingButton';
+import { IDIOMAS, TEXTOS } from '../components/landing/textos';
 import logoMalka from '../assets/logo-malka-positivo.png';
 import fotoWally from '../assets/landing/staff/wally.jpg';
 import fotoMati from '../assets/landing/staff/mati.jpg';
@@ -43,154 +44,92 @@ import fotoCaro from '../assets/landing/staff/caro.jpg';
  */
 /* Las seis puertas de la casa, con el encuadre al que lleva cada una. Viven
    afuera de las secciones porque las usan dos lugares: la lista de "quiénes
-   somos" y la barra que en el teléfono va pegada abajo del dibujo. */
+   somos" y la barra que en el teléfono va pegada abajo del dibujo. Los nombres
+   salen de `textos.js` según el idioma; la clave es la zona. */
 const ESPACIOS = [
-  { nombre: 'El salón', corto: 'Salón', que: 'La mesa larga y el Shabat.', icono: 'salon', zona: 'mesa', piso: 'planta' },
-  { nombre: 'La cocina', corto: 'Cocina', que: 'Lo que termina en la mesa.', icono: 'cocinita', zona: 'cocina', piso: 'planta' },
-  { nombre: 'El cowork', corto: 'Cowork', que: 'Wifi, escritorio y café.', icono: 'cowork', zona: 'cowork', piso: 'primero' },
-  { nombre: 'El garage', corto: 'Garage', que: 'Los autos, y también yoga.', icono: 'garage', zona: 'clase', piso: 'subsuelo' },
-  { nombre: 'La terraza', corto: 'Terraza', que: 'Música y la ciudad abajo.', icono: 'terraza', zona: 'banda', piso: 'terraza' },
-  { nombre: 'El fondo', corto: 'Fondo', que: 'La pileta y el quincho.', icono: 'fondo', zona: 'parrilla', piso: 'todo' },
+  { icono: 'salon', zona: 'mesa', piso: 'planta' },
+  { icono: 'cocinita', zona: 'cocina', piso: 'planta' },
+  { icono: 'cowork', zona: 'cowork', piso: 'primero' },
+  { icono: 'garage', zona: 'clase', piso: 'subsuelo' },
+  { icono: 'terraza', zona: 'banda', piso: 'terraza' },
+  { icono: 'fondo', zona: 'parrilla', piso: 'todo' },
 ];
 
 const SECCIONES = [
   /* La portada no lleva texto en la columna: el texto de la portada es el
      wordmark y la frase. Dos titulares en la misma pantalla era el problema. */
   { id: 'entrada', piso: 'todo', zona: 'todo', portada: true },
-  {
-    id: 'quienes',
-    piso: 'todo',
-    zona: 'casa',
-    kicker: 'Casa Malka · Comunidad Amijai',
-    titulo: 'Esto es Malka',
-    entrada: 'Una casa abierta donde siempre hay un mate esperándote.',
-    texto:
-      'Para quienes buscan un lugar de pertenencia que los identifique. Un espacio de reunión, intercambio y actividades que se vuelve tuyo sencillamente anotándote.',
-    /* Cada espacio lleva su encuadre: tocarlo lleva la cámara ahí. Es la forma
-       más directa de mostrar una casa —dejar que el otro elija por dónde
-       empieza— y de paso convierte la lista en el índice del dibujo. */
-    espacios: ESPACIOS,
-  },
-  {
-    id: 'propuestas',
-    piso: 'planta',
-    zona: 'mesa',
-    kicker: 'Muchas puertas',
-    titulo: 'Lo que se puede hacer acá',
-    entrada: 'Cada uno vive su propio judaísmo.',
-    texto:
-      'Por eso Malka tiene muchas puertas, y cada una te lleva a experiencias sociales, culturales y espirituales distintas. La agenda cambia todas las semanas y vive adentro.',
-  },
-  {
-    id: 'sauna',
-    piso: 'primero',
-    zona: 'bano',
-    kicker: 'Sauna Sessions',
-    titulo: 'Sí, también hay sauna',
-    entrada: 'Y jacuzzi.',
-  },
+  /* Cada espacio lleva su encuadre: tocarlo lleva la cámara ahí. Es la forma
+     más directa de mostrar una casa —dejar que el otro elija por dónde
+     empieza— y de paso convierte la lista en el índice del dibujo. */
+  { id: 'quienes', piso: 'todo', zona: 'casa', conEspacios: true },
+  { id: 'propuestas', piso: 'planta', zona: 'mesa' },
+  { id: 'sauna', piso: 'primero', zona: 'bano' },
 ];
 
 /* Las seis puertas de Malka, que ya son las suyas: están en su sitio desde
    siempre y son la mejor manera de decir qué se puede hacer acá sin escribir
    una lista de actividades que vence en una semana. */
-const PROPUESTAS = [
-  { icono: 'judaismo', label: 'Judaísmo' },
-  { icono: 'actividades', label: 'Actividades' },
-  { icono: 'coworking', label: 'Coworking' },
-  { icono: 'asaditos', label: 'Asaditos' },
-  { icono: 'huerta', label: 'Huerta' },
-  { icono: 'musica', label: 'Música' },
-];
-
-/**
- * Las preguntas, contestadas de frente.
- *
- * El sitio actual tiene un acordeón de ocho preguntas que hay que abrir de a
- * una. Acá la respuesta está a la vista y es lo primero que se lee: lo que
- * frena a alguien de venir es la duda —¿tengo que ser socio?, ¿tengo que
- * saber?— y una duda se despeja mostrando el "no", no escondiéndolo detrás de
- * un clic.
- */
-/* Las preguntas, cortas. Cada una es una ficha que se abre: se ve la lista
-   entera de un vistazo —que es lo que uno quiere cuando tiene una duda— y el
-   texto aparece sólo el de la que abriste. Siete párrafos uno abajo del otro
-   eran una pared, por más bien escrita que estuviera. */
-const PREGUNTAS = [
-  {
-    pregunta: '¿Tengo que registrarme?',
-    veredicto: 'Sí, una vez',
-    detalle:
-      'Registrarte en la app es lo que te hace socio de Malka, y es gratis. Te registrás una sola vez y desde ahí ves la agenda y te anotás a las actividades.',
-  },
-  {
-    pregunta: '¿Hay que poner plata?',
-    veredicto: 'Depende',
-    detalle: 'Algunas actividades son gratuitas y otras aranceladas. Siempre te avisamos antes.',
-    nota: 'Lo que se cobra nos permite mantener la casa y seguir construyéndola juntos.',
-  },
-  {
-    pregunta: '¿Puedo venir solo?',
-    veredicto: 'Obvio',
-    detalle: 'Charlá con la pipol que viene por acá. Acá casi todo se puede.',
-  },
-  {
-    pregunta: '¿Puedo proponer algo?',
-    veredicto: '¡Obvio!',
-    detalle: 'Contanos la idea. Nos encanta que sumen.',
-  },
-  {
-    pregunta: '¿Puedo sumarme aunque sepa poco de judaísmo?',
-    veredicto: 'Claro',
-    detalle: 'Nuestra movida es judía y pluralista, abierta a distintas miradas. Venís con lo que sabés.',
-  },
-];
-
-/* El cartelito de una respuesta: lo que conviene decir con buena onda y aparte,
-   para que no se lea como letra chica. */
-const NotaPregunta = ({ children }) => (
-  <p className="mt-4 rounded-card bg-primary/10 px-4 py-3 text-sm leading-relaxed text-primary-700">
-    {children}
-  </p>
-);
+const PROPUESTAS = ['judaismo', 'actividades', 'coworking', 'asaditos', 'huerta', 'musica'];
 
 /* Los cuatro que te reciben, con sus caras. Las fotos llegaron de Malka y están
    recortadas al mismo alto y a la misma proporción: cuatro retratos con encuadres
    distintos se leen como cuatro fichas prestadas de otro lado. */
 const STAFF = [
-  { nombre: 'Wally Liebhaber', rol: 'Dirección', foto: fotoWally },
-  { nombre: 'Rab Mati Bomse', rol: 'Dirección', foto: fotoMati },
-  { nombre: 'Sem. Brian Bruh', rol: 'Dirección', foto: fotoBrian },
-  { nombre: 'Caro Weber', rol: 'Asistente de Dirección', foto: fotoCaro },
+  { nombre: 'Wally Liebhaber', rol: 'direccion', foto: fotoWally },
+  { nombre: 'Rab Mati Bomse', rol: 'direccion', foto: fotoMati },
+  { nombre: 'Sem. Brian Bruh', rol: 'direccion', foto: fotoBrian },
+  { nombre: 'Caro Weber', rol: 'asistente', foto: fotoCaro },
 ];
 
-/* Los datos de la casa. Los que se pueden abrir, se abren. */
+/* Los datos de la casa. Los que se pueden abrir, se abren. `dato` es fijo en
+   todos los idiomas; `datoDe` lo busca en los textos del idioma. */
 const CONTACTO = [
   {
-    que: 'Dónde',
+    que: 'donde',
     dato: '3 de Febrero 1325, CABA',
     icono: 'pin',
     href: 'https://maps.google.com/?q=3+de+Febrero+1325,+CABA',
   },
-  { que: 'Cuándo', dato: 'Lunes a viernes, de 14 a 21', icono: 'reloj' },
-  { que: 'WhatsApp', dato: '+54 9 11 3440-5730', icono: 'whatsapp', href: 'https://wa.me/5491134405730' },
+  { que: 'cuando', datoDe: 'horario', icono: 'reloj' },
+  { que: 'whatsapp', dato: '+54 9 11 3440-5730', icono: 'whatsapp', href: 'https://wa.me/5491134405730' },
   {
-    que: 'Instagram',
+    que: 'instagram',
     dato: '@somosmalka',
     icono: 'instagram',
     href: 'https://www.instagram.com/somosmalka/',
   },
-  { que: 'Mail', dato: 'malka@casamalka.org', icono: 'sobre', href: 'mailto:malka@casamalka.org' },
-  { que: 'Creada por', dato: 'Comunidad Amijai', icono: 'maguen', href: 'https://amijai.org/' },
+  { que: 'mail', dato: 'malka@casamalka.org', icono: 'sobre', href: 'mailto:malka@casamalka.org' },
+  { que: 'creada', datoDe: 'amijai', icono: 'maguen', href: 'https://amijai.org/' },
 ];
 
-const INDICE = [
-  { id: 'quienes', label: 'Quiénes somos' },
-  { id: 'propuestas', label: 'Propuestas' },
-  { id: 'sauna', label: 'Sauna Sessions' },
-  { id: 'staff', label: 'El equipo' },
-  { id: 'sumate', label: 'Sumate' },
-];
+const INDICE = ['quienes', 'propuestas', 'sauna', 'staff', 'sumate'];
+
+/* Los espacios con sus nombres en el idioma de la página. */
+const espaciosEn = (t) => ESPACIOS.map((e) => ({ ...e, ...t.espacios[e.zona] }));
+
+/**
+ * El cambio de idioma: tres links cortos. Cada idioma tiene su dirección
+ * (`/`, `/en`, `/he`), así que se puede compartir el link en el idioma justo.
+ */
+const SelectorIdioma = ({ idioma, t, className = '' }) => (
+  <nav aria-label={t.ui.idioma} className={`flex items-center gap-1 ${className}`}>
+    {IDIOMAS.map((i) => (
+      <Link
+        key={i.id}
+        to={i.ruta}
+        lang={i.id}
+        aria-current={i.id === idioma ? 'true' : undefined}
+        title={i.nombre}
+        className={`inline-flex min-h-[32px] min-w-[32px] items-center justify-center rounded-pill px-2 font-grotesk text-[0.7rem] font-semibold tracking-label transition-colors duration-base ${
+          i.id === idioma ? 'bg-ink/10 text-ink' : 'text-ink-faint hover:bg-ink/5 hover:text-ink'
+        }`}
+      >
+        {i.corto}
+      </Link>
+    ))}
+  </nav>
+);
 
 /**
  * Una puerta de la casa, en forma de píldora.
@@ -244,7 +183,7 @@ const PildoraEspacio = ({ espacio, elegido, onClick, compacta = false }) => (
  * scroll: se abre cuando lo pedís, ocupa todo, y ahí sí se recorre espacio por
  * espacio con el pulgar.
  */
-const VisorCasa = ({ onCerrar }) => {
+const VisorCasa = ({ onCerrar, t }) => {
   const [espacio, setEspacio] = useState(null);
 
   /**
@@ -290,7 +229,7 @@ const VisorCasa = ({ onCerrar }) => {
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="La casa por dentro"
+      aria-label={t.ui.casaPorDentro}
       className="fixed inset-0 z-[70] animate-fade-in bg-surface-page md:hidden"
     >
       {/* El dibujo ocupa la pantalla entera y todo lo demás flota encima: en un
@@ -331,13 +270,13 @@ const VisorCasa = ({ onCerrar }) => {
 
       <header className="relative flex items-center justify-between px-5 pt-4">
         <p className="text-[0.66rem] font-semibold uppercase tracking-label text-ink-faint">
-          La casa por dentro
+          {t.ui.casaPorDentro}
         </p>
         <button
           type="button"
           onClick={onCerrar}
-          aria-label="Cerrar"
-          className="-mr-2 inline-flex h-11 w-11 items-center justify-center rounded-pill text-ink transition-control duration-fast hover:bg-ink/5 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ink/25"
+          aria-label={t.ui.cerrar}
+          className="-me-2 inline-flex h-11 w-11 items-center justify-center rounded-pill text-ink transition-control duration-fast hover:bg-ink/5 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ink/25"
         >
           <Icon name="close" size="md" />
         </button>
@@ -348,13 +287,13 @@ const VisorCasa = ({ onCerrar }) => {
           que había que deslizar. */}
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-surface-page via-surface-page to-transparent pb-5 pt-10">
         <p className="px-5 pb-3 text-sm leading-snug text-ink-soft">
-          <span className="font-semibold text-ink">{espacio ? espacio.nombre : 'Toda la casa'}</span>
+          <span className="font-semibold text-ink">{espacio ? espacio.nombre : t.ui.todaLaCasa}</span>
           {' — '}
-          {espacio ? espacio.que : 'Elegí un espacio y te lo muestro por dentro.'}
+          {espacio ? espacio.que : t.ui.elegiEspacio}
         </p>
         <ul className="grid grid-cols-3 gap-2 px-5">
-          {ESPACIOS.map((e) => (
-            <li key={e.nombre} className="min-w-0">
+          {espaciosEn(t).map((e) => (
+            <li key={e.zona} className="min-w-0">
               <PildoraEspacio
                 compacta
                 espacio={e}
@@ -369,8 +308,28 @@ const VisorCasa = ({ onCerrar }) => {
   );
 };
 
-const Landing = () => {
+const Landing = ({ idioma = 'es' }) => {
   const { user } = useAuth();
+  const t = TEXTOS[idioma] ?? TEXTOS.es;
+  const rtl = Boolean(IDIOMAS.find((i) => i.id === idioma)?.rtl);
+  /* En hebreo se espeja la página entera: la casa pasa a la derecha, el texto
+     a la izquierda y la barra arranca del otro lado. Por eso los márgenes y
+     posiciones de acá usan los lógicos (ms, me, end) y no left/right. */
+  const dir = rtl ? 'rtl' : undefined;
+
+  /* El idioma de la página entera: lo usan el lector de pantalla, el
+     traductor del navegador y Google. Al salir de la landing vuelve a ser el
+     castellano de la app. */
+  useEffect(() => {
+    const html = document.documentElement;
+    const titulo = document.title;
+    html.lang = idioma;
+    document.title = t.titulo;
+    return () => {
+      html.lang = 'es';
+      document.title = titulo;
+    };
+  }, [idioma, t]);
   const [activo, setActivo] = useState('todo');
   const [zona, setZona] = useState('todo');
   const [seccion, setSeccion] = useState('entrada');
@@ -543,8 +502,8 @@ const Landing = () => {
   }, [telefono]);
 
   return (
-    <div className="relative min-h-screen bg-surface-page font-grotesk text-ink">
-      {visor && <VisorCasa onCerrar={() => setVisor(false)} />}
+    <div dir={dir} className="relative min-h-screen bg-surface-page font-grotesk text-ink">
+      {visor && <VisorCasa t={t} onCerrar={() => setVisor(false)} />}
       {/* El crema plano se leía como un vacío. Estas dos capas no se ven de
           frente pero se sienten: la primera son tres manchas de luz muy
           abiertas —las mismas que usa el login de la app— y la segunda es
@@ -560,14 +519,15 @@ const Landing = () => {
             : 'translate-y-0 border-ink/10 opacity-100'
         }`}
       >
-        <nav aria-label="Principal" className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-5 sm:gap-4 sm:px-8">
+        <nav aria-label={t.ui.principal} className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-5 sm:gap-4 sm:px-8">
           <img src={logoMalka} alt="Malka" className="h-5 w-auto shrink-0 sm:h-6" />
           {/* Con sesión iniciada, la barra deja de ofrecer lo que ya tenés: en
               vez de "registrate" te lleva adentro, que es a lo que venías. */}
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ms-auto flex items-center gap-3">
+            {!telefono && <SelectorIdioma idioma={idioma} t={t} />}
             {user ? (
               <LandingButton to="/dashboard" size="sm" className="whitespace-nowrap">
-                Ir a mi cuenta
+                {t.ui.irCuenta}
               </LandingButton>
             ) : (
               <>
@@ -578,10 +538,10 @@ const Landing = () => {
                   icon={null}
                   className="hidden whitespace-nowrap sm:inline-flex"
                 >
-                  Iniciar sesión
+                  {t.ui.iniciarSesion}
                 </LandingButton>
                 <LandingButton to="/register" size="sm" icon={telefono ? null : undefined} className="whitespace-nowrap">
-                  Registrate
+                  {t.ui.registrate}
                 </LandingButton>
               </>
             )}
@@ -594,9 +554,9 @@ const Landing = () => {
                 type="button"
                 aria-expanded={menu}
                 aria-controls="menu-casa"
-                aria-label={menu ? 'Cerrar menú' : 'Abrir menú'}
+                aria-label={menu ? t.ui.cerrarMenu : t.ui.abrirMenu}
                 onClick={() => setMenu((abierto) => !abierto)}
-                className="-mr-2 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-pill text-ink transition-control duration-fast hover:bg-ink/5 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ink/25"
+                className="-me-2 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-pill text-ink transition-control duration-fast hover:bg-ink/5 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ink/25"
               >
                 <Icon name={menu ? 'close' : 'menu'} size="md" />
               </button>
@@ -622,24 +582,24 @@ const Landing = () => {
                     setMenu(false);
                     setVisor(true);
                   }}
-                  className="flex w-full items-center gap-3 py-4 text-left font-grotesk text-base font-semibold text-ink"
+                  className="flex w-full items-center gap-3 py-4 text-start font-grotesk text-base font-semibold text-ink"
                 >
                   <IconoPropuesta nombre="casita" className="h-5 w-5 shrink-0 text-ink-soft" />
-                  Ver la casa por dentro
+                  {t.ui.verCasa}
                 </button>
               </li>
-              {INDICE.filter((i) => i.id !== 'sauna').map((i) => (
-                <li key={i.id}>
+              {INDICE.filter((id) => id !== 'sauna').map((id) => (
+                <li key={id}>
                   <a
-                    href={`#${i.id}`}
+                    href={`#${id}`}
                     onClick={(e) => {
                       e.preventDefault();
                       setMenu(false);
-                      document.getElementById(i.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }}
                     className="block py-4 font-grotesk text-base font-semibold text-ink"
                   >
-                    {i.label}
+                    {t.indice[id]}
                   </a>
                 </li>
               ))}
@@ -650,10 +610,13 @@ const Landing = () => {
                     onClick={() => setMenu(false)}
                     className="block py-4 font-grotesk text-base font-semibold text-ink-soft"
                   >
-                    Ingresar
+                    {t.ui.ingresar}
                   </Link>
                 </li>
               )}
+              <li className="py-3">
+                <SelectorIdioma idioma={idioma} t={t} />
+              </li>
             </ul>
           </div>
         )}
@@ -664,36 +627,36 @@ const Landing = () => {
           saber dónde estás parado y cuánto falta: eso lo resuelve una lista de
           seis renglones, no más animación. */}
       <nav
-        aria-label="Secciones"
-        className={`fixed right-7 top-1/2 z-40 hidden -translate-y-1/2 flex-col items-end gap-3 transition-opacity duration-500 2xl:flex ${
+        aria-label={t.ui.secciones}
+        className={`fixed end-7 top-1/2 z-40 hidden -translate-y-1/2 flex-col items-end gap-3 transition-opacity duration-500 2xl:flex ${
           enPortada ? 'pointer-events-none opacity-0' : 'opacity-100'
         }`}
       >
-        {INDICE.map((i) => (
+        {INDICE.map((id) => (
           <a
-            key={i.id}
-            href={`#${i.id}`}
+            key={id}
+            href={`#${id}`}
             onClick={(e) => {
               e.preventDefault();
-              document.getElementById(i.id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }}
             className="group flex flex-row-reverse items-center gap-3"
           >
-            {/* Va contra el borde derecho: es el único costado que el dibujo
+            {/* Va contra el borde de afuera (el derecho; en hebreo, el izquierdo): es el único costado que el dibujo
                 nunca invade, y ahí el índice se lee sin pelearse con la casa. */}
             <span
               className={`h-px transition-all duration-500 ${
-                seccion === i.id ? 'w-8 bg-ink' : 'w-4 bg-ink/25 group-hover:w-6 group-hover:bg-ink/50'
+                seccion === id ? 'w-8 bg-ink' : 'w-4 bg-ink/25 group-hover:w-6 group-hover:bg-ink/50'
               }`}
             />
             <span
               className={`text-[0.62rem] font-semibold uppercase tracking-label transition-all duration-300 ${
-                seccion === i.id
+                seccion === id
                   ? 'text-ink opacity-100'
                   : 'text-ink-faint opacity-0 group-hover:opacity-100'
               }`}
             >
-              {i.label}
+              {t.indice[id]}
             </span>
           </a>
         ))}
@@ -722,7 +685,7 @@ const Landing = () => {
               activo={manual?.piso ?? activo}
               zona={manual?.zona ?? zona}
               acercar={acercar}
-              className="mx-auto h-auto max-h-[calc(100vh-5rem)] w-[112%] max-w-none -ml-[9%] lg:w-[112%] lg:-ml-[12%] 2xl:w-[116%] 2xl:-ml-[16%] [mask-image:radial-gradient(106%_94%_at_53%_45%,#000_50%,transparent_90%)]"
+              className="mx-auto h-auto max-h-[calc(100vh-5rem)] w-[112%] max-w-none -ms-[9%] lg:w-[112%] lg:-ms-[12%] 2xl:w-[116%] 2xl:-ms-[16%] [mask-image:radial-gradient(106%_94%_at_53%_45%,#000_50%,transparent_90%)]"
             />
             </div>
           </div>
@@ -755,7 +718,7 @@ const Landing = () => {
                     <button
                       type="button"
                       onClick={() => setVisor(true)}
-                      aria-label="Ver la casa por dentro"
+                      aria-label={t.ui.verCasa}
                       className="-mx-5 -mt-[4vh] mb-1 block w-[calc(100%+2.5rem)] animate-fade-in-up [animation-duration:900ms] [animation-fill-mode:backwards]"
                     >
                       <CasaDibujada
@@ -776,30 +739,40 @@ const Landing = () => {
                   <img
                     src={logoMalka}
                     alt="Malka"
+                    /* El logo es latino en todos los idiomas: en hebreo también
+                       arranca a la izquierda, como en la barra. */
                     className="h-12 w-auto self-start animate-fade-in-up [animation-delay:1250ms] [animation-duration:700ms] [animation-fill-mode:backwards]"
                   />
                   {/* El titular de la página es esta frase, no el wordmark:
                       el logo es una imagen y el h1 tiene que ser texto, que es
                       lo que leen Google y un lector de pantalla. */}
                   <h1 className="mt-7 max-w-xl animate-fade-in-up font-grotesk text-[clamp(1.7rem,3.4vw,2.4rem)] font-semibold leading-[1.1] tracking-tight text-ink [animation-delay:1400ms] [animation-duration:700ms] [animation-fill-mode:backwards]">
-                    Una casa para compartir nuestra espiritualidad judía.
+                    {t.ui.h1}
                   </h1>
                   <ul className="mt-7 flex animate-fade-in-up flex-col items-start gap-1.5 text-[0.68rem] sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-2 sm:text-[0.68rem] font-semibold uppercase tracking-label text-ink-soft [animation-delay:1520ms] [animation-fill-mode:backwards]">
-                    {['18 a 35 años', 'Lunes a viernes', '3 de Febrero 1325'].map((d, i) => (
+                    {t.ui.datos.map((d, i) => (
                       <li key={d} className="flex items-center gap-3">
                         {i > 0 && <span className="hidden h-1 w-1 rounded-pill bg-ink-faint sm:block" />}
-                        {d}
+                        {/* bdi: la dirección es latina y en hebreo no se
+                            tiene que desordenar con el texto de alrededor. */}
+                        <bdi>{d}</bdi>
                       </li>
                     ))}
                   </ul>
                   <div className="mt-9 flex animate-fade-in-up flex-wrap items-center gap-3 [animation-delay:1640ms] [animation-fill-mode:backwards]">
                     <LandingButton size="lg" icon={telefono ? 'forward' : 'chevronDown'} onClick={conocerLaCasa}>
-                      Conocé la casa
+                      {t.ui.conoce}
                     </LandingButton>
                     <LandingButton to={user ? '/activities' : '/register'} variant="outline" size="lg">
-                      {user ? 'Ver la agenda' : 'Entrá a tu casa'}
+                      {user ? t.ui.verAgenda : t.ui.entra}
                     </LandingButton>
                   </div>
+                  {/* En la portada no hay barra, así que el idioma se elige acá. */}
+                  <SelectorIdioma
+                    idioma={idioma}
+                    t={t}
+                    className="mt-6 -ms-2 animate-fade-in-up [animation-delay:1760ms] [animation-fill-mode:backwards]"
+                  />
                 </section>
               ) : (
               <section
@@ -811,13 +784,12 @@ const Landing = () => {
                    la sección es texto y ocupa lo que necesita. */
                 className="flex min-h-[62vh] scroll-mt-16 flex-col justify-center py-14 md:min-h-screen md:scroll-mt-0 md:py-0 md:pt-24 md:pb-24 xl:pt-32 xl:pb-32"
               >
-                {/* El nombre del espacio, con su filete: es lo que ata el
+                {/* El nombre del espacio: es lo que ata el
                     texto con lo que la cámara está mirando. Sin esa etiqueta,
                     las dos columnas se leen como dos cosas separadas que
                     casualmente scrollean juntas. */}
-                <p className="flex items-center gap-3 text-[0.7rem] font-semibold uppercase tracking-label text-ink-soft">
-                  <span className="h-px w-8 bg-primary/50" />
-                  {p.kicker}
+                <p className="text-[0.7rem] font-semibold uppercase tracking-label text-ink-soft">
+                  {t.secciones[p.id].kicker}
                 </p>
                 <h2
                   className={`mt-4 font-bold uppercase leading-[0.9] tracking-display ${
@@ -826,21 +798,23 @@ const Landing = () => {
                       : 'text-[clamp(2rem,5vw,3.2rem)]'
                   }`}
                 >
-                  {p.titulo}
+                  {t.secciones[p.id].titulo}
                 </h2>
-                <p className="mt-6 text-2xl leading-snug sm:text-3xl">{p.entrada}</p>
-                <p className="mt-5 max-w-xl leading-relaxed text-ink-soft sm:text-lg">{p.texto}</p>
+                <p className="mt-6 text-2xl leading-snug sm:text-3xl">{t.secciones[p.id].entrada}</p>
+                {t.secciones[p.id].texto && (
+                  <p className="mt-5 max-w-xl leading-relaxed text-ink-soft sm:text-lg">{t.secciones[p.id].texto}</p>
+                )}
                 {/* Esto es Malka termina en la acción que acaba de nombrar:
                     si el texto dice que alcanza con anotarse, el botón va ahí. */}
                 {p.id === 'quienes' && (
                   <div className="mt-8 flex flex-wrap items-center gap-3">
                     {user ? (
-                      <LandingButton to="/activities">Ver la agenda</LandingButton>
+                      <LandingButton to="/activities">{t.ui.verAgenda}</LandingButton>
                     ) : (
                       <>
-                        <LandingButton to="/register">Anotarme</LandingButton>
+                        <LandingButton to="/register">{t.ui.anotarme}</LandingButton>
                         <LandingButton to="/login" variant="outline">
-                          Ingresar
+                          {t.ui.ingresar}
                         </LandingButton>
                       </>
                     )}
@@ -850,10 +824,10 @@ const Landing = () => {
                 {/* Los espacios de la casa, en una lista corta. Antes cada uno
                     tenía su sección y la página se hacía interminable: nombrarlos
                     acá cuenta lo mismo y deja que el dibujo haga el resto. */}
-                {p.espacios && (
+                {p.conEspacios && (
                   <div className="hidden md:block">
                     <p className="mt-10 text-[0.66rem] font-semibold uppercase tracking-label text-ink-faint">
-                      Tocá un espacio y la casa te lo muestra
+                      {t.ui.tocaEspacio}
                     </p>
                     {/* Píldoras y no tarjetas: seis fichas con título y bajada
                         ocupaban media pantalla y pesaban más que el texto que
@@ -861,8 +835,8 @@ const Landing = () => {
                         deja claro cuál está elegida y es el mismo control que
                         va pegado abajo del dibujo en el teléfono. */}
                     <ul className="mt-4 flex flex-wrap gap-2">
-                      {p.espacios.map((e) => (
-                        <li key={e.nombre}>
+                      {espaciosEn(t).map((e) => (
+                        <li key={e.zona}>
                           <PildoraEspacio
                             espacio={e}
                             elegido={manual?.zona === e.zona}
@@ -877,35 +851,27 @@ const Landing = () => {
                 {p.id === 'propuestas' && (
                   <>
                     <ul className="mt-9 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3">
-                      {PROPUESTAS.map((c) => (
-                        <li key={c.label} className="flex items-center gap-3">
+                      {PROPUESTAS.map((icono) => (
+                        <li key={icono} className="flex items-center gap-3">
                           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill border border-primary/25 text-primary-700">
-                            <IconoPropuesta nombre={c.icono} className="h-6 w-6" />
+                            <IconoPropuesta nombre={icono} className="h-6 w-6" />
                           </span>
-                          <span className="font-semibold text-ink">{c.label}</span>
+                          <span className="font-semibold text-ink">{t.propuestas[icono]}</span>
                         </li>
                       ))}
                     </ul>
 
-                    {/* Las preguntas, como una lista de filas y no como una
-                        grilla de bloques sueltos: la pregunta a la izquierda y
-                        la respuesta a la derecha, separadas por un filete. Es la
-                        forma en la que uno lee una lista de dudas —de arriba
-                        hacia abajo, saltando a la que le importa— y no seis
-                        párrafos en dos columnas. */}
-                    <p className="mt-14 flex items-center gap-3 text-[0.7rem] font-semibold uppercase tracking-label text-ink-soft">
-                      <span className="h-px w-8 bg-primary/50" />
-                      Preguntas frecuentes
+                    <p className="mt-14 text-[0.7rem] font-semibold uppercase tracking-label text-ink-soft">
+                      {t.ui.faq}
                     </p>
-                    {/* Las preguntas a la izquierda y la respuesta al lado, en
-                        el mismo renglón: es la forma de una lista de dudas —se
-                        ven todas de un vistazo y la que abrís se contesta ahí
-                        mismo— sin la pared de siete párrafos ni el ida y vuelta
-                        de un acordeón. Siempre hay una abierta: una respuesta
-                        vacía esperando un clic es un cartel de "faltó algo". */}
-                    <div className="mt-5 grid gap-x-10 gap-y-6 sm:grid-cols-[minmax(0,0.95fr)_minmax(0,1fr)]">
-                      <ul className="-my-1">
-                        {PREGUNTAS.map((q, i) => {
+                    {/* La pregunta abierta se marca con el fondo, no con una
+                        rayita al costado: la fila entera es el botón y se ve
+                        elegida. La respuesta va en un panel con contorno, al
+                        lado en pantallas grandes y abajo de la pregunta en el
+                        teléfono. */}
+                    <div className="mt-5 grid gap-x-8 gap-y-6 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                      <ul className="flex flex-col gap-1">
+                        {t.preguntas.map((q, i) => {
                           const abierta = pregunta === i;
                           return (
                             <li key={q.pregunta}>
@@ -913,48 +879,32 @@ const Landing = () => {
                                 type="button"
                                 onClick={() => setPregunta(i)}
                                 aria-pressed={abierta}
-                                className="group flex w-full items-start gap-3 py-2 text-left"
+                                className={`w-full rounded-card px-4 py-3 text-start text-[0.95rem] leading-snug transition-colors duration-base focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary/25 ${
+                                  abierta
+                                    ? 'bg-primary/10 font-semibold text-primary-700'
+                                    : 'text-ink-soft hover:bg-ink/5 hover:text-ink'
+                                }`}
                               >
-                                <span
-                                  className={`mt-[0.7em] h-px shrink-0 transition-all duration-base ${
-                                    abierta ? 'w-7 bg-primary' : 'w-3 bg-ink/20 group-hover:w-5 group-hover:bg-primary/50'
-                                  }`}
-                                />
-                                <span
-                                  className={`text-[0.95rem] leading-snug transition-colors duration-base ${
-                                    abierta ? 'font-semibold text-primary-700' : 'text-ink-soft group-hover:text-ink'
-                                  }`}
-                                >
-                                  {q.pregunta}
-                                </span>
+                                {q.pregunta}
                               </button>
-
                               {/* En un teléfono la respuesta va acá, pegada a la
                                   pregunta: la columna de al lado no existe y
                                   mandarla al final de la lista obliga a
                                   scrollear para leer lo que acabás de tocar. */}
                               {abierta && (
-                                <div className="animate-fade-in-up border-l border-primary/25 pb-3 pl-5 pt-1 sm:hidden">
-                                  <p className="font-grotesk font-bold leading-none tracking-tight text-primary-700">
-                                    {q.veredicto}
-                                  </p>
-                                  <p className="mt-2 text-sm leading-relaxed text-ink-soft">{q.detalle}</p>
-                                  {q.nota && <NotaPregunta>{q.nota}</NotaPregunta>}
-                                </div>
+                                <p className="mt-2 animate-fade-in-up rounded-card border border-ink/10 bg-surface/70 px-4 py-3 leading-relaxed text-ink sm:hidden">
+                                  {q.respuesta}
+                                </p>
                               )}
                             </li>
                           );
                         })}
                       </ul>
-
-                      <div key={pregunta} className="hidden animate-fade-in-up border-primary/25 sm:block sm:border-l sm:pl-6">
-                        <p className="font-grotesk text-2xl font-bold leading-none tracking-tight text-primary-700">
-                          {PREGUNTAS[pregunta].veredicto}
-                        </p>
-                        <p className="mt-3 leading-relaxed text-ink-soft">
-                          {PREGUNTAS[pregunta].detalle}
-                        </p>
-                        {PREGUNTAS[pregunta].nota && <NotaPregunta>{PREGUNTAS[pregunta].nota}</NotaPregunta>}
+                      <div
+                        key={`${idioma}-${pregunta}`}
+                        className="hidden animate-fade-in-up self-start rounded-card border border-ink/10 bg-surface/70 p-6 sm:block"
+                      >
+                        <p className="text-xl leading-snug text-ink">{t.preguntas[pregunta].respuesta}</p>
                       </div>
                     </div>
                   </>
@@ -973,15 +923,13 @@ const Landing = () => {
               className="flex min-h-[62vh] scroll-mt-16 flex-col justify-center py-14 md:min-h-screen md:scroll-mt-0 md:py-0 md:pt-24 md:pb-24 xl:pt-32 xl:pb-32"
             >
               <p className="text-[0.7rem] font-semibold uppercase tracking-label text-ink-soft">
-                Quiénes te reciben
+                {t.ui.staffKicker}
               </p>
               <h2 className="mt-4 text-[clamp(2rem,4.4vw,3rem)] font-bold uppercase leading-[0.95] tracking-display">
-                Te esperamos con una sonrisa
+                {t.ui.staffTitulo}
               </h2>
               <p className="mt-6 max-w-xl leading-relaxed text-ink-soft sm:text-lg">
-                Alguien de nuestro staff te va a estar esperando. Si es tu primera vez, avisanos y
-                te mostramos la casa. A la mayoría los vas a encontrar arriba, en la terraza, cuando
-                hay música.
+                {t.ui.staffTexto}
               </p>
 
               <ul className="mt-10 grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-4">
@@ -1008,7 +956,7 @@ const Landing = () => {
                     <p className="mt-3 font-semibold leading-tight text-ink transition-colors duration-base group-hover:text-primary-700">
                       {persona.nombre}
                     </p>
-                    <p className="text-sm text-ink-muted">{persona.rol}</p>
+                    <p className="text-sm text-ink-muted">{t.roles[persona.rol]}</p>
                   </li>
                 ))}
               </ul>
@@ -1025,22 +973,18 @@ const Landing = () => {
               className="flex min-h-[62vh] scroll-mt-16 flex-col justify-center py-14 md:min-h-screen md:scroll-mt-0 md:py-0 md:pt-24 md:pb-24 xl:pt-32 xl:pb-32"
             >
               <h2 className="text-[clamp(2rem,4.4vw,3rem)] font-bold uppercase leading-[0.95] tracking-display">
-                {user ? 'Ya sos de la casa' : 'Vení a conocer Malka'}
+                {user ? t.ui.socioTitulo : t.ui.sumateTitulo}
               </h2>
               <p className="mt-6 text-2xl leading-snug sm:text-3xl">
-                {user
-                  ? 'La agenda te está esperando.'
-                  : 'Te esperamos en la casa.'}
+                {user ? t.ui.socioEntrada : t.ui.sumateEntrada}
               </p>
               <p className="mt-5 max-w-xl leading-relaxed text-ink-soft sm:text-lg">
-                {user
-                  ? 'Todo lo que pasa cada semana está adentro, y te inscribís en un toque.'
-                  : 'Te anotás una vez en la app y desde ahí ves la agenda con todas las actividades y te inscribís a las que quieras.'}
+                {user ? t.ui.socioTexto : t.ui.sumateTexto}
               </p>
 
               <div className="mt-9">
                 <LandingButton to={user ? '/activities' : '/register'} size="lg">
-                  {user ? 'Ver la agenda' : 'Entrá a tu casa'}
+                  {user ? t.ui.verAgenda : t.ui.entra}
                 </LandingButton>
               </div>
 
@@ -1060,7 +1004,7 @@ const Landing = () => {
                     </span>
                     <div className="min-w-0">
                     <dt className="text-[0.66rem] font-semibold uppercase tracking-label text-ink-faint">
-                      {c.que}
+                      {t.contacto[c.que]}
                     </dt>
                     <dd className="mt-1">
                       {c.href ? (
@@ -1074,7 +1018,7 @@ const Landing = () => {
                              primero. */
                           className="group text-ink transition-colors duration-base hover:text-primary-700"
                         >
-                          {c.dato}
+                          <bdi>{c.dato ?? t.contacto[c.datoDe]}</bdi>
                           {/* El espacio duro pega la flechita a la última
                               palabra: si no, cuando la dirección se parte en
                               dos renglones, la flecha se va sola al segundo. */}
@@ -1086,7 +1030,7 @@ const Landing = () => {
                           </span>
                         </a>
                       ) : (
-                        <span className="text-ink">{c.dato}</span>
+                        <bdi className="text-ink">{c.dato ?? t.contacto[c.datoDe]}</bdi>
                       )}
                     </dd>
                     </div>

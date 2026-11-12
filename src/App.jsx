@@ -210,6 +210,8 @@ function App() {
             a veces ya tiene cuenta. A la app se sigue entrando por el login y
             por el acceso directo de la PWA, que arranca en /dashboard. */}
         <Route path="/" element={<Landing />} />
+        <Route path="/en" element={<Landing idioma="en" />} />
+        <Route path="/he" element={<Landing idioma="he" />} />
       </Routes>
     </ErrorBoundary>
   );

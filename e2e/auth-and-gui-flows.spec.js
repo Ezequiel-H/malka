@@ -36,13 +36,29 @@ test.describe('Rutas públicas', () => {
   test('las preguntas frecuentes contestan al tocarlas', async ({ page }) => {
     await installApiMock(page);
     await page.goto('/');
-    const respuesta = page.getByText('Algunas actividades son gratuitas', { exact: false });
+    const respuesta = page.getByText('Algunas son gratuitas', { exact: false });
     await expect(respuesta).toHaveCount(0);
-    await page.getByRole('button', { name: '¿Hay que poner plata?' }).click();
+    await page.getByRole('button', { name: '¿Las actividades tienen costo?' }).click();
     /* La respuesta se escribe dos veces: pegada a la pregunta para el teléfono
        y en la columna de al lado para pantallas grandes. En escritorio la
        visible es la segunda. */
     await expect(respuesta.last()).toBeVisible();
+  });
+
+  test('la vitrina se lee en inglés y en hebreo, con el hebreo espejado', async ({ page }) => {
+    await installApiMock(page);
+    await page.goto('/en');
+    await expect(
+      page.getByRole('heading', { name: 'A house to share our Jewish spirituality', level: 1 })
+    ).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+
+    // En la portada la barra está escondida: el selector visible es el de la portada.
+    await page.locator('main').getByRole('link', { name: 'עב' }).click();
+    await expect(page).toHaveURL(/\/he$/);
+    await expect(page.locator('html')).toHaveAttribute('lang', 'he');
+    await expect(page.locator('[dir="rtl"]').first()).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('בית לחלוק בו את הרוחניות היהודית שלנו.');
   });
 
   test.describe('con prefers-reduced-motion', () => {

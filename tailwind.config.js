@@ -102,7 +102,7 @@ export default {
            sigue en Cormorant y ese lenguaje está terminado. Acá afuera, en
            cambio, la serif delicada leía como invitación de casamiento y no
            como un lugar para gente de veinticinco. */
-        grotesk: ['Archivo', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
+        grotesk: ['Archivo', 'Heebo', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
         display: ['"Cormorant Garamond"', 'Georgia', 'serif'],
         sans: ['ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],

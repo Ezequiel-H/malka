@@ -87,7 +87,8 @@ const LandingButton = ({
         <Icon
           name={icon}
           size="xs"
-          className="relative transition-chrome duration-base ease-entrance group-hover:translate-x-1 motion-reduce:transition-none"
+          /* En hebreo la flecha apunta para el otro lado y se corre hacia allá. */
+          className="relative transition-chrome duration-base ease-entrance group-hover:translate-x-1 rtl:-scale-x-100 rtl:group-hover:-translate-x-1 motion-reduce:transition-none"
         />
       )}
     </>
