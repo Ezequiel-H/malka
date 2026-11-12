@@ -67,6 +67,7 @@ import {
   Filter,
   Info,
   LayoutDashboard,
+  ChartColumn,
   Loader2,
   LogOut,
   Mail,
@@ -125,6 +126,7 @@ const ICONS = {
   chevronRight: ChevronRight,
   menu: Menu,
   dashboard: LayoutDashboard,
+  chart: ChartColumn,
   logout: LogOut,
   settings: Settings,
 

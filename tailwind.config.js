@@ -7,6 +7,8 @@
  * crudos de Tailwind (gray-600, blue-500) ni hex sueltos. Si algo no se puede
  * expresar con un token, falta un token — se agrega acá, no en el componente.
  */
+import { SERIE } from './src/components/admin/metricas/colores.js';
+
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
@@ -78,6 +80,8 @@ export default {
 
         /* Semánticos: significado, no color. Un botón de borrar es `danger`,
            no `red-600` — si mañana el rojo cambia, cambia acá y nada más. */
+        /* Las series de los gráficos de métricas (ver colores.js). */
+        chart: SERIE,
         success: { 50: '#eef7f0', 500: '#3f9159', 600: '#2f7546', 700: '#255c38' },
         warning: { 50: '#fdf6e9', 500: '#c98a1e', 600: '#a66f15', 700: '#835710' },
         danger: { 50: '#fdefee', 500: '#c4453c', 600: '#a3352d', 700: '#822a24' },

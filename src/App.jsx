@@ -22,6 +22,7 @@ import ActivityInscriptions from './pages/admin/ActivityInscriptions';
 import TagsManagement from './pages/admin/TagsManagement';
 import PrivateTagsManagement from './pages/admin/PrivateTagsManagement';
 import Settings from './pages/admin/Settings';
+import Metricas from './pages/admin/Metricas';
 import UserDetail from './pages/admin/UserDetail';
 import MyInterests from './pages/participant/MyInterests';
 import MyProfile from './pages/participant/MyProfile';
@@ -199,6 +200,14 @@ function App() {
           element={
             <AdminRoute>
               <PrivateTagsManagement />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/metricas"
+          element={
+            <AdminRoute>
+              <Metricas />
             </AdminRoute>
           }
         />
