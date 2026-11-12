@@ -137,6 +137,7 @@ export const AuthProvider = ({ children }) => {
       nacionalidad: registerPayload.nacionalidad,
       residencia: registerPayload.residencia,
       ciudad: registerPayload.ciudad,
+      tipoDocumento: registerPayload.tipoDocumento,
       tags
     };
 

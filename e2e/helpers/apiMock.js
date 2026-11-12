@@ -116,7 +116,8 @@ export async function installApiMock(page, options = {}) {
               nacionalidad: body.nacionalidad,
               residencia: body.residencia,
               ciudad: body.ciudad,
-              idioma: body.idioma
+              idioma: body.idioma,
+              tipoDocumento: body.tipoDocumento
             }
           },
           201
@@ -153,7 +154,8 @@ export async function installApiMock(page, options = {}) {
             nacionalidad: body.nacionalidad,
             residencia: body.residencia,
             ciudad: body.ciudad,
-            idioma: body.idioma
+            idioma: body.idioma,
+            tipoDocumento: body.tipoDocumento
           }
         })
       );

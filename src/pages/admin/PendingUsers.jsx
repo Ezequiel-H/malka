@@ -102,7 +102,7 @@ const PendingUsers = () => {
               <dl className="space-y-1 text-sm">
                 {user.dni && (
                   <div className="flex gap-2">
-                    <dt className="font-medium text-ink-soft">DNI:</dt>
+                    <dt className="font-medium text-ink-soft">{user.tipoDocumento === 'pasaporte' ? 'Pasaporte:' : 'DNI:'}</dt>
                     <dd className="text-ink">{user.dni}</dd>
                   </div>
                 )}
@@ -127,9 +127,10 @@ const PendingUsers = () => {
                   </div>
                 )}
               </dl>
-              {/* Quien no vive en Buenos Aires termina el registro por
-                  WhatsApp: el aviso le recuerda al equipo que falta eso. */}
-              {user.residencia && user.residencia !== 'buenos_aires' && (
+              {/* Quien no vive en Buenos Aires o se registró con pasaporte
+                  termina el registro por WhatsApp: el aviso le recuerda al
+                  equipo que falta eso. */}
+              {((user.residencia && user.residencia !== 'buenos_aires') || user.tipoDocumento === 'pasaporte') && (
                 <Badge tone="warning" icon="whatsapp" className="mt-3">
                   Termina el registro por WhatsApp
                 </Badge>

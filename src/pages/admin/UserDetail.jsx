@@ -481,20 +481,38 @@ const UserDetail = () => {
                   required
                 />
               </Field>
-              <Field label="DNI" hint="Entre 7 y 10 dígitos, sin puntos">
-                <Input
-                  type="text"
-                  name="dni"
-                  value={formData.dni}
-                  onChange={handleChange}
-                  inputMode="numeric"
-                  autoComplete="off"
-                  minLength={7}
-                  maxLength={10}
-                  pattern="\d{7,10}"
-                  title="Entre 7 y 10 dígitos"
-                />
-              </Field>
+              {/* El número va en el mismo campo; el formato depende del tipo
+                  de documento con el que se registró. */}
+              {user?.tipoDocumento === 'pasaporte' ? (
+                <Field label="Pasaporte" hint="Letras y números, sin espacios">
+                  <Input
+                    type="text"
+                    name="dni"
+                    value={formData.dni}
+                    onChange={handleChange}
+                    autoComplete="off"
+                    minLength={5}
+                    maxLength={20}
+                    pattern="[A-Za-z0-9]{5,20}"
+                    title="Entre 5 y 20 letras o números"
+                  />
+                </Field>
+              ) : (
+                <Field label="DNI" hint="Entre 7 y 10 dígitos, sin puntos">
+                  <Input
+                    type="text"
+                    name="dni"
+                    value={formData.dni}
+                    onChange={handleChange}
+                    inputMode="numeric"
+                    autoComplete="off"
+                    minLength={7}
+                    maxLength={10}
+                    pattern="\d{7,10}"
+                    title="Entre 7 y 10 dígitos"
+                  />
+                </Field>
+              )}
               <Field label="Teléfono">
                 <Input
                   type="tel"

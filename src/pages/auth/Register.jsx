@@ -31,6 +31,7 @@ const RegisterForm = () => {
     apellido: '',
     fechaNacimiento: '',
     dni: '',
+    tipoDocumento: 'dni',
     telefono: '',
     restriccionesAlimentarias: [],
     comoSeEntero: '',
@@ -73,7 +74,7 @@ const RegisterForm = () => {
     const { name, value } = e.target;
     const next =
       name === 'dni'
-        ? value.replace(/ /g, '').trim()
+        ? value.replace(/ /g, '').trim().toUpperCase()
         : name === 'telefono'
           ? value.replace(/\s/g, '').trim()
           : value;
@@ -130,8 +131,8 @@ const RegisterForm = () => {
     });
 
     if (result.success) {
-      // Fuera de Buenos Aires el registro sigue por WhatsApp: la pantalla de
-      // bienvenida le muestra el botón para escribirnos.
+      // Fuera de Buenos Aires o con pasaporte el registro sigue por WhatsApp:
+      // la pantalla de bienvenida le muestra el botón para escribirnos.
       navigate('/dashboard');
     } else {
       setError(result.message);
@@ -229,23 +230,64 @@ const RegisterForm = () => {
               </div>
             )}
 
-            <Field label={t('registro.dni')} hint={t('registro.dniAyuda')} required>
-              <Input
-                type="text"
-                name="dni"
-                dir="ltr"
-                value={formData.dni}
-                onChange={handleChange}
-                required
-                inputMode="numeric"
-                autoComplete="off"
-                minLength={7}
-                maxLength={10}
-                pattern="\d{7,10}"
-                title={t('registro.dniInvalido')}
-                {...invalidEs(t('registro.dniAyuda'))}
-              />
-            </Field>
+            {/* DNI primero; el pasaporte queda de última opción para quien no
+                tiene DNI, y con él el registro sigue por WhatsApp. */}
+            <RadioGroup
+              label={t('registro.documento')}
+              name="tipoDocumento"
+              direction="horizontal"
+              options={[
+                { value: 'dni', label: t('registro.tiposDocumento.dni') },
+                { value: 'pasaporte', label: t('registro.tiposDocumento.pasaporte') },
+              ]}
+              value={formData.tipoDocumento}
+              onChange={(tipoDocumento) => setFormData((previo) => ({ ...previo, tipoDocumento, dni: '' }))}
+              className="mb-3"
+            />
+            {formData.tipoDocumento === 'pasaporte' ? (
+              <div key="pasaporte" className="animate-fade-in">
+                <Field label={t('registro.pasaporte')} hint={t('registro.pasaporteAyuda')} required>
+                  <Input
+                    type="text"
+                    name="dni"
+                    dir="ltr"
+                    value={formData.dni}
+                    onChange={handleChange}
+                    required
+                    autoComplete="off"
+                    minLength={5}
+                    maxLength={20}
+                    pattern="[A-Za-z0-9]{5,20}"
+                    title={t('registro.pasaporteInvalido')}
+                    {...invalidEs(t('registro.pasaporteInvalido'))}
+                  />
+                </Field>
+                {/* Fuera de Buenos Aires ya hay un aviso igual más arriba. */}
+                {(!formData.residencia || formData.residencia === 'buenos_aires') && (
+                  <Alert tone="info" className="-mt-2 mb-5">
+                    {t('registro.avisoPasaporte')}
+                  </Alert>
+                )}
+              </div>
+            ) : (
+              <Field label={t('registro.dni')} hint={t('registro.dniAyuda')} required>
+                <Input
+                  type="text"
+                  name="dni"
+                  dir="ltr"
+                  value={formData.dni}
+                  onChange={handleChange}
+                  required
+                  inputMode="numeric"
+                  autoComplete="off"
+                  minLength={7}
+                  maxLength={10}
+                  pattern="\d{7,10}"
+                  title={t('registro.dniInvalido')}
+                  {...invalidEs(t('registro.dniAyuda'))}
+                />
+              </Field>
+            )}
 
             <Field label={t('registro.email')} required>
               <Input

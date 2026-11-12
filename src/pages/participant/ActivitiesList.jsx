@@ -16,6 +16,7 @@ import InscriptionStatusTag from '../../components/activities/InscriptionStatusT
 import DateSelectionModal from '../../components/activities/DateSelectionModal';
 import InscriptionConfirmModal from '../../components/activities/InscriptionConfirmModal';
 import BirthDatePrompt from '../../components/profile/BirthDatePrompt';
+import DatosFaltantesPrompt from '../../components/profile/DatosFaltantesPrompt';
 import { useIdioma } from '../../i18n';
 import {
   Badge,
@@ -384,6 +385,7 @@ const ActivitiesList = () => {
   return (
     <PageContainer title={t('cartelera.titulo')}>
       <BirthDatePrompt className="mb-6" />
+      <DatosFaltantesPrompt className="mb-6" />
 
         {/* Filtros. En mobile los selects viven detrás de un toggle: la card
             entera ocupaba la primera pantalla y la cartelera quedaba abajo. */}

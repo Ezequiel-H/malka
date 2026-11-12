@@ -192,6 +192,32 @@ test.describe('Registro', () => {
     await expect(wa).toHaveAttribute('href', /wa\.me\/5491134405730\?text=.*Tel%20Aviv/);
   });
 
+  test('con pasaporte también termina el registro por WhatsApp', async ({ page }) => {
+    await installApiMock(page);
+    await page.goto('/register');
+    await page.locator('input[name="nombre"]').fill('Nuevo');
+    await page.locator('input[name="apellido"]').fill('Usuario');
+    await pickDate(page, 'Fecha de nacimiento', '1990-05-15');
+    const nacionalidad = page.getByRole('combobox', { name: 'Nacionalidad' });
+    await nacionalidad.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(100);
+    await nacionalidad.click();
+    await page.getByRole('textbox', { name: 'Buscar opción' }).fill('Israel');
+    await page.keyboard.press('Enter');
+    await page.getByText('En Buenos Aires (CABA o GBA)').click();
+    await page.getByText('Pasaporte', { exact: true }).click();
+    await expect(page.getByText('Como no tenés DNI')).toBeVisible();
+    await page.locator('input[name="dni"]').fill('ab123456');
+    await page.locator('input[name="email"]').fill('nuevo@e2e.test');
+    await page.locator('input[name="telefono"]').fill('+972501234567');
+    await page.locator('input[name="password"]').fill('secret12');
+    await page.locator('input[name="comoSeEntero"]').fill('Un amigo');
+    await page.getByRole('button', { name: 'Registrarse' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page.getByText('Como te registraste con pasaporte')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Escribirnos' })).toBeVisible();
+  });
+
   test('pide nacionalidad y dónde vivís antes de enviar', async ({ page }) => {
     await installApiMock(page);
     await page.goto('/register');

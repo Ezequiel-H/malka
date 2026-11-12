@@ -14,7 +14,9 @@ const CompletarPorWhatsapp = ({ className = '' }) => {
   const { user } = useAuth();
   const { t } = useIdioma();
   const [contacto, setContacto] = useState(null);
-  const aplica = user?.estado === 'pending' && user?.residencia && user.residencia !== 'buenos_aires';
+  const fueraDeBuenosAires = Boolean(user?.residencia) && user.residencia !== 'buenos_aires';
+  const conPasaporte = user?.tipoDocumento === 'pasaporte';
+  const aplica = user?.estado === 'pending' && (fueraDeBuenosAires || conPasaporte);
 
   useEffect(() => {
     if (!aplica) return undefined;
@@ -49,7 +51,7 @@ const CompletarPorWhatsapp = ({ className = '' }) => {
         </Button>
       }
     >
-      {t('whatsappRegistro.texto')}
+      {fueraDeBuenosAires ? t('whatsappRegistro.texto') : t('whatsappRegistro.textoPasaporte')}
     </Alert>
   );
 };

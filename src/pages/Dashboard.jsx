@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import PageContainer from '../components/layout/PageContainer';
 import BirthDatePrompt from '../components/profile/BirthDatePrompt';
+import DatosFaltantesPrompt from '../components/profile/DatosFaltantesPrompt';
 import CompletarPorWhatsapp from '../components/profile/CompletarPorWhatsapp';
 import { Alert, Button, Card } from '../components/ui';
 import { useIdioma } from '../i18n';
@@ -30,6 +31,7 @@ const Dashboard = () => {
         </h1>
 
         <BirthDatePrompt className="mb-5 sm:mb-6" />
+        <DatosFaltantesPrompt className="mb-5 sm:mb-6" />
 
         <CompletarPorWhatsapp className="mb-5 sm:mb-6" />
 

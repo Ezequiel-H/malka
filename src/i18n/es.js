@@ -230,6 +230,12 @@ const textos = {
     "dni": "DNI",
     "dniAyuda": "Entre 7 y 10 dígitos, sin puntos",
     "dniInvalido": "Ingresá entre 7 y 10 dígitos",
+    "documento": "Documento",
+    "tiposDocumento": { "dni": "DNI", "pasaporte": "Pasaporte" },
+    "pasaporte": "Número de pasaporte",
+    "pasaporteAyuda": "Letras y números, sin espacios",
+    "pasaporteInvalido": "Ingresá entre 5 y 20 letras o números",
+    "avisoPasaporte": "Como no tenés DNI, después de registrarte te vamos a pedir unos datos más por WhatsApp.",
     "email": "Email",
     "telefono": "Teléfono",
     "telefonoAyuda": "Al menos 8 dígitos. Podés incluir + y código de país",
@@ -343,7 +349,15 @@ const textos = {
   "whatsappRegistro": {
     "titulo": "Terminá tu registro por WhatsApp",
     "boton": "Escribirnos",
-    "texto": "Como no vivís en Buenos Aires, necesitamos pedirte unos datos más. Escribinos por WhatsApp y te contamos qué falta."
+    "texto": "Como no vivís en Buenos Aires, necesitamos pedirte unos datos más. Escribinos por WhatsApp y te contamos qué falta.",
+    "textoPasaporte": "Como te registraste con pasaporte, necesitamos pedirte unos datos más. Escribinos por WhatsApp y te contamos qué falta."
+  },
+  "datosFaltantes": {
+    "titulo": "Completá tus datos",
+    "texto": "Sumamos dos preguntas al registro. Contestalas una vez y listo.",
+    "guardados": "Datos guardados",
+    "error": "No se pudieron guardar tus datos",
+    "faltan": "Contanos tu nacionalidad y dónde vivís."
   }
 };
 

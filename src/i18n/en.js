@@ -230,6 +230,12 @@ const textos = {
     "dni": "ID number (DNI)",
     "dniAyuda": "7 to 10 digits, no dots",
     "dniInvalido": "Enter 7 to 10 digits",
+    "documento": "ID document",
+    "tiposDocumento": { "dni": "Argentine DNI", "pasaporte": "Passport" },
+    "pasaporte": "Passport number",
+    "pasaporteAyuda": "Letters and numbers, no spaces",
+    "pasaporteInvalido": "Enter 5 to 20 letters or numbers",
+    "avisoPasaporte": "Since you don’t have a DNI, after signing up we’ll ask you for a few more details on WhatsApp.",
     "email": "Email",
     "telefono": "Phone",
     "telefonoAyuda": "At least 8 digits. You can include + and the country code",
@@ -343,7 +349,15 @@ const textos = {
   "whatsappRegistro": {
     "titulo": "Finish signing up on WhatsApp",
     "boton": "Message us",
-    "texto": "Since you don’t live in Buenos Aires, we need a few more details. Message us on WhatsApp and we’ll tell you what’s missing."
+    "texto": "Since you don’t live in Buenos Aires, we need a few more details. Message us on WhatsApp and we’ll tell you what’s missing.",
+    "textoPasaporte": "Since you signed up with a passport, we need a few more details. Message us on WhatsApp and we’ll tell you what’s missing."
+  },
+  "datosFaltantes": {
+    "titulo": "Complete your details",
+    "texto": "We added two questions to the sign-up. Answer them once and you’re done.",
+    "guardados": "Details saved",
+    "error": "We couldn’t save your details",
+    "faltan": "Tell us your nationality and where you live."
   }
 };
 
