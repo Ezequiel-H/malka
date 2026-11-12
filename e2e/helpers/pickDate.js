@@ -1,8 +1,3 @@
-const MESES_CORTOS = [
-  'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-  'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
-];
-
 /**
  * Elige una fecha en un DatePicker del design system.
  *
@@ -17,7 +12,9 @@ export async function pickDate(page, etiqueta, iso) {
 
   await page.getByLabel(etiqueta).click();
 
-  const calendario = page.getByRole('dialog', { name: 'Calendario' });
+  /* Por atributo y posición, no por texto: así anda en cualquier idioma. Los
+     tres primeros botones son anterior, título y siguiente. */
+  const calendario = page.locator('[data-calendario]');
   await calendario.waitFor();
 
   // El título cicla días → meses → años.
@@ -33,9 +30,9 @@ export async function pickDate(page, etiqueta, iso) {
       break;
     }
     const desde = Number((await titulo.textContent()).slice(0, 4));
-    await calendario.getByRole('button', { name: anio < desde ? 'Anterior' : 'Siguiente' }).click();
+    await calendario.getByRole('button').nth(anio < desde ? 0 : 2).click();
   }
 
-  await calendario.getByRole('button', { name: MESES_CORTOS[mes - 1], exact: true }).click();
+  await calendario.getByRole('button').nth(3 + mes - 1).click();
   await calendario.getByRole('button', { name: String(dia), exact: true }).click();
 }

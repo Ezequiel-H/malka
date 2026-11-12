@@ -115,7 +115,8 @@ export async function installApiMock(page, options = {}) {
               tags: [],
               nacionalidad: body.nacionalidad,
               residencia: body.residencia,
-              ciudad: body.ciudad
+              ciudad: body.ciudad,
+              idioma: body.idioma
             }
           },
           201
@@ -151,7 +152,8 @@ export async function installApiMock(page, options = {}) {
             fechaNacimiento: body.fechaNacimiento,
             nacionalidad: body.nacionalidad,
             residencia: body.residencia,
-            ciudad: body.ciudad
+            ciudad: body.ciudad,
+            idioma: body.idioma
           }
         })
       );
@@ -159,7 +161,8 @@ export async function installApiMock(page, options = {}) {
     }
 
     if (method === 'PATCH' && path === '/api/users/me') {
-      await route.fulfill(json({ user: meUser || { estado: 'pending' } }));
+      const body = route.request().postDataJSON() || {};
+      await route.fulfill(json({ user: { ...(meUser || { estado: 'pending' }), ...body } }));
       return;
     }
 

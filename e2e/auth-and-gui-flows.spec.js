@@ -209,6 +209,59 @@ test.describe('Registro', () => {
   });
 });
 
+test.describe('Idiomas de la plataforma', () => {
+  test('el registro se completa en inglés y guarda el idioma en la cuenta', async ({ page }) => {
+    await installApiMock(page);
+    await page.goto('/register');
+    await page.getByRole('button', { name: 'EN', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Sign up', level: 1 })).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+
+    await page.locator('input[name="nombre"]').fill('New');
+    await page.locator('input[name="apellido"]').fill('User');
+    await pickDate(page, 'Date of birth', '1990-05-15');
+    const nacionalidad = page.getByRole('combobox', { name: 'Nationality' });
+    await nacionalidad.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(100);
+    await nacionalidad.click();
+    await page.getByRole('textbox', { name: 'Search option' }).fill('Israel');
+    await page.keyboard.press('Enter');
+    await page.getByText('In another country').click();
+    await page.locator('input[name="ciudad"]').fill('Tel Aviv');
+    await page.locator('input[name="dni"]').fill('12345678');
+    await page.locator('input[name="email"]').fill('new@e2e.test');
+    await page.locator('input[name="telefono"]').fill('+972501234567');
+    await page.locator('input[name="password"]').fill('secret12');
+    await page.locator('input[name="comoSeEntero"]').fill('A friend');
+
+    const alta = page.waitForRequest((r) => r.url().endsWith('/api/auth/register'));
+    await page.getByRole('button', { name: 'Sign up', exact: true }).click();
+    expect((await alta).postDataJSON()).toMatchObject({ idioma: 'en', nacionalidad: 'IL' });
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page.getByRole('heading', { name: 'Your account is being reviewed' })).toBeVisible();
+  });
+
+  test('en hebreo la plataforma del participante se espeja', async ({ page }) => {
+    await installApiMock(page, { meUser: { ...participantApproved, idioma: 'he' } });
+    await page.addInitScript(() => localStorage.setItem('token', 'e2e-test-token'));
+    await page.goto('/activities');
+    await expect(page.getByRole('heading', { name: 'לוח פעילויות' })).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'he');
+  });
+
+  test('el admin ve el panel en castellano aunque el navegador tenga otro idioma', async ({ page }) => {
+    await installApiMock(page, { meUser: adminUser });
+    await page.addInitScript(() => {
+      localStorage.setItem('token', 'e2e-test-token');
+      localStorage.setItem('malka.idioma', 'he');
+    });
+    await page.goto('/admin');
+    await expect(page.getByRole('heading', { name: 'Próximos cumpleaños' })).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+  });
+});
+
 test.describe('Navegación autenticada (participante)', () => {
   test('accede a Mis intereses desde el nav', async ({ page }) => {
     await installApiMock(page, { loginUser: participantApproved });
