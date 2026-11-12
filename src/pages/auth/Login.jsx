@@ -97,7 +97,7 @@ const LoginForm = () => {
 };
 
 const Login = () => (
-  <DotsAccess name="Malka">
+  <DotsAccess name="Malka" markSrc={logoMalka}>
     <LoginForm />
   </DotsAccess>
 );

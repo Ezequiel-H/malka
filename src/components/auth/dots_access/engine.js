@@ -17,6 +17,7 @@ export const createDotsEngine = (canvas, name, reduced) => {
   let height = 0;
   let ratio = 1;
   let area = { x: 0, y: 0, w: 0, h: 0 };
+  let gap = 1;
   let points = [];
   let masks = {};
   let ripples = [];
@@ -84,8 +85,8 @@ export const createDotsEngine = (canvas, name, reduced) => {
       });
     if (mark?.naturalWidth) {
       const fit = Math.min(
-        area.w * 0.74 / mark.naturalWidth,
-        area.h * 0.74 / mark.naturalHeight
+        area.w * 0.86 / mark.naturalWidth,
+        area.h * 0.86 / mark.naturalHeight
       );
       const w = mark.naturalWidth * fit;
       const h = mark.naturalHeight * fit;
@@ -109,6 +110,23 @@ export const createDotsEngine = (canvas, name, reduced) => {
     if (!mask || !surface.width || !surface.height) return result;
     drawShape(mask, target);
     const pixels = mask.getImageData(0, 0, surface.width, surface.height).data;
+    if (target === "mark" && mark?.naturalWidth) {
+      // Un logo con trazos finos se corta si cada punto mira un solo píxel:
+      // el punto se prende según cuánto de su celda cubre el dibujo.
+      const half = gap / 2;
+      points.forEach((point, index) => {
+        const x0 = Math.max(0, Math.floor(point.x - half));
+        const x1 = Math.min(surface.width, Math.ceil(point.x + half));
+        const y0 = Math.max(0, Math.floor(point.y - half));
+        const y1 = Math.min(surface.height, Math.ceil(point.y + half));
+        let sum = 0;
+        for (let y = y0; y < y1; y++)
+          for (let x = x0; x < x1; x++) sum += pixels[(y * surface.width + x) * 4 + 3];
+        const cells = (x1 - x0) * (y1 - y0);
+        result[index] = cells && sum / cells > 255 * 0.22 ? 1 : 0;
+      });
+      return result;
+    }
     points.forEach((point, index) => {
       const offset = (Math.floor(point.y) * surface.width + Math.floor(point.x)) * 4 + 3;
       result[index] = (pixels[offset] ?? 0) > 120 ? 1 : 0;
@@ -135,7 +153,7 @@ export const createDotsEngine = (canvas, name, reduced) => {
   };
   const rebuild = () => {
     const narrow = width < NARROW;
-    const gap = Math.max(
+    gap = Math.max(
       narrow ? 8 : 11,
       Math.sqrt(width * height / MAX_POINTS)
     );

@@ -303,7 +303,7 @@ const RegisterForm = () => {
 };
 
 const Register = () => (
-  <DotsAccess name="Malka">
+  <DotsAccess name="Malka" markSrc={logoMalka}>
     <RegisterForm />
   </DotsAccess>
 );
