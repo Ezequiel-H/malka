@@ -8,9 +8,11 @@ import { Segmentado } from '../../components/admin/metricas/piezas';
 import VistaPersonas from '../../components/admin/metricas/VistaPersonas';
 import VistaPlata from '../../components/admin/metricas/VistaPlata';
 import VistaGastos from '../../components/admin/metricas/VistaGastos';
+import VistaDetalle from '../../components/admin/metricas/VistaDetalle';
 
 const VISTAS = [
   { valor: 'personas', etiqueta: 'Personas' },
+  { valor: 'detalle', etiqueta: 'En detalle' },
   { valor: 'plata', etiqueta: 'Plata' },
   { valor: 'gastos', etiqueta: 'Gastos' },
 ];
@@ -107,7 +109,7 @@ const Metricas = () => {
         </div>
       </div>
 
-      {error && vista !== 'gastos' && (
+      {error && (vista === 'personas' || vista === 'plata') && (
         <Alert tone="danger" className="mb-6">
           {error.response?.data?.message || 'No se pudieron calcular las métricas.'}{' '}
           <Button variant="link" size="sm" onClick={recargar}>
@@ -119,7 +121,9 @@ const Metricas = () => {
       {/* Cambiar de pestaña cruza con un fundido; cambiar el período deja los
           números anteriores atenuados hasta que llegan los nuevos. */}
       <div key={vista} className="animate-fade-in">
-        {vista === 'gastos' ? (
+        {vista === 'detalle' ? (
+          <VistaDetalle desde={desde} hasta={hasta} />
+        ) : vista === 'gastos' ? (
           <VistaGastos
             desde={desde}
             hasta={hasta}

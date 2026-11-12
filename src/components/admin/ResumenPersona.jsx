@@ -9,7 +9,7 @@ import { Kpi, Panel, Segmentado, TooltipCaja, cursorBarras, ejeX, ejeY, mesCorto
 
 /* Cada estado con su color de estado, ícono y una frase que lo explica: el
    color nunca va solo. */
-const ESTADOS = {
+export const ESTADOS = {
   frecuente: { etiqueta: 'Frecuente', tono: 'success', icono: 'star', frase: (r) => `Vino ${r.enUltimos90} veces en los últimos 3 meses.` },
   ocasional: { etiqueta: 'Ocasional', tono: 'info', icono: 'time', frase: (r) => `Viene de vez en cuando: ${numero(r.porMesPromedio)} veces por mes en promedio.` },
   nueva: { etiqueta: 'Nueva', tono: 'primary', icono: 'sparkles', frase: () => 'Vino por primera vez hace menos de 2 meses: es buen momento para acompañarla.' },
