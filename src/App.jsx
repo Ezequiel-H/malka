@@ -8,6 +8,7 @@ import LoginGate from './components/auth/LoginGate';
 import Register from './pages/auth/Register';
 import Dashboard from './pages/Dashboard';
 import Landing from './pages/Landing';
+import PostAuthRedirect from './components/auth/PostAuthRedirect';
 import ActivitiesList from './pages/participant/ActivitiesList';
 import ActivityDetail from './pages/participant/ActivityDetail';
 import MyInscriptions from './pages/participant/MyInscriptions';
@@ -29,23 +30,30 @@ import AdminRoute from './components/auth/AdminRoute';
 // TEMPORAL: vitrina del design system. Se borra junto con su ruta /ds.
 import DesignSystem from './pages/DesignSystem';
 
+/* Las tres direcciones de la vitrina (castellano, inglés y hebreo) son la
+   misma página: cambiar de idioma no es navegar a otra pantalla. */
+const RUTAS_VITRINA = ['/', '/en', '/he'];
+
 function App() {
   const { user, loading } = useAuth();
   const location = useLocation();
+  const esVitrina = RUTAS_VITRINA.includes(location.pathname);
+  const pantalla = esVitrina ? 'vitrina' : location.pathname;
 
   /* Al navegar, la vista nueva arranca desde arriba: sin esto el router
      conserva el scroll de la pantalla anterior y una ruta nueva puede abrir
-     "abajo de todo" (se nota sobre todo en mobile). */
+     "abajo de todo" (se nota sobre todo en mobile). Cambiar el idioma de la
+     vitrina no cuenta: te quedás donde estabas leyendo. */
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [location.pathname]);
+  }, [pantalla]);
 
   if (loading) {
     return <LoadingScreen />;
   }
 
   const routes = (
-    <ErrorBoundary key={location.pathname}>
+    <ErrorBoundary key={pantalla}>
       <Routes>
         <Route path="/login" element={<LoginGate />} />
         <Route path="/register" element={!user ? <Register /> : <LoginGate />} />
@@ -203,26 +211,24 @@ function App() {
           }
         />
 
-        {/* La raíz es la vitrina pública: reemplaza a casamalka.org como
-            puerta de entrada. La ve todo el mundo, con o sin sesión — quien ya
-            entró la lee con otro tono ("ir a mi cuenta", "ver la agenda") en
-            vez de que se la escondamos: al link de Instagram lo abre gente que
-            a veces ya tiene cuenta. A la app se sigue entrando por el login y
-            por el acceso directo de la PWA, que arranca en /dashboard. */}
-        <Route path="/" element={<Landing />} />
-        <Route path="/en" element={<Landing idioma="en" />} />
-        <Route path="/he" element={<Landing idioma="he" />} />
+        {/* La raíz es la vitrina pública, en castellano, inglés (/en) y
+            hebreo (/he). Es sólo para quien todavía no tiene cuenta: con sesión
+            iniciada te lleva directo a tu lugar en la app (la agenda, el panel
+            o la espera de aprobación), así la vitrina y la plataforma no se
+            mezclan. La landing va en una ruta contenedora y las tres direcciones
+            son hijas vacías: así cambiar de idioma no la vuelve a montar y el
+            cambio se funde en vez de recargar la página. */}
+        <Route element={user ? <PostAuthRedirect /> : <Landing />}>
+          {RUTAS_VITRINA.map((ruta) => (
+            <Route key={ruta} path={ruta} element={null} />
+          ))}
+        </Route>
       </Routes>
     </ErrorBoundary>
   );
 
-  /* La vitrina pública no lleva el shell aunque haya sesión: es una página de
-     puertas afuera, con su propia barra y su propio pie. Adentro del shell
-     quedaba con dos cabeceras y con la barra de pestañas de la app tapándole
-     el final. Su barra ya sabe qué mostrarle a alguien logueado —"ir a mi
-     cuenta" en vez de "registrate"—, que es justamente lo que no se veía. */
-  const esVitrina = location.pathname === '/';
-
+  /* La vitrina no lleva el shell: con sesión ni se muestra (te manda a la
+     app), y el shell alrededor del salto se vería un instante. */
   // Las rutas sin sesión (login, registro, /ds) no llevan el shell.
   return (
     <div className="App min-h-screen">

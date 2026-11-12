@@ -93,7 +93,6 @@ export const TEXTOS = {
     ui: {
       principal: 'Principal',
       idioma: 'Idioma',
-      irCuenta: 'Ir a mi cuenta',
       iniciarSesion: 'Iniciar sesión',
       registrate: 'Registrate',
       abrirMenu: 'Abrir menú',
@@ -109,7 +108,6 @@ export const TEXTOS = {
       datos: ['18 a 35 años', 'Lunes a viernes', '3 de Febrero 1325'],
       conoce: 'Conocé la casa',
       entra: 'Entrá a tu casa',
-      verAgenda: 'Ver la agenda',
       anotarme: 'Anotarme',
       tocaEspacio: 'Tocá un espacio y la casa te lo muestra',
       faq: 'Preguntas frecuentes',
@@ -121,9 +119,6 @@ export const TEXTOS = {
       sumateEntrada: 'Te esperamos en la casa.',
       sumateTexto:
         'Te anotás una vez en la app y desde ahí ves la agenda con todas las actividades y te inscribís a las que quieras.',
-      socioTitulo: 'Ya sos de la casa',
-      socioEntrada: 'La agenda te está esperando.',
-      socioTexto: 'Todo lo que pasa cada semana está adentro, y te inscribís en un toque.',
     },
   },
 
@@ -205,7 +200,6 @@ export const TEXTOS = {
     ui: {
       principal: 'Main',
       idioma: 'Language',
-      irCuenta: 'Go to my account',
       iniciarSesion: 'Log in',
       registrate: 'Sign up',
       abrirMenu: 'Open menu',
@@ -221,7 +215,6 @@ export const TEXTOS = {
       datos: ['Ages 18 to 35', 'Monday to Friday', '3 de Febrero 1325'],
       conoce: 'Explore the house',
       entra: 'Come on in',
-      verAgenda: 'See the schedule',
       anotarme: 'Sign up',
       tocaEspacio: 'Tap a space and the house shows it to you',
       faq: 'Frequently asked questions',
@@ -233,9 +226,6 @@ export const TEXTOS = {
       sumateEntrada: 'We’ll be waiting for you at the house.',
       sumateTexto:
         'Sign up once in the app and from there you’ll see the schedule with every activity and join the ones you like.',
-      socioTitulo: 'You’re already part of the house',
-      socioEntrada: 'The schedule is waiting for you.',
-      socioTexto: 'Everything happening each week is inside, and signing up takes one tap.',
     },
   },
 
@@ -317,7 +307,6 @@ export const TEXTOS = {
     ui: {
       principal: 'ראשי',
       idioma: 'שפה',
-      irCuenta: 'לחשבון שלי',
       iniciarSesion: 'כניסה',
       registrate: 'הרשמה',
       abrirMenu: 'פתיחת תפריט',
@@ -333,7 +322,6 @@ export const TEXTOS = {
       datos: ['גילאי 18 עד 35', 'שני עד שישי', '3 de Febrero 1325'],
       conoce: 'הכירו את הבית',
       entra: 'היכנסו הביתה',
-      verAgenda: 'ללו״ז',
       anotarme: 'להרשמה',
       tocaEspacio: 'לחצו על חלל והבית יראה לכם אותו',
       faq: 'שאלות נפוצות',
@@ -344,9 +332,6 @@ export const TEXTOS = {
       sumateTitulo: 'בואו להכיר את מלכה',
       sumateEntrada: 'מחכים לכם בבית.',
       sumateTexto: 'נרשמים פעם אחת באפליקציה, ומשם רואים את הלו״ז עם כל הפעילויות ונרשמים למה שבא לכם.',
-      socioTitulo: 'אתם כבר חלק מהבית',
-      socioEntrada: 'הלו״ז מחכה לכם.',
-      socioTexto: 'כל מה שקורה כל שבוע נמצא בפנים, ונרשמים בלחיצה.',
     },
   },
 };

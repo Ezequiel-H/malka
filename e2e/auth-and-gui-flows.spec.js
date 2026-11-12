@@ -54,9 +54,14 @@ test.describe('Rutas públicas', () => {
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 
     // En la portada la barra está escondida: el selector visible es el de la portada.
+    /* Cambiar de idioma no vuelve a montar la página: el cambio se funde. */
+    await page.evaluate(() => {
+      document.querySelector('main').dataset.marca = 'misma';
+    });
     await page.locator('main').getByRole('link', { name: 'עב' }).click();
     await expect(page).toHaveURL(/\/he$/);
     await expect(page.locator('html')).toHaveAttribute('lang', 'he');
+    await expect(page.locator('main')).toHaveAttribute('data-marca', 'misma');
     await expect(page.locator('[dir="rtl"]').first()).toBeVisible();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('בית לחלוק בו את הרוחניות היהודית שלנו.');
   });
@@ -134,17 +139,18 @@ test.describe('Login', () => {
 });
 
 test.describe('Sesión restaurada', () => {
-  test('con token, la vitrina saluda distinto y la app deja pasar', async ({ page }) => {
+  test('con sesión, la vitrina no se muestra y te lleva a la app', async ({ page }) => {
     await installApiMock(page, { meUser: participantApproved });
     await page.addInitScript(() => {
       localStorage.setItem('token', 'e2e-test-token');
     });
 
-    /* La vitrina es pública para todo el mundo: quien ya entró la ve igual,
-       pero con otro botón. Antes la raíz lo rebotaba a su panel y el saludo
-       para gente con sesión no se veía nunca. */
+    /* La vitrina es para quien todavía no tiene cuenta: con sesión, la raíz
+       (en cualquier idioma) va directo a anotarse a las actividades. */
     await page.goto('/');
-    await expect(page.getByRole('link', { name: 'Ver la agenda' }).first()).toBeVisible();
+    await expect(page).toHaveURL(/\/activities$/);
+    await page.goto('/he');
+    await expect(page).toHaveURL(/\/activities$/);
 
     /* Y la sesión guardada sigue abriendo la app sin pasar por el login. */
     await page.goto('/login');

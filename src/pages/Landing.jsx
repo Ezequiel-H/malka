@@ -1,9 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Icon } from '../components/ui';
 import IconoPropuesta from '../components/landing/IconosPropuestas';
 import Grano from '../components/landing/Grano';
-import { useAuth } from '../contexts/AuthContext';
 import CasaDibujada, { PROPORCION } from '../components/landing/casa/CasaDibujada';
 import LandingButton from '../components/landing/LandingButton';
 import { IDIOMAS, TEXTOS } from '../components/landing/textos';
@@ -308,8 +307,46 @@ const VisorCasa = ({ onCerrar, t }) => {
   );
 };
 
-const Landing = ({ idioma = 'es' }) => {
-  const { user } = useAuth();
+/* El idioma sale de la dirección: /en y /he; todo lo demás es castellano. */
+const idiomaDeRuta = (pathname) => IDIOMAS.find((i) => i.id !== 'es' && pathname === i.ruta)?.id ?? 'es';
+
+/* Cuánto tarda en apagarse el contenido antes de cambiar de idioma. */
+const FUNDIDO_IDIOMA_MS = 220;
+
+/**
+ * La landing es siempre la de un visitante: no mira la sesión. Quien ya tiene
+ * cuenta no llega acá (App lo manda a la app), así la vitrina y la plataforma
+ * no se mezclan.
+ */
+const Landing = () => {
+  const { pathname } = useLocation();
+  const pedido = idiomaDeRuta(pathname);
+
+  /**
+   * El idioma que se ve va un paso atrás del de la dirección: al tocar otro,
+   * el contenido se apaga, cambia el texto (y en hebreo se espeja) mientras
+   * no se ve, y vuelve a aparecer. Cambiar de golpe hacía saltar la página
+   * entera, sobre todo al pasar a hebreo, que da vuelta el armado.
+   */
+  const [idioma, setIdioma] = useState(pedido);
+  const [fundido, setFundido] = useState(false);
+  useEffect(() => {
+    if (pedido === idioma) return undefined;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setIdioma(pedido);
+      return undefined;
+    }
+    setFundido(true);
+    const espera = window.setTimeout(() => {
+      setIdioma(pedido);
+      setFundido(false);
+    }, FUNDIDO_IDIOMA_MS);
+    return () => window.clearTimeout(espera);
+  }, [pedido, idioma]);
+  const capa = `transition-opacity duration-200 ease-standard motion-reduce:transition-none ${
+    fundido ? 'opacity-0' : 'opacity-100'
+  }`;
+
   const t = TEXTOS[idioma] ?? TEXTOS.es;
   const rtl = Boolean(IDIOMAS.find((i) => i.id === idioma)?.rtl);
   /* En hebreo se espeja la página entera: la casa pasa a la derecha, el texto
@@ -521,16 +558,8 @@ const Landing = ({ idioma = 'es' }) => {
       >
         <nav aria-label={t.ui.principal} className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-5 sm:gap-4 sm:px-8">
           <img src={logoMalka} alt="Malka" className="h-5 w-auto shrink-0 sm:h-6" />
-          {/* Con sesión iniciada, la barra deja de ofrecer lo que ya tenés: en
-              vez de "registrate" te lleva adentro, que es a lo que venías. */}
-          <div className="ms-auto flex items-center gap-3">
-            {!telefono && <SelectorIdioma idioma={idioma} t={t} />}
-            {user ? (
-              <LandingButton to="/dashboard" size="sm" className="whitespace-nowrap">
-                {t.ui.irCuenta}
-              </LandingButton>
-            ) : (
-              <>
+          <div className={`ms-auto flex items-center gap-3 ${capa}`}>
+            {!telefono && <SelectorIdioma idioma={pedido} t={t} />}
                 <LandingButton
                   to="/login"
                   variant="outline"
@@ -543,8 +572,6 @@ const Landing = ({ idioma = 'es' }) => {
                 <LandingButton to="/register" size="sm" icon={telefono ? null : undefined} className="whitespace-nowrap">
                   {t.ui.registrate}
                 </LandingButton>
-              </>
-            )}
             {/* En el teléfono, un menú de verdad: renglones de 56px que se
                 tocan sin apuntar, en vez de tres controles chicos apretados
                 contra el borde. Ahí adentro viven las secciones, la casa y el
@@ -603,19 +630,17 @@ const Landing = ({ idioma = 'es' }) => {
                   </a>
                 </li>
               ))}
-              {!user && (
-                <li>
-                  <Link
-                    to="/login"
-                    onClick={() => setMenu(false)}
-                    className="block py-4 font-grotesk text-base font-semibold text-ink-soft"
-                  >
-                    {t.ui.ingresar}
-                  </Link>
-                </li>
-              )}
+              <li>
+                <Link
+                  to="/login"
+                  onClick={() => setMenu(false)}
+                  className="block py-4 font-grotesk text-base font-semibold text-ink-soft"
+                >
+                  {t.ui.ingresar}
+                </Link>
+              </li>
               <li className="py-3">
-                <SelectorIdioma idioma={idioma} t={t} />
+                <SelectorIdioma idioma={pedido} t={t} />
               </li>
             </ul>
           </div>
@@ -629,7 +654,7 @@ const Landing = ({ idioma = 'es' }) => {
       <nav
         aria-label={t.ui.secciones}
         className={`fixed end-7 top-1/2 z-40 hidden -translate-y-1/2 flex-col items-end gap-3 transition-opacity duration-500 2xl:flex ${
-          enPortada ? 'pointer-events-none opacity-0' : 'opacity-100'
+          enPortada || fundido ? 'pointer-events-none opacity-0' : 'opacity-100'
         }`}
       >
         {INDICE.map((id) => (
@@ -662,7 +687,7 @@ const Landing = ({ idioma = 'es' }) => {
         ))}
       </nav>
 
-      <main className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
+      <main className={`relative z-10 mx-auto max-w-6xl px-5 sm:px-8 ${capa}`}>
         <div className="md:grid md:grid-cols-12 md:gap-x-8 xl:gap-x-12">
           {/* El dibujo al costado, siguiendo la lectura: de tablet para
               arriba. En el teléfono no existe —la casa se abre a pantalla
@@ -763,13 +788,13 @@ const Landing = ({ idioma = 'es' }) => {
                     <LandingButton size="lg" icon={telefono ? 'forward' : 'chevronDown'} onClick={conocerLaCasa}>
                       {t.ui.conoce}
                     </LandingButton>
-                    <LandingButton to={user ? '/activities' : '/register'} variant="outline" size="lg">
-                      {user ? t.ui.verAgenda : t.ui.entra}
+                    <LandingButton to="/register" variant="outline" size="lg">
+                      {t.ui.entra}
                     </LandingButton>
                   </div>
                   {/* En la portada no hay barra, así que el idioma se elige acá. */}
                   <SelectorIdioma
-                    idioma={idioma}
+                    idioma={pedido}
                     t={t}
                     className="mt-6 -ms-2 animate-fade-in-up [animation-delay:1760ms] [animation-fill-mode:backwards]"
                   />
@@ -808,16 +833,10 @@ const Landing = ({ idioma = 'es' }) => {
                     si el texto dice que alcanza con anotarse, el botón va ahí. */}
                 {p.id === 'quienes' && (
                   <div className="mt-8 flex flex-wrap items-center gap-3">
-                    {user ? (
-                      <LandingButton to="/activities">{t.ui.verAgenda}</LandingButton>
-                    ) : (
-                      <>
-                        <LandingButton to="/register">{t.ui.anotarme}</LandingButton>
-                        <LandingButton to="/login" variant="outline">
-                          {t.ui.ingresar}
-                        </LandingButton>
-                      </>
-                    )}
+                    <LandingButton to="/register">{t.ui.anotarme}</LandingButton>
+                    <LandingButton to="/login" variant="outline">
+                      {t.ui.ingresar}
+                    </LandingButton>
                   </div>
                 )}
 
@@ -973,18 +992,18 @@ const Landing = ({ idioma = 'es' }) => {
               className="flex min-h-[62vh] scroll-mt-16 flex-col justify-center py-14 md:min-h-screen md:scroll-mt-0 md:py-0 md:pt-24 md:pb-24 xl:pt-32 xl:pb-32"
             >
               <h2 className="text-[clamp(2rem,4.4vw,3rem)] font-bold uppercase leading-[0.95] tracking-display">
-                {user ? t.ui.socioTitulo : t.ui.sumateTitulo}
+                {t.ui.sumateTitulo}
               </h2>
               <p className="mt-6 text-2xl leading-snug sm:text-3xl">
-                {user ? t.ui.socioEntrada : t.ui.sumateEntrada}
+                {t.ui.sumateEntrada}
               </p>
               <p className="mt-5 max-w-xl leading-relaxed text-ink-soft sm:text-lg">
-                {user ? t.ui.socioTexto : t.ui.sumateTexto}
+                {t.ui.sumateTexto}
               </p>
 
               <div className="mt-9">
-                <LandingButton to={user ? '/activities' : '/register'} size="lg">
-                  {user ? t.ui.verAgenda : t.ui.entra}
+                <LandingButton to="/register" size="lg">
+                  {t.ui.entra}
                 </LandingButton>
               </div>
 
