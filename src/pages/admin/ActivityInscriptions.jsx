@@ -739,16 +739,21 @@ const ActivityInscriptions = () => {
         />
       }
       actions={
-        <Button icon="document" onClick={() => setShowProofsModal(true)}>
-          Revisar comprobantes
-          {pagosPendientesCount > 0 && (
-            /* Contador integrado al botón: pill translúcido del mismo esquema,
-               no un badge de otro color peleando con el fondo verde. */
-            <span className="ml-1 rounded-pill bg-white/25 px-2 py-0.5 text-xs font-semibold tabular-nums text-white">
-              {pagosPendientesCount}
-            </span>
-          )}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" icon="chart" to={`/admin/metricas?vista=actividades&actividad=${id}`}>
+            Métricas
+          </Button>
+          <Button icon="document" onClick={() => setShowProofsModal(true)}>
+            Revisar comprobantes
+            {pagosPendientesCount > 0 && (
+              /* Contador integrado al botón: pill translúcido del mismo esquema,
+                 no un badge de otro color peleando con el fondo verde. */
+              <span className="ml-1 rounded-pill bg-white/25 px-2 py-0.5 text-xs font-semibold tabular-nums text-white">
+                {pagosPendientesCount}
+              </span>
+            )}
+          </Button>
+        </div>
       }
     >
 

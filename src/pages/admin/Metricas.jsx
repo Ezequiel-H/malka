@@ -9,10 +9,12 @@ import VistaPersonas from '../../components/admin/metricas/VistaPersonas';
 import VistaPlata from '../../components/admin/metricas/VistaPlata';
 import VistaGastos from '../../components/admin/metricas/VistaGastos';
 import VistaDetalle from '../../components/admin/metricas/VistaDetalle';
+import VistaActividades from '../../components/admin/metricas/VistaActividades';
 
 const VISTAS = [
   { valor: 'personas', etiqueta: 'Personas' },
   { valor: 'detalle', etiqueta: 'En detalle' },
+  { valor: 'actividades', etiqueta: 'Actividades' },
   { valor: 'plata', etiqueta: 'Plata' },
   { valor: 'gastos', etiqueta: 'Gastos' },
 ];
@@ -143,7 +145,22 @@ const Metricas = () => {
   return (
     <PageContainer title="Métricas">
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <Segmentado opciones={VISTAS} valor={vista} onChange={(v) => cambiar({ vista: v === 'personas' ? null : v })} etiqueta="Qué mirar" />
+        {/* Cinco pestañas no entran en un teléfono: ahí es un desplegable. */}
+        <Segmentado
+          opciones={VISTAS}
+          valor={vista}
+          onChange={(v) => cambiar({ vista: v === 'personas' ? null : v })}
+          etiqueta="Qué mirar"
+          className="hidden sm:inline-flex"
+        />
+        <Field label="Qué mirar" htmlFor="metricas-vista" className="mb-0 sm:hidden">
+          <Select
+            id="metricas-vista"
+            options={VISTAS.map((v) => ({ value: v.valor, label: v.etiqueta }))}
+            value={vista}
+            onChange={(v) => v && cambiar({ vista: v === 'personas' ? null : v })}
+          />
+        </Field>
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end lg:justify-end">
           <Field label="Período" htmlFor="metricas-periodo" className="mb-0 sm:w-52">
             <Select
@@ -180,6 +197,8 @@ const Metricas = () => {
       <div key={vista} className="animate-fade-in">
         {vista === 'detalle' ? (
           <VistaDetalle desde={desde} hasta={hasta} />
+        ) : vista === 'actividades' ? (
+          <VistaActividades desde={desde} hasta={hasta} abrirDetalle={abrirDetalle} />
         ) : vista === 'gastos' ? (
           <VistaGastos
             desde={desde}
