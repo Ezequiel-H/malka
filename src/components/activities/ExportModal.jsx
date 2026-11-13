@@ -263,6 +263,7 @@ const ExportModal = ({ activity, dates, loading, onClose, onExport }) => {
       size="xl"
       className="sm:max-w-5xl"
       title={titulo}
+      ariaLabel={`Exportar inscriptos de ${limpiarTitulo(activity.titulo)}`}
       footer={
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-ink-soft" aria-live="polite">
@@ -397,7 +398,10 @@ const ExportModal = ({ activity, dates, loading, onClose, onExport }) => {
 
           <section>
             <h3 className="mb-1 font-grotesk text-sm font-semibold text-ink">Columnas</h3>
-            <p className="mb-3 text-xs text-ink-muted">Arrastrá para cambiar el orden. Tocá para sacar o sumar.</p>
+            <p className="mb-3 text-xs text-ink-muted">
+              <span className="hidden sm:inline">Arrastrá para cambiar el orden.</span>
+              <span className="sm:hidden">Con la flecha la pasás adelante.</span> Tocá para sacar o sumar.
+            </p>
             <ul className="flex flex-wrap gap-2" aria-label="Columnas elegidas, en orden">
               {columnas.map((c) => (
                 <li
@@ -414,8 +418,19 @@ const ExportModal = ({ activity, dates, loading, onClose, onExport }) => {
                     soltarSobre(c);
                   }}
                   onDragEnd={() => setArrastrando(null)}
-                  className={cn('animate-fade-in transition-opacity duration-fast', arrastrando === c && 'opacity-40')}
+                  className={cn('flex animate-fade-in items-center gap-1 transition-opacity duration-fast', arrastrando === c && 'opacity-40')}
                 >
+                  {/* En el celular no hay arrastre: una flecha la corre un lugar adelante. */}
+                  {columnas.indexOf(c) > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => mover(c, columnas.indexOf(c) - 1)}
+                      aria-label={`Pasar ${COLUMNAS[c]} adelante`}
+                      className="flex h-[34px] w-7 items-center justify-center rounded-pill text-ink-muted hover:bg-ink/[0.06] sm:hidden"
+                    >
+                      <Icon name="chevronLeft" size="xs" className="rtl:-scale-x-100" />
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => alternarColumna(c)}

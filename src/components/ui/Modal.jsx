@@ -30,6 +30,7 @@ const Modal = ({
   open,
   onClose,
   title,
+  ariaLabel,
   description,
   size = 'md',
   closeOnOverlay = true,
@@ -104,7 +105,7 @@ const Modal = ({
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-label={typeof title === 'string' ? title : undefined}
+        aria-label={ariaLabel ?? (typeof title === 'string' ? title : undefined)}
         tabIndex={-1}
         className={cn(
           'relative z-10 flex max-h-[92vh] w-full flex-col bg-surface shadow-overlay',
