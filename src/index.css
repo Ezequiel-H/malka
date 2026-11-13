@@ -18,9 +18,10 @@
 }
 
 /*
- * Pantallas de acceso con la grilla de puntos (`DotsAccess`). Sin tarjeta: el
- * fondo es la grilla y el formulario flota a un costado; en el teléfono, la
- * figura arriba y el formulario abajo.
+ * Pantallas de acceso con la grilla de puntos (`DotsAccess`). La grilla es
+ * el fondo y el formulario va en un panel opaco a un costado: los campos
+ * nunca quedan arriba de los puntos, que en movimiento marean. En el
+ * teléfono la grilla es sólo una franja arriba y el panel va abajo.
  */
 .dots-access {
 	--dots-glow: theme('colors.primary.600');
@@ -45,24 +46,35 @@
 	justify-content: center;
 	gap: 1.75rem;
 	min-height: 100dvh;
-	width: min(25rem, calc(100cqw - 4rem));
-	margin-left: clamp(2rem, 8cqw, 8rem);
+	width: min(28rem, calc(100cqw - 4rem));
+	/* Lógico: en hebreo el panel va del otro lado con el mismo margen. */
+	margin-inline-start: clamp(2rem, 8cqw, 8rem);
 	padding-block: calc(env(safe-area-inset-top) + 2rem)
 		calc(env(safe-area-inset-bottom) + 2rem);
 	transition:
 		opacity 0.45s ease,
 		transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.dots-access__panel > * {
+.dots-access__tarjeta {
+	display: flex;
+	flex-direction: column;
+	gap: 1.75rem;
+	padding: 2rem;
+	border: 1px solid theme('colors.surface.border');
+	border-radius: theme('borderRadius.card');
+	background: theme('colors.surface.DEFAULT');
+	box-shadow: theme('boxShadow.raised');
+}
+.dots-access__tarjeta > * {
 	animation: dots-access-rise 0.95s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.dots-access__panel > :nth-child(2) {
+.dots-access__tarjeta > :nth-child(2) {
 	animation-delay: 0.1s;
 }
-.dots-access__panel > :nth-child(3) {
+.dots-access__tarjeta > :nth-child(3) {
 	animation-delay: 0.22s;
 }
-.dots-access__panel > :nth-child(4) {
+.dots-access__tarjeta > :nth-child(4) {
 	animation-delay: 0.34s;
 }
 .dots-access.is-leaving .dots-access__panel {
@@ -76,25 +88,32 @@
 		transform: translateY(1.6rem);
 	}
 }
-@container (max-width: 639px) {
-	.dots-access__panel {
-		justify-content: flex-end;
-		gap: 1.25rem;
-		width: calc(100cqw - 2.5rem);
-		margin-inline: auto;
-		padding-top: 36dvh;
+/* En el teléfono la grilla no acompaña el scroll: es una franja arriba que
+   se va con la página, así nunca queda detrás de los campos. */
+@media (max-width: 639px) {
+	.dots-access__canvas {
+		position: absolute;
+		height: 32dvh;
+		/* La franja se funde con el fondo en vez de cortar en una línea. */
+		mask-image: linear-gradient(to bottom, #000 70%, transparent);
 	}
 }
 @container (max-width: 639px) {
-	@media (max-height: 720px) {
-		.dots-access__panel {
-			padding-top: 30dvh;
-		}
+	.dots-access__panel {
+		justify-content: flex-start;
+		gap: 1.25rem;
+		width: calc(100cqw - 2rem);
+		margin-inline: auto;
+		padding-top: 30dvh;
+	}
+	.dots-access__tarjeta {
+		gap: 1.25rem;
+		padding: 1.25rem;
 	}
 }
 @media (prefers-reduced-motion: reduce) {
 	.dots-access__panel,
-	.dots-access__panel > * {
+	.dots-access__tarjeta > * {
 		animation: none;
 		transition: none;
 	}
