@@ -1,215 +1,297 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
-import { useToast } from '../../contexts/ToastContext';
-import LoadingScreen from '../../components/layout/LoadingScreen';
 import PageContainer from '../../components/layout/PageContainer';
+import useCargaSuave from '../../hooks/useCargaSuave';
+import EditorConDatos, { BurbujaWhatsApp } from '../../components/admin/EditorConDatos';
 import { PLANTILLA_VARIABLES } from '../../utils/whatsapp';
-import { Button, Card, Field, Input, Textarea } from '../../components/ui';
+import { Alert, Button, Field, Icon, Input, Skeleton, Textarea, cn } from '../../components/ui';
 
-const VARIABLES_HINT = `Variables disponibles: ${PLANTILLA_VARIABLES.map((v) => `{${v}}`).join(', ')} — se reemplazan por los datos de la persona y la actividad al abrir WhatsApp.`;
+const ESPERA_MS = 1200;
 
+const SECCIONES = [
+  { id: 'pagos', icono: 'payment', titulo: 'Pagos', bajada: 'Lo que ve quien se anota a una actividad paga.' },
+  { id: 'whatsapp', icono: 'whatsapp', titulo: 'WhatsApp', bajada: 'El número adonde escriben los participantes.' },
+  { id: 'mensajes', icono: 'mail', titulo: 'Mensajes', bajada: 'Lo que sale escrito cuando alguien toca un botón de WhatsApp.' },
+  { id: 'plantillas', icono: 'document', titulo: 'Plantillas', bajada: 'Mensajes listos para escribirle a cada inscripto.' },
+];
+
+/* Cada mensaje con los datos que tiene a mano. */
+const MENSAJES = [
+  {
+    campo: 'whatsappViajeMensaje',
+    titulo: 'Coordinar un viaje',
+    cuando: 'Cuando alguien anotado a un viaje toca «Escribinos por WhatsApp».',
+    claves: PLANTILLA_VARIABLES,
+    llegaA: 'Así le llega al centro',
+  },
+  {
+    campo: 'whatsappRegistroMensaje',
+    titulo: 'Terminar el registro',
+    cuando: 'Cuando alguien que no vive en Buenos Aires o usa pasaporte se registra y toca «Escribirnos».',
+    claves: ['nombre', 'ciudad'],
+    llegaA: 'Así le llega al centro',
+  },
+  {
+    campo: 'whatsappCumpleanosMensaje',
+    titulo: 'Saludo de cumpleaños',
+    cuando: 'Cuando el equipo toca «Saludar» en los cumpleaños del panel.',
+    claves: ['nombre', 'edad'],
+    llegaA: 'Así le llega a la persona',
+  },
+];
+
+const CAMPOS = ['instruccionesPagoDefault', 'whatsappNumero', 'whatsappViajeMensaje', 'whatsappRegistroMensaje', 'whatsappCumpleanosMensaje'];
+
+let ultimaClave = 0;
+const conClave = (p) => ({ ...p, k: `p${++ultimaClave}` });
+const completa = (p) => p.nombre.trim() && p.mensaje.trim();
+
+const pedirAjustes = (signal) => axios.get('/settings', { signal }).then((r) => r.data.settings ?? {});
+
+/**
+ * Ajustes del centro: un índice a la izquierda (arriba en el teléfono) y cada
+ * cambio se guarda solo, 1,2 s después de la última tecla o al salir del
+ * campo. Los mensajes de WhatsApp se arman tocando los datos, que quedan
+ * como pastillas, y al lado se ve cómo llegan.
+ */
 const Settings = () => {
-  const { showSuccess, showError } = useToast();
-  const [instruccionesPagoDefault, setInstruccionesPagoDefault] = useState('');
-  const [whatsappNumero, setWhatsappNumero] = useState('');
-  const [whatsappViajeMensaje, setWhatsappViajeMensaje] = useState('');
-  const [whatsappCumpleanosMensaje, setWhatsappCumpleanosMensaje] = useState('');
-  const [whatsappRegistroMensaje, setWhatsappRegistroMensaje] = useState('');
+  const [params, setParams] = useSearchParams();
+  const seccion = SECCIONES.find((s) => s.id === params.get('seccion')) ?? SECCIONES[0];
+  const { datos, cargando, error } = useCargaSuave(pedirAjustes, 'ajustes');
+
+  const [valores, setValores] = useState(null);
   const [plantillas, setPlantillas] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [estado, setEstado] = useState('quieto'); // quieto | esperando | guardando | guardado | error
+  const pendientes = useRef(new Set());
+  const valoresRef = useRef(null);
+  const plantillasRef = useRef([]);
+  const reloj = useRef(null);
 
   useEffect(() => {
-    fetchSettings();
+    if (!datos || valores) return;
+    const v = Object.fromEntries(CAMPOS.map((c) => [c, datos[c] ?? '']));
+    const ps = (datos.plantillasWhatsApp ?? []).map((p) => conClave({ nombre: p.nombre ?? '', mensaje: p.mensaje ?? '' }));
+    setValores(v);
+    setPlantillas(ps);
+    valoresRef.current = v;
+    plantillasRef.current = ps;
+  }, [datos, valores]);
+
+  /* Manda sólo lo que cambió. Las plantillas van enteras (sin las incompletas). */
+  const guardar = useCallback(async () => {
+    window.clearTimeout(reloj.current);
+    const campos = [...pendientes.current];
+    if (!campos.length) return;
+    pendientes.current = new Set();
+    const cuerpo = {};
+    for (const c of campos) {
+      cuerpo[c] = c === 'plantillasWhatsApp' ? plantillasRef.current.filter(completa).map(({ nombre, mensaje }) => ({ nombre, mensaje })) : valoresRef.current[c];
+    }
+    setEstado('guardando');
+    try {
+      const res = await axios.put('/settings', cuerpo);
+      // El número vuelve normalizado (sólo dígitos): se refleja si no se siguió escribiendo.
+      const numero = res.data.settings?.whatsappNumero;
+      if ('whatsappNumero' in cuerpo && numero !== undefined && !pendientes.current.has('whatsappNumero')) {
+        valoresRef.current = { ...valoresRef.current, whatsappNumero: numero };
+        setValores(valoresRef.current);
+      }
+      setEstado(pendientes.current.size ? 'esperando' : 'guardado');
+    } catch {
+      for (const c of campos) pendientes.current.add(c);
+      setEstado('error');
+    }
   }, []);
 
-  const fetchSettings = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get('/settings');
-      const s = response.data.settings || {};
-      setInstruccionesPagoDefault(s.instruccionesPagoDefault || '');
-      setWhatsappNumero(s.whatsappNumero || '');
-      setWhatsappViajeMensaje(s.whatsappViajeMensaje || '');
-      setWhatsappCumpleanosMensaje(s.whatsappCumpleanosMensaje || '');
-      setWhatsappRegistroMensaje(s.whatsappRegistroMensaje || '');
-      setPlantillas(s.plantillasWhatsApp || []);
-    } catch (error) {
-      showError('Error al cargar ajustes');
-    } finally {
-      setLoading(false);
-    }
+  const programar = (campo) => {
+    pendientes.current.add(campo);
+    setEstado('esperando');
+    window.clearTimeout(reloj.current);
+    reloj.current = window.setTimeout(guardar, ESPERA_MS);
+  };
+  const cambiar = (campo, valor) => {
+    valoresRef.current = { ...valoresRef.current, [campo]: valor };
+    setValores(valoresRef.current);
+    programar(campo);
+  };
+  const cambiarPlantillas = (fn) => {
+    plantillasRef.current = fn(plantillasRef.current);
+    setPlantillas(plantillasRef.current);
+    programar('plantillasWhatsApp');
   };
 
-  const updatePlantilla = (index, campo, valor) => {
-    setPlantillas((prev) => prev.map((p, i) => (i === index ? { ...p, [campo]: valor } : p)));
-  };
+  /* Lo que quedó sin mandar se manda al irse de la pantalla. */
+  useEffect(() => () => void guardar(), [guardar]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      setSaving(true);
-      const response = await axios.put('/settings', {
-        instruccionesPagoDefault,
-        whatsappNumero,
-        whatsappViajeMensaje,
-        whatsappCumpleanosMensaje,
-        whatsappRegistroMensaje,
-        plantillasWhatsApp: plantillas,
-      });
-      // El back limpia (descarta filas vacías, normaliza el número):
-      // reflejamos lo que quedó guardado de verdad.
-      const s = response.data.settings || {};
-      setWhatsappNumero(s.whatsappNumero || '');
-      setPlantillas(s.plantillasWhatsApp || []);
-      showSuccess('Ajustes guardados');
-    } catch (error) {
-      showError(error.response?.data?.message || 'Error al guardar ajustes');
-    } finally {
-      setSaving(false);
-    }
-  };
+  const irA = (id) => setParams(id === SECCIONES[0].id ? {} : { seccion: id }, { replace: true });
 
-  if (loading) {
-    return <LoadingScreen message="Cargando ajustes..." />;
-  }
+  const indicador = {
+    quieto: { icono: 'check', texto: 'Los cambios se guardan solos', clase: 'text-ink-muted' },
+    esperando: { icono: 'edit', texto: 'Sin guardar todavía', clase: 'text-ink-muted' },
+    guardando: { icono: 'loading', texto: 'Guardando…', clase: 'text-ink-muted' },
+    guardado: { icono: 'check', texto: 'Guardado', clase: 'text-success-700' },
+    error: { icono: 'error', texto: 'No se pudo guardar', clase: 'text-danger-700' },
+  }[estado];
 
   return (
-    <PageContainer title="Ajustes" maxWidth="3xl">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <Card>
-          <h2 className="mb-4 text-lg font-semibold text-ink">Pagos</h2>
-          <Field
-            label="Instrucciones de pago por defecto"
-            hint="Se muestran al inscribirse en actividades pagas que no tengan instrucciones propias. El precio ya se ve en la actividad; acá sólo indicá dónde transferir (alias, CBU, titular, etc.)."
-          >
-            <Textarea
-              value={instruccionesPagoDefault}
-              onChange={(e) => setInstruccionesPagoDefault(e.target.value)}
-              rows={6}
-              placeholder="Ej: Transferí a Alias: MALKA.ACTIVIDADES - CBU: 0000003100012345678901 - Titular: ..."
-            />
-          </Field>
-        </Card>
+    <PageContainer title="Ajustes">
+      {error && <Alert tone="danger">No se pudieron cargar los ajustes. Probá recargar la página.</Alert>}
+      <div className="grid gap-6 lg:grid-cols-[14rem_minmax(0,1fr)] [&>*]:min-w-0">
+        <nav aria-label="Secciones de ajustes" className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 lg:flex-col lg:pb-0">
+          {SECCIONES.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => irA(s.id)}
+              aria-current={seccion.id === s.id ? 'page' : undefined}
+              className={cn(
+                'flex shrink-0 items-center gap-3 rounded-pill px-4 py-2.5 text-sm font-medium transition-colors duration-base',
+                seccion.id === s.id ? 'bg-ink text-surface' : 'text-ink-soft hover:bg-ink/[0.05]',
+              )}
+            >
+              <Icon name={s.icono} size="sm" />
+              {s.titulo}
+            </button>
+          ))}
+        </nav>
 
-        <Card>
-          <h2 className="mb-1 text-lg font-semibold text-ink">WhatsApp</h2>
-          <p className="mb-4 text-sm text-ink-muted">{VARIABLES_HINT}</p>
-
-          <Field
-            label="Número del centro"
-            hint="Con código de país, sin + ni espacios. Es adonde escriben los participantes."
-          >
-            <Input
-              type="tel"
-              icon="whatsapp"
-              value={whatsappNumero}
-              onChange={(e) => setWhatsappNumero(e.target.value)}
-              placeholder="5491134405730"
-            />
-          </Field>
-
-          <Field
-            label="Mensaje de coordinación de viajes"
-            hint="Lo que llega prellenado cuando alguien inscripto a un viaje toca «Escribinos por WhatsApp»."
-          >
-            <Textarea
-              value={whatsappViajeMensaje}
-              onChange={(e) => setWhatsappViajeMensaje(e.target.value)}
-              rows={3}
-            />
-          </Field>
-
-          <Field
-            label="Terminar el registro (fuera de Buenos Aires)"
-            hint="Lo que sale prellenado cuando alguien que no vive en Buenos Aires se registra y toca «Escribirnos». Variables: {nombre} y {ciudad}."
-          >
-            <Textarea
-              value={whatsappRegistroMensaje}
-              onChange={(e) => setWhatsappRegistroMensaje(e.target.value)}
-              rows={3}
-            />
-          </Field>
-
-          <Field
-            label="Saludo de cumpleaños"
-            hint="Lo que sale prellenado al tocar «Saludar» en los cumpleaños del panel. Variables: {nombre} y {edad}."
-          >
-            <Textarea
-              value={whatsappCumpleanosMensaje}
-              onChange={(e) => setWhatsappCumpleanosMensaje(e.target.value)}
-              rows={2}
-            />
-          </Field>
-
-          <div className="mt-2 border-t border-surface-border pt-4">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div>
-                <h3 className="font-semibold text-ink">Plantillas para contactar inscriptos</h3>
-                <p className="text-sm text-ink-muted">
-                  Aparecen al tocar WhatsApp junto a una persona en las inscripciones de una
-                  actividad.
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                icon="add"
-                onClick={() => setPlantillas((prev) => [...prev, { nombre: '', mensaje: '' }])}
-              >
-                Agregar
-              </Button>
+        <section aria-labelledby="seccion-titulo" className="rounded-[22px] border border-surface-border bg-surface p-5 sm:p-6">
+          <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 id="seccion-titulo" className="font-grotesk text-xl font-semibold text-ink">
+                {seccion.titulo}
+              </h2>
+              <p className="text-sm text-ink-muted">{seccion.bajada}</p>
             </div>
-
-            {plantillas.length === 0 ? (
-              <p className="rounded-card border border-dashed border-surface-border p-4 text-center text-sm text-ink-muted">
-                Sin plantillas todavía. Agregá una, por ejemplo un recordatorio de actividad.
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {plantillas.map((p, i) => (
-                  <div
-                    key={p._id ?? `nueva-${i}`}
-                    className="rounded-card border border-surface-border p-3 sm:p-4"
-                  >
-                    <div className="mb-2 flex items-center gap-2">
-                      <Input
-                        value={p.nombre}
-                        onChange={(e) => updatePlantilla(i, 'nombre', e.target.value)}
-                        placeholder="Nombre (ej: Recordatorio)"
-                        className="flex-1"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        icon="delete"
-                        iconOnly
-                        label="Eliminar plantilla"
-                        onClick={() => setPlantillas((prev) => prev.filter((_, j) => j !== i))}
-                        className="text-danger-600 hover:bg-danger-50 hover:text-danger-700"
-                      />
-                    </div>
-                    <Textarea
-                      value={p.mensaje}
-                      onChange={(e) => updatePlantilla(i, 'mensaje', e.target.value)}
-                      rows={3}
-                      placeholder="Hola {nombre}! Te esperamos en {actividad} el {fecha} a las {hora}."
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+            <span className={cn('flex shrink-0 items-center gap-1.5 text-xs font-medium', indicador.clase)} role="status" aria-live="polite">
+              <Icon name={indicador.icono} size="xs" className={estado === 'guardando' ? 'animate-spin' : undefined} />
+              {indicador.texto}
+              {estado === 'error' && (
+                <button type="button" onClick={guardar} className="ms-1 font-semibold underline">
+                  Reintentar
+                </button>
+              )}
+            </span>
           </div>
-        </Card>
 
-        <div className="flex justify-end">
-          <Button type="submit" icon="check" loading={saving}>
-            {saving ? 'Guardando...' : 'Guardar ajustes'}
-          </Button>
-        </div>
-      </form>
+          {cargando || !valores ? (
+            <div className="space-y-3">{cargando && [0, 1].map((i) => <Skeleton key={i} className="h-28 rounded-[16px]" />)}</div>
+          ) : (
+            <div key={seccion.id} className="animate-fade-in">
+              {seccion.id === 'pagos' && (
+                <Field
+                  label="Instrucciones de pago por defecto"
+                  hint="Se muestran al anotarse a una actividad paga que no tenga instrucciones propias. El precio ya se ve en la actividad: acá va dónde transferir (alias, CBU, titular)."
+                >
+                  <Textarea
+                    value={valores.instruccionesPagoDefault}
+                    onChange={(e) => cambiar('instruccionesPagoDefault', e.target.value)}
+                    onBlur={guardar}
+                    rows={6}
+                    placeholder="Ej: Transferí a Alias: MALKA.ACTIVIDADES · Titular: …"
+                  />
+                </Field>
+              )}
+
+              {seccion.id === 'whatsapp' && (
+                <Field label="Número del centro" hint="Con código de país. Se guarda sólo con los números (wa.me no acepta + ni espacios).">
+                  <Input
+                    type="tel"
+                    icon="whatsapp"
+                    value={valores.whatsappNumero}
+                    onChange={(e) => cambiar('whatsappNumero', e.target.value)}
+                    onBlur={guardar}
+                    placeholder="5491134405730"
+                  />
+                </Field>
+              )}
+
+              {seccion.id === 'mensajes' && (
+                <div className="space-y-8">
+                  {MENSAJES.map((m) => (
+                    <div key={m.campo} className="grid items-start gap-5 xl:grid-cols-2">
+                      <div>
+                        <h3 className="font-semibold text-ink">{m.titulo}</h3>
+                        <p className="mb-3 text-sm text-ink-muted">{m.cuando}</p>
+                        <EditorConDatos
+                          id={m.campo}
+                          etiqueta={m.titulo}
+                          valor={valores[m.campo]}
+                          claves={m.claves}
+                          onChange={(v) => cambiar(m.campo, v)}
+                          onBlur={guardar}
+                        />
+                      </div>
+                      <BurbujaWhatsApp mensaje={valores[m.campo]} titulo={m.llegaA} />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {seccion.id === 'plantillas' && (
+                <div className="space-y-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-sm text-ink-soft">Aparecen al tocar WhatsApp al lado de una persona en los inscriptos de una actividad.</p>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon="add"
+                      onClick={() => {
+                        // Una nueva arranca vacía: no se manda hasta que tenga nombre y mensaje.
+                        plantillasRef.current = [...plantillasRef.current, conClave({ nombre: '', mensaje: '' })];
+                        setPlantillas(plantillasRef.current);
+                      }}
+                    >
+                      Nueva plantilla
+                    </Button>
+                  </div>
+                  {plantillas.length === 0 ? (
+                    <p className="rounded-[16px] border border-dashed border-surface-border p-5 text-center text-sm text-ink-muted">
+                      Sin plantillas todavía. Sumá una, por ejemplo un recordatorio del día anterior.
+                    </p>
+                  ) : (
+                    plantillas.map((p) => (
+                      <div key={p.k} className="grid animate-fade-in items-start gap-5 rounded-[18px] border border-surface-border p-4 xl:grid-cols-2">
+                        <div>
+                          <div className="mb-3 flex items-center gap-2">
+                            <Input
+                              value={p.nombre}
+                              aria-label="Nombre de la plantilla"
+                              onChange={(e) => cambiarPlantillas((ps) => ps.map((x) => (x.k === p.k ? { ...x, nombre: e.target.value } : x)))}
+                              onBlur={guardar}
+                              placeholder="Nombre (ej: Recordatorio)"
+                              className="flex-1"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              icon="delete"
+                              iconOnly
+                              label={`Borrar «${p.nombre || 'plantilla sin nombre'}»`}
+                              onClick={() => cambiarPlantillas((ps) => ps.filter((x) => x.k !== p.k))}
+                            />
+                          </div>
+                          <EditorConDatos
+                            etiqueta={`Mensaje de ${p.nombre || 'la plantilla'}`}
+                            valor={p.mensaje}
+                            claves={PLANTILLA_VARIABLES}
+                            placeholder="Escribí el mensaje y sumá los datos de abajo"
+                            onChange={(v) => cambiarPlantillas((ps) => ps.map((x) => (x.k === p.k ? { ...x, mensaje: v } : x)))}
+                            onBlur={guardar}
+                          />
+                          {!completa(p) && <p className="mt-2 text-xs text-warning-700">Le falta {p.nombre.trim() ? 'el mensaje' : 'el nombre'}: se guarda cuando esté completa.</p>}
+                        </div>
+                        <BurbujaWhatsApp mensaje={p.mensaje} titulo="Así le llega a la persona" />
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      </div>
     </PageContainer>
   );
 };
