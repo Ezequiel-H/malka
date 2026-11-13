@@ -24,6 +24,9 @@ class ResizeObserverStub {
 }
 global.ResizeObserver = ResizeObserverStub;
 
+// jsdom no dibuja en canvas: sin esto ensucia la salida con un error por cada grilla.
+HTMLCanvasElement.prototype.getContext = () => null;
+
 /** Recharts: jsdom suele dar 0×0 y loguea "width(0) and height(0) of chart" */
 const originalGetBoundingClientRect = Element.prototype.getBoundingClientRect;
 Element.prototype.getBoundingClientRect = function patchedGetBoundingClientRect() {

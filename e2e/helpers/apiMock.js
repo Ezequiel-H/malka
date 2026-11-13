@@ -9,6 +9,18 @@ const json = (data, status = 200) => ({
 
 const pathname = (route) => new URL(route.request().url()).pathname;
 
+/** Ventana de cumpleaños vacía: la forma que devuelve GET /admin/birthdays. */
+const emptyBirthdays = {
+  desde: '2026-09-25',
+  finDeEstaSemana: '2026-09-27',
+  hasta: '2026-10-04',
+  hoy: [],
+  estaSemana: [],
+  proximaSemana: [],
+  total: 0,
+  sinFecha: 0
+};
+
 /**
  * Intercepts API calls so E2E tests run without a real backend.
  * @param {import('@playwright/test').Page} page
@@ -16,9 +28,10 @@ const pathname = (route) => new URL(route.request().url()).pathname;
  * @param {object} [options.loginUser] — Successful login payload (token is added automatically). Omit if using rejectLogin.
  * @param {boolean} [options.rejectLogin] — When true, POST /auth/login returns 401.
  * @param {object | null} [options.meUser] — User for GET /auth/me when Bearer token is sent. Defaults to loginUser when that is set.
+ * @param {object} [options.birthdays] — Payload for GET /admin/birthdays. Defaults to an empty window.
  */
 export async function installApiMock(page, options = {}) {
-  const { loginUser, rejectLogin = false, meUser: meUserOpt } = options;
+  const { loginUser, rejectLogin = false, meUser: meUserOpt, birthdays } = options;
   const meUser = meUserOpt !== undefined ? meUserOpt : loginUser || null;
 
   await page.route(`${API_BASE}/**`, async (route) => {
@@ -59,6 +72,36 @@ export async function installApiMock(page, options = {}) {
       return;
     }
 
+    if (method === 'GET' && path === '/api/settings') {
+      await route.fulfill(
+        json({ settings: { whatsappCumpleanosMensaje: '¡Feliz cumpleaños, {nombre}!' } })
+      );
+      return;
+    }
+
+    if (method === 'GET' && path === '/api/admin/birthdays') {
+      await route.fulfill(json({ ...emptyBirthdays, ...(birthdays || {}) }));
+      return;
+    }
+
+    // El panel: nada pendiente, sin números y sin actividades en la semana.
+    if (method === 'GET' && path === '/api/admin/hoy') {
+      const vacio = { cantidad: 0, actividades: [], nombres: [], masAntigua: null };
+      await route.fulfill(json({ personas: { cantidad: 0, nombres: [], masAntigua: null }, inscripciones: vacio, comprobantes: vacio }));
+      return;
+    }
+
+    if (method === 'GET' && path === '/api/admin/actividades-resumen') {
+      await route.fulfill(json({ semana: { desde: '2026-09-21', hasta: '2026-09-27', hoy: '2026-09-25' }, actividades: [] }));
+      return;
+    }
+
+    // Cuántas veces vino en el año (inicio y Mis cosas).
+    if (method === 'GET' && path === '/api/me/resumen') {
+      await route.fulfill(json({ anio: 2026, veces: 0 }));
+      return;
+    }
+
     if (method === 'GET' && path.startsWith('/api/users/pending')) {
       await route.fulfill(json({ users: [] }));
       return;
@@ -75,6 +118,7 @@ export async function installApiMock(page, options = {}) {
     }
 
     if (method === 'POST' && path === '/api/auth/register') {
+      const body = route.request().postDataJSON() || {};
       await route.fulfill(
         json(
           {
@@ -86,7 +130,12 @@ export async function installApiMock(page, options = {}) {
               apellido: 'Usuario',
               role: 'participant',
               estado: 'pending',
-              tags: []
+              tags: [],
+              nacionalidad: body.nacionalidad,
+              residencia: body.residencia,
+              ciudad: body.ciudad,
+              idioma: body.idioma,
+              tipoDocumento: body.tipoDocumento
             }
           },
           201
@@ -95,7 +144,20 @@ export async function installApiMock(page, options = {}) {
       return;
     }
 
+    if (method === 'GET' && path === '/api/auth/registro-whatsapp') {
+      await route.fulfill(
+        json({
+          completarPorWhatsapp: true,
+          numero: '5491134405730',
+          mensaje: 'Hola! Soy {nombre} y vivo en {ciudad}.'
+        })
+      );
+      return;
+    }
+
     if (method === 'POST' && path === '/api/users/onboarding') {
+      /* Como el back: devuelve el perfil con lo que se mandó. */
+      const body = route.request().postDataJSON() || {};
       await route.fulfill(
         json({
           user: {
@@ -105,7 +167,13 @@ export async function installApiMock(page, options = {}) {
             apellido: 'Usuario',
             role: 'participant',
             estado: 'pending',
-            tags: []
+            tags: [],
+            fechaNacimiento: body.fechaNacimiento,
+            nacionalidad: body.nacionalidad,
+            residencia: body.residencia,
+            ciudad: body.ciudad,
+            idioma: body.idioma,
+            tipoDocumento: body.tipoDocumento
           }
         })
       );
@@ -113,7 +181,8 @@ export async function installApiMock(page, options = {}) {
     }
 
     if (method === 'PATCH' && path === '/api/users/me') {
-      await route.fulfill(json({ user: meUser || { estado: 'pending' } }));
+      const body = route.request().postDataJSON() || {};
+      await route.fulfill(json({ user: { ...(meUser || { estado: 'pending' }), ...body } }));
       return;
     }
 

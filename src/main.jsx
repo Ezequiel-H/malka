@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from 'react-query';
 import App from './App';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { ConfirmProvider } from './components/ui';
+import { IdiomaProvider } from './i18n';
 import './index.css';
 
 const queryClient = new QueryClient({
@@ -26,9 +28,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         }}
       >
         <AuthProvider>
-          <ToastProvider>
-            <App />
-          </ToastProvider>
+          <IdiomaProvider>
+            <ToastProvider>
+              <ConfirmProvider>
+                <App />
+              </ConfirmProvider>
+            </ToastProvider>
+          </IdiomaProvider>
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>

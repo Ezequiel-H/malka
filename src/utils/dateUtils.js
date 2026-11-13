@@ -1,3 +1,7 @@
+import { getLocale } from '../i18n/idiomas';
+
+/* Los `…EsAR` formatean con el locale del idioma activo (es-AR para el
+   equipo y para quien eligió castellano); el nombre quedó por historia. */
 const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 export const parseDateSafely = (value) => {
@@ -46,7 +50,7 @@ export const formatDateToString = (value) => {
 export const formatDateEsAR = (value, options) => {
   const parsed = parseDateSafely(value);
   if (!parsed || Number.isNaN(parsed.getTime())) return '';
-  return parsed.toLocaleDateString('es-AR', options);
+  return parsed.toLocaleDateString(getLocale(), options);
 };
 
 /**
@@ -78,7 +82,7 @@ export const birthDateToInputValue = (value) => {
 export const formatUtcCalendarDateEsAR = (value, options) => {
   const d = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('es-AR', { timeZone: 'UTC', ...options });
+  return d.toLocaleDateString(getLocale(), { timeZone: 'UTC', ...options });
 };
 
 /** Día del evento (UTC) + hora en una sola cadena breve, p. ej. `21/04/2026 · 18:30`. */

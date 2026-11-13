@@ -52,7 +52,7 @@ describe('Login', () => {
     expect(await screen.findByText('At Event')).toBeInTheDocument();
   });
 
-  it('redirects to activities when no saved path', async () => {
+  it('sin una dirección guardada, quien participa entra a su inicio', async () => {
     server.use(
       http.post('http://localhost:5001/api/auth/login', async () =>
         HttpResponse.json({
@@ -74,7 +74,7 @@ describe('Login', () => {
       <AppTestShell initialEntries={['/login']}>
         <Routes>
           <Route path="/login" element={<LoginGate />} />
-          <Route path="/activities" element={<div>At Activities</div>} />
+          <Route path="/dashboard" element={<div>At Home</div>} />
         </Routes>
       </AppTestShell>
     );
@@ -86,7 +86,7 @@ describe('Login', () => {
     await user.type(passInput, 'password123');
     await user.click(screen.getByRole('button', { name: /Iniciar sesión/i }));
 
-    expect(await screen.findByText('At Activities')).toBeInTheDocument();
+    expect(await screen.findByText('At Home')).toBeInTheDocument();
   });
 
   it('shows API error message on failure', async () => {

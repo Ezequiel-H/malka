@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
@@ -9,11 +9,28 @@ import {
   formatUtcCalendarDayAndTime,
 } from '../../utils/dateUtils';
 import { buildGoogleCalendarTemplateUrl } from '../../utils/googleCalendarActivityUrl';
-import { getPagoEstadoLabel, getPagoEstadoBadgeClass } from '../../utils/paymentUtils';
+import { getPagoEstadoLabel, getPagoEstadoTone } from '../../utils/paymentUtils';
 import LoadingScreen from '../../components/layout/LoadingScreen';
 import PageContainer from '../../components/layout/PageContainer';
-import EmptyState from '../../components/common/EmptyState';
-import InscriptionStatusTag from '../../components/activities/InscriptionStatusTag';
+import PendingPaymentProofsModal from '../../components/admin/PendingPaymentProofsModal';
+import WaitlistExitModal from '../../components/activities/WaitlistExitModal';
+import SinAnotarse from '../../components/admin/historial/SinAnotarse';
+import FormVisita from '../../components/admin/historial/FormVisita';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Field,
+  Icon,
+  ImageLightbox,
+  Modal,
+  Select,
+  Switch,
+  useConfirm,
+  cn,
+} from '../../components/ui';
+import { renderPlantilla, plantillaContext, buildWaLink } from '../../utils/whatsapp';
 import { formatActivityPrice, formatPrice } from '../../utils/priceUtils';
 
 const GMAIL_INVITE_BODY_MAX = 7500;
@@ -167,28 +184,104 @@ const buildGmailInvitationBody = (activity, sortedDateStrings, calendarUrl, maps
   return text;
 };
 
+const ESTADO_OPTIONS = [
+  { value: 'pendiente', label: 'Pendiente' },
+  { value: 'aceptada', label: 'Aceptada' },
+  { value: 'cancelada', label: 'Cancelada' },
+  { value: 'en_espera', label: 'En lista de espera' },
+];
+
+const FILTRO_OPTIONS = [
+  { value: 'todos', label: 'Todos' },
+  { value: 'pendiente', label: 'Pendientes' },
+  { value: 'aceptada', label: 'Aceptadas' },
+  { value: 'cancelada', label: 'Canceladas' },
+  { value: 'en_espera', label: 'En espera' },
+];
+
+/* Números en tinta: cuatro colores fuertes convertían el resumen en un
+   semáforo. El estado ya lo dice el label. */
+const RESUMEN = [
+  { estado: 'pendiente', label: 'Pendientes' },
+  { estado: 'aceptada', label: 'Aceptadas' },
+  { estado: 'cancelada', label: 'Canceladas' },
+  { estado: 'en_espera', label: 'En espera' },
+];
+
 const ActivityInscriptions = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const fechaHighlight = searchParams.get('fecha');
   const { showSuccess, showError } = useToast();
+  const confirm = useConfirm();
   const [activity, setActivity] = useState(null);
   const [inscriptions, setInscriptions] = useState([]);
   const [allInscriptions, setAllInscriptions] = useState([]);
+  /* Por defecto se ven los encuentros desde ayer; para tomar asistencia de
+     uno de la semana pasada se prenden los anteriores. */
+  const [verAnteriores, setVerAnteriores] = useState(false);
+  /* Quienes vinieron sin anotarse, por fecha del encuentro, y el encuentro
+     al que se está sumando a alguien. */
+  const [sinAnotarse, setSinAnotarse] = useState({});
+  const [sumandoEn, setSumandoEn] = useState(null);
+  const cargarSinAnotarse = useCallback(() => {
+    axios
+      .get('/historial', { params: { actividad: id, origen: 'sin_anotarse', limit: 200 } })
+      .then((r) => {
+        const porFecha = {};
+        for (const f of r.data.filas) {
+          const dia = String(f.fecha).slice(0, 10);
+          (porFecha[dia] ??= []).push(f);
+        }
+        setSinAnotarse(porFecha);
+      })
+      .catch(() => setSinAnotarse({}));
+  }, [id]);
+  useEffect(() => {
+    cargarSinAnotarse();
+  }, [cargarSinAnotarse]);
+  const sacarSinAnotarse = async (fila) => {
+    const ok = await confirm({
+      title: `¿Sacar a ${fila.persona.nombre}?`,
+      description: 'Deja de figurar que vino a este encuentro sin anotarse.',
+      confirmLabel: 'Sacar',
+      tone: 'danger',
+    });
+    if (!ok) return;
+    try {
+      await axios.delete(`/historial/${fila.id}`);
+      cargarSinAnotarse();
+    } catch (error) {
+      showError(error.response?.data?.message || 'No se pudo sacar');
+    }
+  };
+  const hoyStr = formatLocalDateToString(new Date());
   const [loading, setLoading] = useState(true);
   const [groupedInscriptions, setGroupedInscriptions] = useState({});
+  const [comprobanteAbierto, setComprobanteAbierto] = useState(null);
+  const [showProofsModal, setShowProofsModal] = useState(false);
   const [estadoFilter, setEstadoFilter] = useState('todos');
+  /* Contacto por WhatsApp con plantillas de Ajustes. */
+  const [waTarget, setWaTarget] = useState(null);
+  const [waPlantillas, setWaPlantillas] = useState([]);
 
   useEffect(() => {
     fetchActivity();
   }, [id]);
 
   useEffect(() => {
+    axios
+      .get('/settings')
+      .then((res) => setWaPlantillas(res.data.settings?.plantillasWhatsApp || []))
+      .catch(() => setWaPlantillas([]));
+  }, []);
+
+  useEffect(() => {
     if (activity) {
       fetchInscriptions();
     }
-  }, [activity, id]);
+  }, [activity, id, verAnteriores]);
 
   useEffect(() => {
     if (loading || !fechaHighlight) return;
@@ -236,7 +329,7 @@ const ActivityInscriptions = () => {
       const filteredInscriptions = allInscriptions.filter((inscription) => {
         const dayStr = formatUtcCalendarDateToString(inscription.fecha);
         if (!dayStr) return false;
-        return dayStr >= yesterdayStr;
+        return verAnteriores || dayStr >= yesterdayStr;
       });
 
       setAllInscriptions(filteredInscriptions);
@@ -266,7 +359,40 @@ const ActivityInscriptions = () => {
     }
   };
 
-  const handleStatusChange = async (inscriptionId, newStatus) => {
+  const estadoLabel = (estado) =>
+    ESTADO_OPTIONS.find((o) => o.value === estado)?.label ?? estado;
+
+  /* Sacar a alguien de la lista de espera tiene su propio modal: ahí el admin
+     decide si le manda el mail y lo ve antes. */
+  const [waitlistExit, setWaitlistExit] = useState(null);
+
+  const handleWaitlistExit = async (notificar) => {
+    const { inscription, estado } = waitlistExit;
+    try {
+      await axios.put(`/inscriptions/${inscription._id}/status`, { estado, notificar });
+      showSuccess(notificar ? 'Estado actualizado y aviso enviado' : `Estado actualizado a ${getEstadoLabel(estado)}`);
+      setWaitlistExit(null);
+      fetchInscriptions();
+    } catch (error) {
+      showError(error.response?.data?.message || 'Error al actualizar estado');
+    }
+  };
+
+  const handleStatusChange = async (inscription, newStatus) => {
+    if (inscription.estado === 'en_espera' && ['pendiente', 'aceptada'].includes(newStatus)) {
+      setWaitlistExit({ inscription, estado: newStatus });
+      return;
+    }
+
+    const inscriptionId = inscription._id;
+    const ok = await confirm({
+      title: `¿Cambiar el estado a "${estadoLabel(newStatus)}"?`,
+      description: 'La persona ve este estado en sus inscripciones.',
+      confirmLabel: 'Cambiar estado',
+      tone: newStatus === 'cancelada' ? 'danger' : 'primary',
+    });
+    if (!ok) return;
+
     try {
       await axios.put(`/inscriptions/${inscriptionId}/status`, { estado: newStatus });
       showSuccess(`Estado actualizado a ${getEstadoLabel(newStatus)}`);
@@ -277,6 +403,14 @@ const ActivityInscriptions = () => {
   };
 
   const handleApprovePayment = async (inscriptionId) => {
+    const ok = await confirm({
+      title: '¿Aprobar este pago?',
+      description: 'La inscripción queda confirmada y la persona recibe el estado aprobado.',
+      confirmLabel: 'Aprobar pago',
+      tone: 'primary',
+    });
+    if (!ok) return;
+
     try {
       const response = await axios.put(`/inscriptions/${inscriptionId}/payment/approve`);
       showSuccess(response.data.message || 'Pago aprobado');
@@ -287,7 +421,14 @@ const ActivityInscriptions = () => {
   };
 
   const handleRejectPayment = async (inscriptionId) => {
-    const motivoRechazo = window.prompt('Motivo del rechazo (opcional):') ?? '';
+    const motivoRechazo = await confirm({
+      title: '¿Rechazar este pago?',
+      description: 'La persona va a tener que subir un comprobante nuevo.',
+      confirmLabel: 'Rechazar pago',
+      prompt: { label: 'Motivo del rechazo', optional: true, placeholder: 'Ej: el monto no coincide' },
+    });
+    if (motivoRechazo === false) return;
+
     try {
       const response = await axios.put(`/inscriptions/${inscriptionId}/payment/reject`, { motivoRechazo });
       showSuccess(response.data.message || 'Pago rechazado');
@@ -377,89 +518,147 @@ const ActivityInscriptions = () => {
   };
 
   const inscriptionListHeader = (
-    <div className="hidden sm:grid sm:grid-cols-12 sm:gap-x-3 sm:items-center px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+    <div className="hidden border-b border-surface-border px-4 py-2 text-xs font-semibold uppercase tracking-wide text-ink-muted sm:grid sm:grid-cols-12 sm:items-center sm:gap-x-3">
       <div className="sm:col-span-4">Participante</div>
-      <div className="sm:col-span-5">Contacto</div>
-      <div className="sm:col-span-3 text-right">Estado</div>
+      <div className="sm:col-span-3">Pago</div>
+      <div className="sm:col-span-5 text-right">Estado</div>
     </div>
   );
 
+  /* Vino / faltó. Se actualiza en el lugar, sin recargar la lista: tomar
+     asistencia es tocar una fila tras otra. */
+  const handleAttendance = async (inscription, asistencia) => {
+    const siguiente = inscription.asistencia === asistencia ? null : asistencia;
+    try {
+      await axios.put(`/inscriptions/${inscription._id}/attendance`, { asistencia: siguiente });
+      const aplicar = (lista) =>
+        lista.map((i) => (i._id === inscription._id ? { ...i, asistencia: siguiente ?? undefined } : i));
+      setAllInscriptions(aplicar);
+      setInscriptions(aplicar);
+      setGroupedInscriptions((grupos) =>
+        Object.fromEntries(Object.entries(grupos).map(([fecha, lista]) => [fecha, aplicar(lista)]))
+      );
+    } catch (error) {
+      showError(error.response?.data?.message || 'No se pudo marcar la asistencia');
+    }
+  };
+
   const renderInscriptionCard = (inscription) => {
     const nombreCompleto =
-      [inscription.userId?.nombre, inscription.userId?.apellido].filter(Boolean).join(' ').trim() || '—';
-    const telefono = inscription.userId?.telefono || '—';
-    const email = inscription.userId?.email || '—';
+      [inscription.userId?.nombre, inscription.userId?.apellido].filter(Boolean).join(' ').trim();
+    const contacto = [inscription.userId?.email, inscription.userId?.telefono]
+      .filter(Boolean)
+      .join(' · ');
     const userHref = adminUserPath(inscription.userId);
     const participantLabel =
-      nombreCompleto !== '—'
-        ? nombreCompleto
-        : typeof inscription.userId === 'object' && inscription.userId?.email
-          ? inscription.userId.email
-          : 'Ver perfil';
+      nombreCompleto ||
+      (typeof inscription.userId === 'object' && inscription.userId?.email) ||
+      'Ver perfil';
+    const pago = inscription.pago;
+    const pagoPendiente = pago?.comprobante?.url && pago.estadoPago === 'pendiente';
+
     return (
       <div
         key={inscription._id}
-        className="px-4 py-2.5 grid grid-cols-1 gap-2 sm:grid-cols-12 sm:gap-x-3 sm:items-center text-sm hover:bg-gray-50/80"
+        className="grid grid-cols-1 gap-2 px-4 py-3 text-sm transition-control duration-fast hover:bg-primary-50/40 sm:grid-cols-12 sm:items-center sm:gap-x-3"
       >
-        <div className="sm:col-span-4 font-medium text-gray-900 truncate">
+        <div className="min-w-0 sm:col-span-4">
           {userHref ? (
-            <Link to={userHref} className="text-primary hover:underline">
+            <Link
+              to={userHref}
+              className="block truncate font-medium text-ink hover:text-primary hover:underline"
+            >
               {participantLabel}
             </Link>
           ) : (
-            nombreCompleto
+            <span className="block truncate font-medium text-ink">{nombreCompleto || '—'}</span>
           )}
+          <span className="block truncate text-xs text-ink-muted">{contacto || '—'}</span>
         </div>
-        <div className="sm:col-span-5 text-gray-700 min-w-0 space-y-0.5">
-          <div className="break-words">{telefono}</div>
-          <div className="break-words text-gray-600">{email}</div>
-        </div>
-        <div className="sm:col-span-3 flex flex-wrap items-center gap-2 sm:justify-end shrink-0">
-          <InscriptionStatusTag estado={inscription.estado} />
-          {inscription.pago?.comprobante?.url && (
+
+        {/* Pago: badge arriba, link al comprobante abajo. */}
+        <div className="min-w-0 sm:col-span-3">
+          {pago?.comprobante?.url && (
             <>
-              <span className={`badge ${getPagoEstadoBadgeClass(inscription.pago.estadoPago)}`}>
-                {getPagoEstadoLabel(inscription.pago.estadoPago)}
-              </span>
-              <a
-                href={inscription.pago.comprobante.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-primary hover:underline"
+              <Badge tone={getPagoEstadoTone(pago.estadoPago)} dot>
+                {getPagoEstadoLabel(pago.estadoPago)}
+              </Badge>
+              <button
+                type="button"
+                onClick={() =>
+                  setComprobanteAbierto({
+                    url: pago.comprobante.url,
+                    titulo: participantLabel,
+                  })
+                }
+                className="mt-0.5 block text-xs font-medium text-primary hover:underline"
               >
                 Ver comprobante
-              </a>
-              {inscription.pago.estadoPago === 'pendiente' && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => handleApprovePayment(inscription._id)}
-                    className="btn btn-primary text-xs py-1 px-2"
-                  >
-                    Aprobar pago
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleRejectPayment(inscription._id)}
-                    className="btn btn-danger text-xs py-1 px-2"
-                  >
-                    Rechazar pago
-                  </button>
-                </>
-              )}
+              </button>
             </>
           )}
-          <select
+        </div>
+
+        {/* Acciones en UNA línea: aprobar/rechazar sólo si hay pago por
+            revisar, y el select de estado. Antes esto era una torre de tres
+            pisos que estiraba cada fila. */}
+        <div className="flex flex-wrap items-center gap-2 sm:col-span-5 sm:justify-end">
+          {pagoPendiente && (
+            <>
+              <Button size="sm" icon="check" onClick={() => handleApprovePayment(inscription._id)}>
+                Aprobar
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                icon="close"
+                onClick={() => handleRejectPayment(inscription._id)}
+                className="hover:border-danger-500/40 hover:bg-danger-50 hover:text-danger-600"
+              >
+                Rechazar
+              </Button>
+            </>
+          )}
+          {inscription.userId?.telefono && (
+            <Button
+              size="sm"
+              variant="ghost"
+              icon="whatsapp"
+              iconOnly
+              label="Escribir por WhatsApp"
+              title="Escribir por WhatsApp"
+              onClick={() => setWaTarget(inscription)}
+            />
+          )}
+          {inscription.estado === 'aceptada' &&
+            formatUtcCalendarDateToString(inscription.fecha) <= formatLocalDateToString(new Date()) && (
+              <div role="group" aria-label="Asistencia" className="inline-flex rounded-pill border border-surface-border bg-surface p-0.5">
+                {[
+                  { valor: 'vino', etiqueta: 'Vino', activo: 'bg-success-600 text-surface' },
+                  { valor: 'falto', etiqueta: 'Faltó', activo: 'bg-ink text-surface' },
+                ].map((o) => (
+                  <button
+                    key={o.valor}
+                    type="button"
+                    aria-pressed={inscription.asistencia === o.valor}
+                    onClick={() => handleAttendance(inscription, o.valor)}
+                    className={cn(
+                      'min-h-[30px] rounded-pill px-3 text-xs font-semibold transition-colors duration-base',
+                      inscription.asistencia === o.valor ? o.activo : 'text-ink-soft hover:bg-ink/5 hover:text-ink'
+                    )}
+                  >
+                    {o.etiqueta}
+                  </button>
+                ))}
+              </div>
+            )}
+          <Select
+            options={ESTADO_OPTIONS}
             value={inscription.estado}
-            onChange={(e) => handleStatusChange(inscription._id, e.target.value)}
-            className="px-2 py-1 border border-gray-300 rounded text-xs bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <option value="pendiente">Pendiente</option>
-            <option value="aceptada">Aceptada</option>
-            <option value="cancelada">Cancelada</option>
-            <option value="en_espera">En lista de espera</option>
-          </select>
+            onChange={(value) => handleStatusChange(inscription, value)}
+            size="sm"
+            className="w-40"
+          />
         </div>
       </div>
     );
@@ -560,168 +759,210 @@ const ActivityInscriptions = () => {
     }
   };
 
+  const pagosPendientesCount = allInscriptions.filter(
+    (i) => i.pago?.estadoPago === 'pendiente' && i.pago?.comprobante?.url
+  ).length;
+
   return (
-    <PageContainer>
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-          <button
-            onClick={() => navigate('/admin/activities')}
-            className="btn btn-secondary w-full shrink-0 justify-center sm:w-auto"
-          >
-            ← Volver
-          </button>
-          <h1 className="text-2xl font-bold text-primary sm:text-3xl md:text-4xl">Inscripciones</h1>
+    <PageContainer
+      title="Inscripciones"
+      back={
+        <Button
+          variant="ghost"
+          size="sm"
+          icon="back"
+          iconOnly
+          label="Volver a actividades"
+          onClick={() => navigate('/admin/activities')}
+        />
+      }
+      actions={
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" icon="chart" to={`/admin/metricas?vista=actividades&actividad=${id}`}>
+            Métricas
+          </Button>
+          <Button icon="document" onClick={() => setShowProofsModal(true)}>
+            Revisar comprobantes
+            {pagosPendientesCount > 0 && (
+              /* Contador integrado al botón: pill translúcido del mismo esquema,
+                 no un badge de otro color peleando con el fondo verde. */
+              <span className="ml-1 rounded-pill bg-white/25 px-2 py-0.5 text-xs font-semibold tabular-nums text-white">
+                {pagosPendientesCount}
+              </span>
+            )}
+          </Button>
         </div>
+      }
+    >
 
         {/* Información de la actividad */}
-        <div className="card mb-8">
-          <h2 className="text-xl font-bold text-gray-800 sm:text-2xl mb-4 break-words">{activity.titulo}</h2>
-          {activity.descripcion && (
-            <p className="text-gray-600 mb-4">{activity.descripcion}</p>
-          )}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="mb-8">
+          <h2 className="mb-4 break-words text-xl font-bold text-ink sm:text-2xl">
+            {activity.titulo}
+          </h2>
+          {activity.descripcion && <p className="mb-4 text-ink-muted">{activity.descripcion}</p>}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-ink-soft">
             {activity.fecha && (
-              <div>
-                <p className="text-sm text-gray-600"><strong>Fecha:</strong> {formatDate(activity.fecha)}</p>
-              </div>
+              <span className="flex items-center gap-1.5">
+                <Icon name="activity" size="sm" className="shrink-0 text-ink-faint" />
+                {formatDate(activity.fecha)}
+              </span>
             )}
             {activity.hora && (
-              <div>
-                <p className="text-sm text-gray-600"><strong>Hora:</strong> {activity.hora}</p>
-              </div>
+              <span className="flex items-center gap-1.5">
+                <Icon name="time" size="sm" className="shrink-0 text-ink-faint" />
+                {activity.hora}
+              </span>
             )}
             {activity.lugar && (
-              <div>
-                <p className="text-sm text-gray-600"><strong>Lugar:</strong> {activity.lugar}</p>
-              </div>
+              <span className="flex min-w-0 items-center gap-1.5">
+                <Icon name="location" size="sm" className="shrink-0 text-ink-faint" />
+                <span className="truncate">{activity.lugar}</span>
+              </span>
             )}
-            {activity.ubicacionOnline && (
-              <div>
-                <p className="text-sm text-gray-600 mb-2"><strong>Ubicación:</strong></p>
-                <a
-                  href={activity.ubicacionOnline}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-secondary w-full justify-center text-sm sm:w-auto"
-                  title="Ver ubicación en Google Maps"
-                >
-                  🗺️ ¿Cómo llego?
-                </a>
-              </div>
-            )}
-            <div>
-              <p className="text-sm text-gray-600">
-                <strong>Precio:</strong> {formatActivityPrice(activity)}
-              </p>
-            </div>
             {activity.cupo && (
-              <div>
-                <p className="text-sm text-gray-600">
-                  <strong>Cupo:</strong> {activity.cupo}
-                </p>
-              </div>
+              <span className="flex items-center gap-1.5">
+                <Icon name="users" size="sm" className="shrink-0 text-ink-faint" />
+                Cupo {activity.cupo}
+              </span>
             )}
-            <div>
-              <p className="text-sm text-gray-600">
-                <strong>Tipo:</strong> {activity.tipo === 'recurrente' ? 'Recurrente' : activity.tipo === 'viaje' ? 'Viaje' : 'Única'}
-              </p>
-            </div>
-          </div>
-        </div>
+            <span className="flex items-center gap-1.5">
+              <Icon name="payment" size="sm" className="shrink-0 text-ink-faint" />
+              {activity.esGratuita ? (
+                <Badge tone="success" size="sm">
+                  Gratis
+                </Badge>
+              ) : (
+                <span className="font-semibold text-ink">{formatActivityPrice(activity)}</span>
+              )}
+            </span>
+            <Badge tone="neutral" size="sm">
+              {activity.tipo === 'recurrente' ? 'Recurrente' : activity.tipo === 'viaje' ? 'Viaje' : 'Única'}
+            </Badge>
+            {activity.ubicacionOnline && (
+              <Button
+                variant="link"
+                size="sm"
+                icon="location"
+                href={activity.ubicacionOnline}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="min-h-0 px-0 py-0"
+              >
+                ¿Cómo llego?
+              </Button>
+            )}
+                    </div>
+        </Card>
 
         {/* Estadísticas */}
-        <div className="card mb-8">
+        <Card className="mb-8">
           <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-              <h2 className="text-xl font-semibold text-gray-800 sm:text-2xl">Resumen</h2>
+              <h2 className="text-xl font-semibold text-ink sm:text-2xl">Resumen</h2>
               <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:gap-2">
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon="mail"
                   onClick={copyConfirmedEmailsToClipboard}
-                  className="btn btn-secondary w-full shrink-0 justify-center text-sm sm:w-auto"
                   title="Copia los correos de participantes con inscripción aceptada, separados por coma, para pegarlos en Para o CCO"
+                  className="w-full shrink-0 sm:w-auto"
                 >
                   Copiar emails (inscripciones aceptadas)
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon="mail"
                   onClick={handleOpenGmailCompose}
-                  className="btn btn-secondary w-full shrink-0 justify-center text-sm sm:w-auto no-underline"
                   title="Abre Gmail con CCO y asunto del evento. El cuerpo se copia al portapapeles para pegarlo y mantener links clickeables."
+                  className="w-full shrink-0 sm:w-auto"
                 >
                   Redactar en Gmail (CCO)
-                </button>
+                </Button>
               </div>
             </div>
             <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 md:w-auto">
-              <label className="shrink-0 font-medium text-gray-700">Filtrar por estado:</label>
-              <select
-                value={estadoFilter}
-                onChange={handleFilterChange}
-                className="w-full min-w-0 rounded border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary sm:w-auto sm:min-w-[12rem]"
-              >
-                <option value="todos">Todos</option>
-                <option value="pendiente">Pendientes</option>
-                <option value="aceptada">Aceptadas</option>
-                <option value="cancelada">Canceladas</option>
-                <option value="en_espera">En espera</option>
-              </select>
+              <Switch
+                checked={verAnteriores}
+                onChange={(e) => setVerAnteriores(e.target.checked)}
+                label="Ver encuentros anteriores"
+                className="shrink-0"
+              />
+              <Field label="Filtrar por estado" className="mb-0 w-full min-w-0 sm:w-56">
+                <Select
+                  options={FILTRO_OPTIONS}
+                  value={estadoFilter}
+                  onChange={(value) => handleFilterChange({ target: { value: value ?? 'todos' } })}
+                />
+              </Field>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-yellow-500 sm:text-3xl">
-                {allInscriptions.filter(i => i.estado === 'pendiente').length}
-              </p>
-              <p className="text-gray-600">Pendientes</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-600 sm:text-3xl">
-                {allInscriptions.filter(i => i.estado === 'aceptada').length}
-              </p>
-              <p className="text-gray-600">Aceptadas</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-red-600 sm:text-3xl">
-                {allInscriptions.filter(i => i.estado === 'cancelada').length}
-              </p>
-              <p className="text-gray-600">Canceladas</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600 sm:text-3xl">
-                {allInscriptions.filter(i => i.estado === 'en_espera').length}
-              </p>
-              <p className="text-gray-600">En espera</p>
-            </div>
+            {RESUMEN.map(({ estado, label }) => (
+              <div key={estado} className="rounded-card border border-surface-border bg-surface px-3 py-3 text-center">
+                <p className="text-2xl font-bold tabular-nums tracking-tight text-ink sm:text-3xl">
+                  {allInscriptions.filter((i) => i.estado === estado).length}
+                </p>
+                <p className="mt-0.5 text-sm text-ink-muted">{label}</p>
+              </div>
+            ))}
           </div>
-        </div>
+        </Card>
 
         {/* Lista de inscripciones */}
         {allInscriptions.length === 0 ? (
-          <EmptyState message="No hay inscripciones para esta actividad (solo se muestran inscripciones de ayer en adelante)." />
+          <Card padding="none">
+            <EmptyState
+              icon="users"
+              title="Sin inscripciones"
+              description="No hay inscripciones para esta actividad. Sólo se muestran las de ayer en adelante."
+            />
+          </Card>
         ) : inscriptions.length === 0 ? (
-          <EmptyState message="No hay inscripciones con el estado seleccionado." />
+          <Card padding="none">
+            <EmptyState
+              icon="search"
+              title="Sin resultados"
+              description="No hay inscripciones con el estado seleccionado."
+            />
+          </Card>
         ) : activity.tipo === 'recurrente' ? (
           // Actividad recurrente: agrupar por fecha
           <div className="space-y-8">
             {sortedDates.length === 0 ? (
-              <EmptyState message="No hay inscripciones con el estado seleccionado." />
+              <Card padding="none">
+            <EmptyState
+              icon="search"
+              title="Sin resultados"
+              description="No hay inscripciones con el estado seleccionado."
+            />
+          </Card>
             ) : (
               sortedDates.map(fechaStr => {
                 const fechaInscriptions = filteredGrouped[fechaStr];
                 return (
                   <div key={fechaStr} id={`inscription-fecha-${fechaStr}`}>
                     <div className="mb-2">
-                      <h3 className="text-base font-bold text-gray-800 tabular-nums">
+                      <h3 className="text-base font-bold tabular-nums text-ink">
                         {formatUtcCalendarDayAndTime(new Date(`${fechaStr}T00:00:00.000Z`), activity.hora)}
                       </h3>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-ink-muted">
                         {fechaInscriptions.length} inscripción{fechaInscriptions.length !== 1 ? 'es' : ''}
                       </p>
                     </div>
-                    <div className="card p-0 overflow-hidden divide-y divide-gray-100">
+                    <div className="overflow-hidden rounded-card border border-surface-border bg-surface shadow-card divide-y divide-surface-border">
                       {inscriptionListHeader}
                       {fechaInscriptions.map(inscription => renderInscriptionCard(inscription))}
                     </div>
+                    {fechaStr <= hoyStr && (
+                      <SinAnotarse
+                        filas={sinAnotarse[fechaStr]}
+                        onSumar={() => setSumandoEn(fechaStr)}
+                        onBorrar={sacarSinAnotarse}
+                      />
+                    )}
                   </div>
                 );
               })
@@ -730,7 +971,7 @@ const ActivityInscriptions = () => {
         ) : (
           // Actividad única: mostrar todas juntas
           <div
-            className="card p-0 overflow-hidden divide-y divide-gray-100"
+            className="overflow-hidden rounded-card border border-surface-border bg-surface shadow-card divide-y divide-surface-border"
             id={
               activity.fecha
                 ? `inscription-fecha-${formatUtcCalendarDateToString(activity.fecha)}`
@@ -741,6 +982,107 @@ const ActivityInscriptions = () => {
             {inscriptions.map(inscription => renderInscriptionCard(inscription))}
           </div>
         )}
+        {activity.tipo !== 'recurrente' && activity.fecha && formatUtcCalendarDateToString(activity.fecha) <= hoyStr && (
+          <SinAnotarse
+            filas={sinAnotarse[formatUtcCalendarDateToString(activity.fecha)]}
+            onSumar={() => setSumandoEn(formatUtcCalendarDateToString(activity.fecha))}
+            onBorrar={sacarSinAnotarse}
+          />
+        )}
+        <FormVisita
+          abierto={Boolean(sumandoEn)}
+          fijo={sumandoEn ? { actividadId: id, fecha: sumandoEn, titulo: activity.titulo } : null}
+          onCerrar={() => setSumandoEn(null)}
+          onGuardada={() => {
+            setSumandoEn(null);
+            cargarSinAnotarse();
+          }}
+        />
+      <PendingPaymentProofsModal
+        open={showProofsModal}
+        activityId={id}
+        onClose={() => setShowProofsModal(false)}
+        onReviewed={fetchInscriptions}
+      />
+
+      {waitlistExit && (
+        <WaitlistExitModal
+          inscription={waitlistExit.inscription}
+          estado={waitlistExit.estado}
+          onClose={() => setWaitlistExit(null)}
+          onConfirm={handleWaitlistExit}
+        />
+      )}
+
+      <Modal
+        open={Boolean(waTarget)}
+        onClose={() => setWaTarget(null)}
+        size="sm"
+        title="Escribir por WhatsApp"
+        description={
+          waTarget
+            ? [waTarget.userId?.nombre, waTarget.userId?.apellido].filter(Boolean).join(' ') ||
+              waTarget.userId?.email
+            : undefined
+        }
+      >
+        {waTarget && (
+          <div className="space-y-2">
+            {waPlantillas.map((p) => {
+              const texto = renderPlantilla(
+                p.mensaje,
+                plantillaContext({
+                  user: waTarget.userId,
+                  activity,
+                  fecha: waTarget.fecha,
+                  hora: waTarget.hora || activity?.hora,
+                })
+              );
+              return (
+                <Button
+                  key={p._id ?? p.nombre}
+                  variant="secondary"
+                  icon="whatsapp"
+                  fullWidth
+                  href={buildWaLink(waTarget.userId?.telefono, texto)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setWaTarget(null)}
+                  className="justify-start text-left"
+                >
+                  {p.nombre}
+                </Button>
+              );
+            })}
+
+            <Button
+              variant="secondary"
+              icon="whatsapp"
+              fullWidth
+              href={buildWaLink(waTarget.userId?.telefono, '')}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setWaTarget(null)}
+              className="justify-start text-left"
+            >
+              Chat vacío (sin plantilla)
+            </Button>
+
+            {waPlantillas.length === 0 && (
+              <p className="pt-1 text-sm text-ink-muted">
+                Podés crear plantillas con variables en Ajustes → WhatsApp.
+              </p>
+            )}
+          </div>
+        )}
+      </Modal>
+
+      <ImageLightbox
+        open={Boolean(comprobanteAbierto)}
+        src={comprobanteAbierto?.url}
+        title={`Comprobante · ${comprobanteAbierto?.titulo ?? ''}`}
+        onClose={() => setComprobanteAbierto(null)}
+      />
     </PageContainer>
   );
 };

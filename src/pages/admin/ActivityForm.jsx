@@ -1,15 +1,88 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useToast } from '../../contexts/ToastContext';
+import { useAuth } from '../../contexts/AuthContext';
 import PageContainer from '../../components/layout/PageContainer';
-import { activityPublicTags, activityPrivateTags } from '../../utils/tagFields';
-import DatePicker from 'react-datepicker';
-import { registerLocale } from 'react-datepicker';
-import { es } from 'date-fns/locale/es';
-import 'react-datepicker/dist/react-datepicker.css';
+import { activityPublicTags, activityPrivateTags, publicTagColor, publicTagIcon } from '../../utils/tagFields';
+import TagAssigner from '../../components/tags/TagAssigner';
+import { Segmentado } from '../../components/admin/metricas/piezas';
+import VistaCartelera from '../../components/admin/actividadForm/VistaCartelera';
+import useBorradorLocal from '../../components/admin/actividadForm/useBorradorLocal';
+import { Alert, Button, DatePicker, Field, Icon, Input, Select, Switch, Textarea, TimePicker, cn } from '../../components/ui';
 
-registerLocale('es', es);
+/* Color de respaldo cuando la tag privada del catálogo no define el suyo. */
+const DEFAULT_PRIVATE_TAG_COLOR = '#c98a1e';
+
+const MONEDA_OPTIONS = [
+  { value: 'ARS', label: 'Pesos ($)' },
+  { value: 'USD', label: 'Dólares (US$)' },
+];
+
+const ESTADO_OPTIONS = [
+  { valor: 'borrador', etiqueta: 'Borrador' },
+  { valor: 'publicada', etiqueta: 'Publicada' },
+];
+
+const VISIBILIDAD_OPTIONS = [
+  { valor: 'publica', etiqueta: 'Pública' },
+  { valor: 'privada', etiqueta: 'Sólo algunas personas' },
+];
+
+const FRECUENCIA_OPTIONS = [
+  { valor: 'weekly', etiqueta: 'Todas las semanas' },
+  { valor: 'monthly', etiqueta: 'Todos los meses' },
+];
+
+/* De lunes a domingo, como se lee una semana; el valor es el de JavaScript (0 = domingo). */
+const DIAS_SEMANA = [
+  { value: 1, corto: 'L', label: 'Lunes' },
+  { value: 2, corto: 'M', label: 'Martes' },
+  { value: 3, corto: 'M', label: 'Miércoles' },
+  { value: 4, corto: 'J', label: 'Jueves' },
+  { value: 5, corto: 'V', label: 'Viernes' },
+  { value: 6, corto: 'S', label: 'Sábado' },
+  { value: 0, corto: 'D', label: 'Domingo' },
+];
+
+/**
+ * Botón de día para la recurrencia. Es un toggle con estado propio, no un
+ * checkbox de formulario: se ve como una pastilla y se lee como botón
+ * presionado.
+ */
+const DayToggle = ({ label, title, checked, onToggle, compact = false }) => (
+  <button
+    type="button"
+    onClick={() => onToggle(!checked)}
+    aria-pressed={checked}
+    aria-label={title}
+    title={title}
+    className={cn(
+      'rounded-pill text-sm font-semibold tabular-nums',
+      'transition-colors duration-base ease-standard motion-reduce:transition-none',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/25 focus-visible:ring-offset-1',
+      compact ? 'h-9 w-9' : 'h-9 w-9 sm:h-10 sm:w-10',
+      checked ? 'bg-ink text-surface' : 'bg-ink/[0.05] text-ink-soft hover:bg-ink/10'
+    )}
+  >
+    {label}
+  </button>
+);
+
+const TIPO_OPTIONS = [
+  { valor: 'unica', etiqueta: 'Una vez' },
+  { valor: 'recurrente', etiqueta: 'Se repite' },
+  { valor: 'viaje', etiqueta: 'Viaje' },
+];
+
+/* Un bloque del formulario: título y lo suyo adentro. */
+const Bloque = ({ titulo, ayuda, children }) => (
+  <section className="rounded-[22px] border border-surface-border bg-surface p-5 sm:p-6">
+    <h2 className="font-grotesk text-lg font-semibold text-ink">{titulo}</h2>
+    {ayuda && <p className="mt-0.5 text-sm text-ink-muted">{ayuda}</p>}
+    <div className="mt-4">{children}</div>
+  </section>
+);
 
 // Helper function to format date as YYYY-MM-DD - simple date, no timezone conversion
 // Just extract the year, month, day as simple numbers
@@ -31,25 +104,6 @@ const formatDateToString = (date) => {
 };
 
 // Helper function to convert YYYY-MM-DD string to Date object using local components
-// This prevents timezone issues when displaying dates in DatePicker
-const stringToLocalDate = (dateString) => {
-  if (!dateString) return null;
-  
-  // If it's already a Date, return it
-  if (dateString instanceof Date) {
-    return dateString;
-  }
-  
-  // If it's a string in YYYY-MM-DD format, parse it using local components
-  if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateString)) {
-    const [year, month, day] = dateString.substring(0, 10).split('-').map(Number);
-    // Create Date using local components (not UTC) to avoid day shift
-    return new Date(year, month - 1, day);
-  }
-  
-  // Otherwise, try to parse it normally
-  return new Date(dateString);
-};
 
 const ActivityForm = () => {
   const { id } = useParams();
@@ -91,13 +145,37 @@ const ActivityForm = () => {
     }
   });
 
-  const [tagInputPublic, setTagInputPublic] = useState('');
   const [tagInputPrivate, setTagInputPrivate] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [availableTags, setAvailableTags] = useState([]);
   const [availablePrivateTags, setAvailablePrivateTags] = useState([]);
   const [defaultInstruccionesPago, setDefaultInstruccionesPago] = useState('');
+  // Avisar a los participantes sólo tiene sentido la primera vez que se publica.
+  const [estadoOriginal, setEstadoOriginal] = useState(null);
+  const [notificarParticipantes, setNotificarParticipantes] = useState(true);
+  const seEstaPublicando = formData.estado === 'publicada' && estadoOriginal !== 'publicada';
+
+  /* Lo que se escribe queda en este navegador hasta guardar (ver useBorradorLocal). */
+  const { user } = useAuth();
+  const [borradorListo, setBorradorListo] = useState(false);
+  const [recuperado, setRecuperado] = useState(false);
+  const deEntrada = useRef(formData);
+  const borrador = useBorradorLocal(`malka.borrador.actividad.${user?._id ?? 'anon'}.${id ?? 'nueva'}`, formData, { activo: borradorListo });
+  const retomarBorrador = (base) => {
+    deEntrada.current = base;
+    const guardado = borrador.leer();
+    if (guardado?.valor && JSON.stringify(guardado.valor) !== JSON.stringify(base)) {
+      setFormData(guardado.valor);
+      setRecuperado(true);
+    }
+    setBorradorListo(true);
+  };
+  const empezarDeCero = () => {
+    borrador.borrar();
+    setFormData(deEntrada.current);
+    setRecuperado(false);
+  };
 
   useEffect(() => {
     fetchAvailableTags();
@@ -105,6 +183,8 @@ const ActivityForm = () => {
     fetchDefaultInstruccionesPago();
     if (isEdit) {
       fetchActivity();
+    } else {
+      retomarBorrador(formData);
     }
   }, [id]);
 
@@ -177,10 +257,11 @@ const ActivityForm = () => {
         recurrence.dayOfMonth = [recurrence.dayOfMonth];
       }
       
+      setEstadoOriginal(activity.estado);
       const publicTags = activityPublicTags(activity);
       const privateTags = activityPrivateTags(activity);
 
-      setFormData({
+      const cargada = {
         ...activity,
         tags: publicTags,
         tagsPrivados: privateTags,
@@ -202,7 +283,9 @@ const ActivityForm = () => {
           endDate: recurrence.endDate ? formatDateToString(recurrence.endDate) : '',
           hora: recurrence.hora || activity.hora || ''
         }
-      });
+      };
+      setFormData(cargada);
+      retomarBorrador(cargada);
     } catch (error) {
       console.error('Error fetching activity:', error);
       setError('Error al cargar la actividad');
@@ -223,47 +306,7 @@ const ActivityForm = () => {
     });
   };
 
-  // Helper para convertir hora en formato HH:mm a horas y minutos
-  const parseTime = (timeString) => {
-    if (!timeString) return { hour: '', minute: '' };
-    const [hour, minute] = timeString.split(':');
-    return { hour: hour || '', minute: minute || '' };
-  };
 
-  // Helper para formatear hora y minutos a formato HH:mm
-  const formatTime = (hour, minute) => {
-    if (!hour || !minute) return '';
-    const h = hour.padStart(2, '0');
-    const m = minute.padStart(2, '0');
-    return `${h}:${m}`;
-  };
-
-  // Generar opciones de horas (0-23)
-  const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
-  
-  // Generar opciones de minutos con intervalos de 10 minutos
-  const minutes = ['00', '10', '15', '20', '30', '40', '45', '50'];
-
-
-  const addPublicTagFromSelect = () => {
-    if (!tagInputPublic) return;
-    const tagNombreLower = tagInputPublic.toLowerCase();
-    if (formData.tags.some(t => t.toLowerCase() === tagNombreLower)) return;
-    const tagFromBackend = availableTags.find(t => t.nombre.toLowerCase() === tagNombreLower);
-    const tagToAdd = tagFromBackend ? tagFromBackend.nombre : tagInputPublic;
-    setFormData(prev => ({
-      ...prev,
-      tags: [...prev.tags, tagToAdd]
-    }));
-    setTagInputPublic('');
-  };
-
-  const removePublicTag = (tag) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags.filter(t => t !== tag)
-    }));
-  };
 
   const addPrivateTagFromSelect = () => {
     if (!tagInputPrivate) return;
@@ -355,14 +398,17 @@ const ActivityForm = () => {
           endDate: formData.recurrence.endDate || null,
           occurrences: formData.recurrence.occurrences || null,
           hora: formData.recurrence.hora || formData.hora
-        } : undefined
+        } : undefined,
+        notificarParticipantes: seEstaPublicando && notificarParticipantes
       };
 
       if (isEdit) {
         await axios.put(`/activities/${id}`, dataToSend);
+        borrador.borrar();
         showSuccess('Actividad actualizada exitosamente');
       } else {
         await axios.post('/activities', dataToSend);
+        borrador.borrar();
         showSuccess('Actividad creada exitosamente');
       }
       navigate('/admin/activities');
@@ -373,767 +419,328 @@ const ActivityForm = () => {
     }
   };
 
+  const set = (cambio) => setFormData((prev) => ({ ...prev, ...cambio }));
+  const setRec = (cambio) => setFormData((prev) => ({ ...prev, recurrence: { ...prev.recurrence, ...cambio } }));
+  const togglePublica = (nombre) =>
+    setFormData((prev) => {
+      const tiene = prev.tags.some((t) => t.toLowerCase() === nombre.toLowerCase());
+      return { ...prev, tags: tiene ? prev.tags.filter((t) => t.toLowerCase() !== nombre.toLowerCase()) : [...prev.tags, nombre] };
+    });
+  /* Las tags asignadas que ya no están en el catálogo se muestran igual, para poder sacarlas. */
+  const sueltas = formData.tags.filter((t) => !availableTags.some((c) => c.nombre.toLowerCase() === t.toLowerCase()));
+
+  const textoGuardar = loading ? 'Guardando…' : isEdit ? 'Guardar cambios' : formData.estado === 'publicada' ? 'Publicar' : 'Guardar borrador';
+
   return (
-    <PageContainer title={isEdit ? 'Editar Actividad' : 'Nueva Actividad'} maxWidth="4xl">
-
-        {error && (
-          <div className="alert alert-error">{error}</div>
-        )}
-
-        <form onSubmit={handleSubmit} className="card">
-        <div className="form-group">
-          <label>Título *</label>
-          <input
-            type="text"
-            name="titulo"
-            value={formData.titulo}
-            onChange={handleChange}
-            required
-            className="bg-white"
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Descripción *</label>
-          <textarea
-            name="descripcion"
-            value={formData.descripcion}
-            onChange={handleChange}
-            required
-            className="bg-white"
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Tags públicos</label>
-          <p className="text-sm text-gray-600 mb-2">
-            Temas de la actividad (visibles en cartelera y filtros). Catálogo público.
-          </p>
-          <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-stretch">
-            <select
-              value={tagInputPublic}
-              onChange={(e) => setTagInputPublic(e.target.value)}
-              className="min-w-0 flex-1 bg-white"
-            >
-              <option value="">Seleccionar tag</option>
-              {availableTags.length > 0 ? (
-                availableTags
-                  .filter(tag => {
-                    const tagNombreLower = tag.nombre.toLowerCase();
-                    return !formData.tags.some(c => c.toLowerCase() === tagNombreLower);
-                  })
-                  .map(tag => (
-                    <option key={tag._id} value={tag.nombre}>
-                      {tag.nombre.charAt(0).toUpperCase() + tag.nombre.slice(1)}
-                      {tag.descripcion && ` - ${tag.descripcion}`}
-                    </option>
-                  ))
-              ) : (
-                <option value="" disabled>No hay tags disponibles</option>
-              )}
-            </select>
-            <button
-              type="button"
-              onClick={addPublicTagFromSelect}
-              className="btn btn-secondary w-full shrink-0 justify-center sm:w-auto"
-              disabled={!tagInputPublic}
-            >
-              Agregar
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {formData.tags.map(cat => {
-              const tag = availableTags.find(t => t.nombre.toLowerCase() === cat.toLowerCase());
-              const tagColor = tag?.color || '#3B82F6';
-              return (
-                <span
-                  key={cat}
-                  className="badge flex items-center gap-2 text-white"
-                  style={{ backgroundColor: tagColor }}
-                >
-                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                  <button
-                    type="button"
-                    onClick={() => removePublicTag(cat)}
-                    className="bg-transparent border-none text-white cursor-pointer hover:text-gray-200 font-bold"
-                  >
-                    ×
-                  </button>
-                </span>
-              );
-            })}
-          </div>
-          {availableTags.length === 0 && (
-            <p className="text-sm text-gray-500 mt-2">
-              No hay tags disponibles. <a href="/admin/tags" className="text-primary hover:underline">Crear tags</a>
-            </p>
+    <PageContainer title={isEdit ? 'Editar actividad' : 'Nueva actividad'} back={<Button variant="ghost" size="sm" icon="back" iconOnly label="Volver a actividades" to="/admin/activities" />}>
+      <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] [&>*]:min-w-0">
+        <div className="space-y-5">
+          {error && <Alert tone="danger">{error}</Alert>}
+          {recuperado && (
+            <Alert tone="info">
+              Retomamos lo que estabas cargando.{' '}
+              <button type="button" onClick={empezarDeCero} className="font-semibold underline">
+                Empezar de cero
+              </button>
+            </Alert>
           )}
-        </div>
 
-        <div className="form-group">
-          <label>Tipo *</label>
-          <select
-            name="tipo"
-            value={formData.tipo}
-            onChange={handleChange}
-            required
-            className="bg-white"
-          >
-            <option value="unica">Única</option>
-            <option value="recurrente">Recurrente</option>
-            <option value="viaje">Viaje</option>
-          </select>
-        </div>
-
-        {formData.tipo === 'unica' ? (
-          <>
-            <div className="form-group">
-              <label>Fecha</label>
-              <DatePicker
-                selected={formData.fecha ? stringToLocalDate(formData.fecha) : null}
-                onChange={(date) => {
-                  const dateString = date ? formatDateToString(date) : '';
-                  setFormData(prev => ({ ...prev, fecha: dateString }));
-                }}
-                locale="es"
-                dateFormat="dd/MM/yyyy"
-                placeholderText="dd/mm/yyyy"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all bg-white cursor-pointer"
-                showPopperArrow={false}
-              />
-            </div>
-            <div className="form-group">
-              <label>Hora</label>
-              <div className="flex gap-2">
-                <select
-                  value={parseTime(formData.hora).hour}
-                  onChange={(e) => {
-                    const newHour = e.target.value;
-                    const { minute } = parseTime(formData.hora);
-                    const newTime = formatTime(newHour, minute || '00');
-                    setFormData(prev => ({ ...prev, hora: newTime }));
-                  }}
-                  className="flex-1 bg-white cursor-pointer"
-                >
-                  <option value="">Hora</option>
-                  {hours.map(hour => (
-                    <option key={hour} value={hour}>{hour}</option>
-                  ))}
-                </select>
-                <span className="flex items-center text-gray-500 font-bold">:</span>
-                <select
-                  value={parseTime(formData.hora).minute}
-                  onChange={(e) => {
-                    const newMinute = e.target.value;
-                    const { hour } = parseTime(formData.hora);
-                    const newTime = formatTime(hour || '00', newMinute);
-                    setFormData(prev => ({ ...prev, hora: newTime }));
-                  }}
-                  className="flex-1 bg-white cursor-pointer"
-                >
-                  <option value="">Min</option>
-                  {minutes.map(minute => (
-                    <option key={minute} value={minute}>{minute}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </>
-        ) : formData.tipo === 'viaje' ? (
-          <>
-            <div className="form-group">
-              <label>Fecha de inicio *</label>
-              <DatePicker
-                selected={formData.fecha ? stringToLocalDate(formData.fecha) : null}
-                onChange={(date) => {
-                  const dateString = date ? formatDateToString(date) : '';
-                  setFormData(prev => ({ ...prev, fecha: dateString }));
-                }}
-                locale="es"
-                dateFormat="dd/MM/yyyy"
-                placeholderText="dd/mm/yyyy"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all bg-white cursor-pointer"
-                showPopperArrow={false}
-              />
-            </div>
-            <div className="form-group">
-              <label>Hora de inicio</label>
-              <div className="flex gap-2">
-                <select
-                  value={parseTime(formData.hora).hour}
-                  onChange={(e) => {
-                    const { minute } = parseTime(formData.hora);
-                    const newTime = formatTime(e.target.value, minute || '00');
-                    setFormData(prev => ({ ...prev, hora: newTime }));
-                  }}
-                  className="flex-1 bg-white cursor-pointer"
-                >
-                  <option value="">Hora</option>
-                  {hours.map(hour => (
-                    <option key={hour} value={hour}>{hour}</option>
-                  ))}
-                </select>
-                <span className="flex items-center text-gray-500 font-bold">:</span>
-                <select
-                  value={parseTime(formData.hora).minute}
-                  onChange={(e) => {
-                    const { hour } = parseTime(formData.hora);
-                    const newTime = formatTime(hour || '00', e.target.value);
-                    setFormData(prev => ({ ...prev, hora: newTime }));
-                  }}
-                  className="flex-1 bg-white cursor-pointer"
-                >
-                  <option value="">Min</option>
-                  {minutes.map(minute => (
-                    <option key={minute} value={minute}>{minute}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="form-group">
-              <label>Fecha de finalización *</label>
-              <DatePicker
-                selected={formData.fechaFin ? stringToLocalDate(formData.fechaFin) : null}
-                onChange={(date) => {
-                  const dateString = date ? formatDateToString(date) : '';
-                  setFormData(prev => ({ ...prev, fechaFin: dateString }));
-                }}
-                locale="es"
-                dateFormat="dd/MM/yyyy"
-                placeholderText="dd/mm/yyyy"
-                minDate={formData.fecha ? stringToLocalDate(formData.fecha) : undefined}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all bg-white cursor-pointer"
-                showPopperArrow={false}
-              />
-            </div>
-            <div className="form-group">
-              <label>Hora de finalización</label>
-              <div className="flex gap-2">
-                <select
-                  value={parseTime(formData.horaFin).hour}
-                  onChange={(e) => {
-                    const { minute } = parseTime(formData.horaFin);
-                    const newTime = formatTime(e.target.value, minute || '00');
-                    setFormData(prev => ({ ...prev, horaFin: newTime }));
-                  }}
-                  className="flex-1 bg-white cursor-pointer"
-                >
-                  <option value="">Hora</option>
-                  {hours.map(hour => (
-                    <option key={hour} value={hour}>{hour}</option>
-                  ))}
-                </select>
-                <span className="flex items-center text-gray-500 font-bold">:</span>
-                <select
-                  value={parseTime(formData.horaFin).minute}
-                  onChange={(e) => {
-                    const { hour } = parseTime(formData.horaFin);
-                    const newTime = formatTime(hour || '00', e.target.value);
-                    setFormData(prev => ({ ...prev, horaFin: newTime }));
-                  }}
-                  className="flex-1 bg-white cursor-pointer"
-                >
-                  <option value="">Min</option>
-                  {minutes.map(minute => (
-                    <option key={minute} value={minute}>{minute}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="form-group">
-              <label>Frecuencia *</label>
-              <select
-                name="recurrence.frequency"
-                value={formData.recurrence.frequency}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  recurrence: { 
-                    ...prev.recurrence, 
-                    frequency: e.target.value,
-                    daysOfWeek: e.target.value === 'weekly' ? prev.recurrence.daysOfWeek : [],
-                    dayOfMonth: e.target.value === 'monthly' ? prev.recurrence.dayOfMonth : ''
-                  }
-                }))}
-                className="bg-white"
-                required
-              >
-                <option value="weekly">Semanal</option>
-                <option value="monthly">Mensual</option>
-                <option value="daily">Diaria</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Hora *</label>
-              <div className="flex gap-2">
-                <select
-                  value={parseTime(formData.recurrence.hora || formData.hora).hour}
-                  onChange={(e) => {
-                    const newHour = e.target.value;
-                    const currentTime = formData.recurrence.hora || formData.hora;
-                    const { minute } = parseTime(currentTime);
-                    const newTime = formatTime(newHour, minute || '00');
-                    setFormData(prev => ({
-                      ...prev,
-                      hora: newTime,
-                      recurrence: { ...prev.recurrence, hora: newTime }
-                    }));
-                  }}
-                  className="flex-1 bg-white cursor-pointer"
-                  required
-                >
-                  <option value="">Hora</option>
-                  {hours.map(hour => (
-                    <option key={hour} value={hour}>{hour}</option>
-                  ))}
-                </select>
-                <span className="flex items-center text-gray-500 font-bold">:</span>
-                <select
-                  value={parseTime(formData.recurrence.hora || formData.hora).minute}
-                  onChange={(e) => {
-                    const newMinute = e.target.value;
-                    const currentTime = formData.recurrence.hora || formData.hora;
-                    const { hour } = parseTime(currentTime);
-                    const newTime = formatTime(hour || '00', newMinute);
-                    setFormData(prev => ({
-                      ...prev,
-                      hora: newTime,
-                      recurrence: { ...prev.recurrence, hora: newTime }
-                    }));
-                  }}
-                  className="flex-1 bg-white cursor-pointer"
-                  required
-                >
-                  <option value="">Min</option>
-                  {minutes.map(minute => (
-                    <option key={minute} value={minute}>{minute}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {formData.recurrence.frequency === 'weekly' && (
-              <div className="form-group">
-                <label>Días de la Semana *</label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
-                  {[
-                    { value: 0, label: 'Domingo' },
-                    { value: 1, label: 'Lunes' },
-                    { value: 2, label: 'Martes' },
-                    { value: 3, label: 'Miércoles' },
-                    { value: 4, label: 'Jueves' },
-                    { value: 5, label: 'Viernes' },
-                    { value: 6, label: 'Sábado' }
-                  ].map(day => (
-                    <label key={day.value} className="flex items-center cursor-pointer p-2 border rounded hover:bg-gray-50">
-                      <input
-                        type="checkbox"
-                        checked={formData.recurrence.daysOfWeek?.includes(day.value) || false}
-                        onChange={(e) => {
-                          const daysOfWeek = formData.recurrence.daysOfWeek || [];
-                          if (e.target.checked) {
-                            setFormData(prev => ({
-                              ...prev,
-                              recurrence: {
-                                ...prev.recurrence,
-                                daysOfWeek: [...daysOfWeek, day.value].sort((a, b) => a - b)
-                              }
-                            }));
-                          } else {
-                            setFormData(prev => ({
-                              ...prev,
-                              recurrence: {
-                                ...prev.recurrence,
-                                daysOfWeek: daysOfWeek.filter(d => d !== day.value)
-                              }
-                            }));
-                          }
-                        }}
-                        className="mr-2 w-4 h-4 text-primary focus:ring-primary rounded"
-                      />
-                      <span>{day.label}</span>
-                    </label>
-                  ))}
+          <Bloque titulo="Qué es">
+            <Field label="Nombre" required>
+              <Input type="text" name="titulo" value={formData.titulo} onChange={handleChange} required placeholder="Ej: Cocina israelí" />
+            </Field>
+            <Field label="Descripción" required>
+              <Textarea name="descripcion" value={formData.descripcion} onChange={handleChange} required rows={4} placeholder="Qué se hace, para quién, qué traer" />
+            </Field>
+            <div>
+              <p className="mb-1.5 text-sm font-medium text-ink">Propuesta</p>
+              {availableTags.length > 0 || sueltas.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {[...availableTags.map((t) => t.nombre), ...sueltas].map((nombre) => {
+                    const activo = formData.tags.some((t) => t.toLowerCase() === nombre.toLowerCase());
+                    const color = publicTagColor(availableTags, nombre);
+                    return (
+                      <button
+                        key={nombre}
+                        type="button"
+                        aria-pressed={activo}
+                        onClick={() => togglePublica(nombre)}
+                        className={cn(
+                          'inline-flex min-h-[38px] items-center gap-2 rounded-pill border px-3.5 text-sm font-medium capitalize transition-colors duration-base',
+                          activo ? 'border-transparent text-surface' : 'border-surface-border bg-surface text-ink-soft hover:border-ink/25'
+                        )}
+                        style={activo ? { background: color } : undefined}
+                      >
+                        <Icon name={activo ? 'check' : publicTagIcon(availableTags, nombre) || 'tag'} size="xs" />
+                        {nombre}
+                      </button>
+                    );
+                  })}
                 </div>
-                {formData.recurrence.daysOfWeek?.length === 0 && (
-                  <p className="text-sm text-red-500 mt-1">Selecciona al menos un día</p>
-                )}
-              </div>
-            )}
+              ) : (
+                <p className="text-sm text-ink-muted">
+                  No hay propuestas cargadas.{' '}
+                  <Button variant="link" size="sm" to="/admin/tags" className="min-h-0 px-0 py-0">
+                    Crear tags
+                  </Button>
+                </p>
+              )}
+              <p className="mt-1.5 text-xs text-ink-muted">El color y el ícono de la primera salen en la cartelera. Se pueden elegir varias.</p>
+            </div>
+          </Bloque>
 
-            {formData.recurrence.frequency === 'monthly' && (
-              <div className="form-group">
-                <label>Días del Mes *</label>
-                <div className="mt-2">
-                  <p className="text-sm text-gray-600 mb-2">Selecciona los días del mes (1-31):</p>
-                  <div className="grid grid-cols-5 gap-2 sm:grid-cols-8 md:grid-cols-10">
-                    {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
-                      <label key={day} className="flex items-center justify-center cursor-pointer p-2 border rounded hover:bg-gray-50">
-                        <input
-                          type="checkbox"
-                          checked={formData.recurrence.dayOfMonth?.includes(day) || false}
-                          onChange={(e) => {
-                            const dayOfMonth = formData.recurrence.dayOfMonth || [];
-                            if (e.target.checked) {
-                              setFormData(prev => ({
-                                ...prev,
-                                recurrence: {
-                                  ...prev.recurrence,
-                                  dayOfMonth: [...dayOfMonth, day].sort((a, b) => a - b)
-                                }
-                              }));
-                            } else {
-                              setFormData(prev => ({
-                                ...prev,
-                                recurrence: {
-                                  ...prev.recurrence,
-                                  dayOfMonth: dayOfMonth.filter(d => d !== day)
-                                }
-                              }));
-                            }
-                          }}
-                          className="mr-1 w-4 h-4 text-primary focus:ring-primary rounded"
-                        />
-                        <span className="text-sm">{day}</span>
-                      </label>
-                    ))}
+          <Bloque titulo="Cuándo">
+            <Segmentado opciones={TIPO_OPTIONS} valor={formData.tipo} onChange={(tipo) => set({ tipo })} etiqueta="Tipo de actividad" />
+            <div key={formData.tipo} className="mt-4 animate-fade-in">
+              {formData.tipo === 'unica' && (
+                <div className="grid gap-x-4 sm:grid-cols-2">
+                  <Field label="Día">
+                    <DatePicker value={formData.fecha} onChange={(fecha) => set({ fecha })} placeholder="dd/mm/aaaa" clearable />
+                  </Field>
+                  <Field label="Hora">
+                    <TimePicker value={formData.hora} onChange={(hora) => set({ hora })} />
+                  </Field>
+                </div>
+              )}
+
+              {formData.tipo === 'viaje' && (
+                <div className="grid gap-x-4 sm:grid-cols-2">
+                  <Field label="Sale el" required>
+                    <DatePicker value={formData.fecha} onChange={(fecha) => set({ fecha })} placeholder="dd/mm/aaaa" clearable />
+                  </Field>
+                  <Field label="A las">
+                    <TimePicker value={formData.hora} onChange={(hora) => set({ hora })} />
+                  </Field>
+                  <Field label="Vuelve el" required>
+                    <DatePicker value={formData.fechaFin} onChange={(fechaFin) => set({ fechaFin })} placeholder="dd/mm/aaaa" min={formData.fecha || undefined} clearable />
+                  </Field>
+                  <Field label="A las">
+                    <TimePicker value={formData.horaFin} onChange={(horaFin) => set({ horaFin })} />
+                  </Field>
+                </div>
+              )}
+
+              {formData.tipo === 'recurrente' && (
+                <div>
+                  <Segmentado
+                    opciones={FRECUENCIA_OPTIONS}
+                    valor={formData.recurrence.frequency === 'monthly' ? 'monthly' : 'weekly'}
+                    onChange={(frequency) =>
+                      setRec({
+                        frequency,
+                        daysOfWeek: frequency === 'weekly' ? formData.recurrence.daysOfWeek : [],
+                        dayOfMonth: frequency === 'monthly' ? formData.recurrence.dayOfMonth : '',
+                      })
+                    }
+                    etiqueta="Cada cuánto"
+                  />
+
+                  {formData.recurrence.frequency !== 'monthly' ? (
+                    <div className="mt-4">
+                      <p className="mb-1.5 text-sm font-medium text-ink">Qué días</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {DIAS_SEMANA.map((day) => (
+                          <DayToggle
+                            key={day.value}
+                            label={day.corto}
+                            title={day.label}
+                            checked={formData.recurrence.daysOfWeek?.includes(day.value) || false}
+                            onToggle={(next) => {
+                              const actuales = formData.recurrence.daysOfWeek || [];
+                              setRec({ daysOfWeek: next ? [...actuales, day.value].sort((x, y) => x - y) : actuales.filter((d) => d !== day.value) });
+                            }}
+                          />
+                        ))}
+                      </div>
+                      {formData.recurrence.daysOfWeek?.length === 0 && <p className="mt-1.5 text-sm text-danger-600">Elegí al menos un día</p>}
+                    </div>
+                  ) : (
+                    <div className="mt-4">
+                      <p className="mb-1.5 text-sm font-medium text-ink">Qué días del mes</p>
+                      <div className="grid max-w-md grid-cols-7 gap-1.5">
+                        {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                          <DayToggle
+                            key={day}
+                            label={day}
+                            title={`Día ${day}`}
+                            compact
+                            checked={formData.recurrence.dayOfMonth?.includes(day) || false}
+                            onToggle={(next) => {
+                              const actuales = Array.isArray(formData.recurrence.dayOfMonth) ? formData.recurrence.dayOfMonth : [];
+                              setRec({ dayOfMonth: next ? [...actuales, day].sort((x, y) => x - y) : actuales.filter((d) => d !== day) });
+                            }}
+                          />
+                        ))}
+                      </div>
+                      {(!formData.recurrence.dayOfMonth || formData.recurrence.dayOfMonth.length === 0) && (
+                        <p className="mt-1.5 text-sm text-danger-600">Elegí al menos un día del mes</p>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="mt-4 grid gap-x-4 sm:grid-cols-2">
+                    <Field label="Hora" required>
+                      <TimePicker value={formData.recurrence.hora || formData.hora} onChange={(hora) => setFormData((prev) => ({ ...prev, hora, recurrence: { ...prev.recurrence, hora } }))} />
+                    </Field>
+                    {formData.recurrence.frequency === 'daily' && (
+                      <Field label="Empieza el">
+                        <DatePicker value={formData.fecha} onChange={(fecha) => set({ fecha })} placeholder="dd/mm/aaaa" clearable />
+                      </Field>
+                    )}
+                    <Field label="Termina el (opcional)">
+                      <DatePicker value={formData.recurrence.endDate} onChange={(endDate) => setRec({ endDate })} placeholder="Sin fecha de fin" clearable />
+                    </Field>
+                    <Field label="Cantidad de encuentros (opcional)">
+                      <Input
+                        type="number"
+                        min="1"
+                        value={formData.recurrence.occurrences || ''}
+                        onChange={(e) => setRec({ occurrences: e.target.value ? Number(e.target.value) : null })}
+                        placeholder="Sin límite"
+                      />
+                    </Field>
                   </div>
                 </div>
-                {(!formData.recurrence.dayOfMonth || formData.recurrence.dayOfMonth.length === 0) && (
-                  <p className="text-sm text-red-500 mt-1">Selecciona al menos un día del mes</p>
+              )}
+
+              <Field label="Duración en minutos (opcional)">
+                <Input type="number" name="duracion" value={formData.duracion} onChange={handleChange} min="0" placeholder="Ej: 90" />
+              </Field>
+            </div>
+          </Bloque>
+
+          <Bloque titulo="Dónde">
+            <div className="grid gap-x-4 sm:grid-cols-2">
+              <Field label="Lugar">
+                <Input type="text" name="lugar" value={formData.lugar} onChange={handleChange} />
+              </Field>
+              <Field label="Link de Google Maps">
+                <Input type="url" name="ubicacionOnline" value={formData.ubicacionOnline} onChange={handleChange} placeholder="https://maps.google.com/..." />
+              </Field>
+            </div>
+          </Bloque>
+
+          <Bloque titulo="Lugares y precio">
+            <Field label="Cupo (opcional)">
+              <Input type="number" name="cupo" value={formData.cupo} onChange={handleChange} min="1" placeholder="Sin límite" className="sm:max-w-[12rem]" />
+            </Field>
+            <div className="mb-5">
+              <Switch name="esGratuita" label="Es gratis" description="Sin precio ni comprobante de pago" checked={formData.esGratuita} onChange={handleChange} />
+            </div>
+            {!formData.esGratuita && (
+              <div className="animate-fade-in">
+                <Field label="Precio">
+                  <div className="flex gap-2">
+                    <Input type="number" name="precio" value={formData.precio} onChange={handleChange} min="0" step="0.01" className="min-w-0 flex-1" />
+                    <Select
+                      name="moneda"
+                      options={MONEDA_OPTIONS}
+                      value={formData.moneda}
+                      onChange={(value) => handleChange({ target: { name: 'moneda', value, type: 'text' } })}
+                      className="w-40 shrink-0"
+                    />
+                  </div>
+                </Field>
+                {formData.tipo !== 'viaje' ? (
+                  <Field label="Instrucciones de pago">
+                    <p className="mb-2 text-sm text-ink-muted">Vienen de Ajustes. Podés cambiarlas para esta actividad.</p>
+                    <Textarea
+                      name="instruccionesPago"
+                      value={formData.instruccionesPago || ''}
+                      onChange={handleChange}
+                      rows={4}
+                      placeholder={defaultInstruccionesPago || 'Datos de transferencia (alias, CBU, titular...)'}
+                    />
+                  </Field>
+                ) : (
+                  <Alert tone="warning" title="Pago del viaje">
+                    No se cobra por transferencia ni se pide comprobante. Las instrucciones se coordinan por WhatsApp una vez confirmado el cupo.
+                  </Alert>
                 )}
               </div>
             )}
+          </Bloque>
 
-            {formData.recurrence.frequency === 'daily' && (
-              <div className="form-group">
-                <label>Fecha de Inicio</label>
-                <DatePicker
-                  selected={formData.fecha ? stringToLocalDate(formData.fecha) : null}
-                  onChange={(date) => {
-                    const dateString = date ? formatDateToString(date) : '';
-                    setFormData(prev => ({ ...prev, fecha: dateString }));
-                  }}
-                  locale="es"
-                  dateFormat="dd/MM/yyyy"
-                  placeholderText="dd/mm/yyyy"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all bg-white cursor-pointer"
-                  showPopperArrow={false}
+          <Bloque titulo="Inscripción y quién la ve">
+            <div className="mb-5 space-y-4">
+              <Switch name="requiereAprobacion" label="Requiere aprobación" description="Las inscripciones entran como pendientes" checked={formData.requiereAprobacion} onChange={handleChange} />
+              <Switch name="recordatoriosAutomaticos" label="Recordatorios automáticos" description="Avisos previos a la actividad" checked={formData.recordatoriosAutomaticos} onChange={handleChange} />
+            </div>
+            <p className="mb-1.5 text-sm font-medium text-ink">Quién la ve</p>
+            <Segmentado opciones={VISIBILIDAD_OPTIONS} valor={formData.visibilidad} onChange={(visibilidad) => set({ visibilidad })} etiqueta="Visibilidad" />
+            <p className="mt-1.5 text-xs text-ink-muted">
+              {formData.visibilidad === 'privada' ? 'Sólo quienes tienen las tags privadas que elijas.' : 'Todas las personas aprobadas.'}
+            </p>
+            {formData.visibilidad === 'privada' && (
+              <div className="mt-4 animate-fade-in">
+                {formData.tagsPrivados.length === 0 && (
+                  <Alert tone="warning" compact className="mb-3">
+                    Elegí al menos una tag privada para que la actividad sea visible a quien corresponda.
+                  </Alert>
+                )}
+                <TagAssigner
+                  label="Tags privadas (audiencia)"
+                  placeholder="Seleccionar tag privada"
+                  emptyMessage="No hay tags privadas disponibles"
+                  catalog={availablePrivateTags}
+                  assigned={formData.tagsPrivados}
+                  value={tagInputPrivate}
+                  onValueChange={setTagInputPrivate}
+                  onAdd={addPrivateTagFromSelect}
+                  onRemove={removePrivateTag}
+                  defaultColor={DEFAULT_PRIVATE_TAG_COLOR}
+                  emptyHint={
+                    <p className="mt-2 text-sm text-ink-muted">
+                      No hay tags privadas.{' '}
+                      <Button variant="link" size="sm" to="/admin/tags-privados" className="min-h-0 px-0 py-0">
+                        Crear en catálogo privado
+                      </Button>
+                    </p>
+                  }
                 />
               </div>
             )}
+            <div className="mt-5">
+              <Field label="Política de cancelación (opcional)">
+                <Textarea name="politicaCancelacion" value={formData.politicaCancelacion} onChange={handleChange} rows={3} placeholder="Hasta cuándo se puede cancelar y qué pasa con lo pagado" />
+              </Field>
+            </div>
+          </Bloque>
+        </div>
 
-            <div className="form-group">
-              <label>Fecha de Fin (opcional)</label>
-              <DatePicker
-                selected={formData.recurrence.endDate ? stringToLocalDate(formData.recurrence.endDate) : null}
-                onChange={(date) => {
-                  const dateString = date ? formatDateToString(date) : '';
-                  setFormData(prev => ({
-                    ...prev,
-                    recurrence: { ...prev.recurrence, endDate: dateString }
-                  }));
-                }}
-                dateFormat="dd/MM/yyyy"
-                placeholderText="dd/mm/yyyy"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all bg-white cursor-pointer"
-                showPopperArrow={false}
-                locale="es"
-                isClearable
+        {/* Así la ve la gente, mientras se escribe; y lo que hace falta para publicarla. */}
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+          <p className="text-xs font-semibold uppercase tracking-label text-ink-faint">Así se ve en la cartelera</p>
+          <VistaCartelera form={formData} catalogo={availableTags} />
+
+          <div className="space-y-3 rounded-[22px] border border-surface-border bg-surface p-4">
+            <Segmentado opciones={ESTADO_OPTIONS} valor={formData.estado} onChange={(estado) => set({ estado })} etiqueta="Estado" />
+            <p className="text-xs text-ink-muted">{formData.estado === 'publicada' ? 'La ven en la cartelera y se pueden anotar.' : 'Queda guardada, pero nadie la ve todavía.'}</p>
+            {seEstaPublicando && (
+              <Switch
+                name="notificarParticipantes"
+                label="Avisar a los participantes"
+                description="Les llega una notificación de que hay una actividad nueva. Sólo a quienes pueden verla."
+                checked={notificarParticipantes}
+                onChange={(e) => setNotificarParticipantes(e.target.checked)}
               />
-              <p className="text-sm text-gray-500 mt-1">Deja vacío si no tiene fecha de fin</p>
+            )}
+            <div className="grid gap-2 pt-1">
+              <Button type="submit" icon="check" loading={loading} fullWidth>
+                {textoGuardar}
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => navigate('/admin/activities')} fullWidth>
+                Cancelar
+              </Button>
             </div>
-
-            <div className="form-group">
-              <label>Número de Ocurrencias (opcional)</label>
-              <input
-                type="number"
-                min="1"
-                value={formData.recurrence.occurrences || ''}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  recurrence: { ...prev.recurrence, occurrences: e.target.value ? Number(e.target.value) : null }
-                }))}
-                className="bg-white"
-                placeholder="Ej: 10 (para 10 sesiones)"
-              />
-              <p className="text-sm text-gray-500 mt-1">Deja vacío si no hay límite de ocurrencias</p>
-            </div>
-          </>
-        )}
-
-        <div className="form-group">
-          <label>Lugar</label>
-          <input
-            type="text"
-            name="lugar"
-            value={formData.lugar}
-            onChange={handleChange}
-            className="bg-white"
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Link de Google Maps</label>
-          <input
-            type="url"
-            name="ubicacionOnline"
-            value={formData.ubicacionOnline}
-            onChange={handleChange}
-            placeholder="https://maps.google.com/..."
-            className="bg-white"
-          />
-          <p className="text-sm text-gray-500 mt-1">Ingresa el link de Google Maps de la ubicación del evento</p>
-        </div>
-
-        <div className="form-group">
-          <label className="flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              name="esGratuita"
-              checked={formData.esGratuita}
-              onChange={handleChange}
-              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-            />
-            <span>Actividad Gratuita</span>
-          </label>
-        </div>
-
-        {!formData.esGratuita && (
-          <div className="form-group">
-            <label>Precio</label>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                name="precio"
-                value={formData.precio}
-                onChange={handleChange}
-                min="0"
-                step="0.01"
-                className="flex-1 min-w-0 bg-white"
-              />
-              <select
-                name="moneda"
-                value={formData.moneda}
-                onChange={handleChange}
-                className="!w-48 shrink-0 bg-white cursor-pointer"
-              >
-                <option value="ARS">Pesos ($)</option>
-                <option value="USD">Dólares (US$)</option>
-              </select>
-            </div>
-          </div>
-        )}
-
-        {!formData.esGratuita && formData.tipo !== 'viaje' && (
-          <div className="form-group">
-            <label>Instrucciones de pago</label>
-            <p className="text-sm text-gray-500 mb-2">
-              Se completan automáticamente desde Ajustes. Podés editarlas para esta actividad.
-            </p>
-            <textarea
-              name="instruccionesPago"
-              value={formData.instruccionesPago || ''}
-              onChange={handleChange}
-              rows={5}
-              className="bg-white"
-              placeholder={defaultInstruccionesPago || 'Datos de transferencia (alias, CBU, titular...)'}
-            />
-          </div>
-        )}
-
-        {!formData.esGratuita && formData.tipo === 'viaje' && (
-          <div className="form-group">
-            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-gray-700">
-              El pago del viaje no se realiza por transferencia y no se pide comprobante.
-              Las instrucciones de pago se coordinan por WhatsApp una vez que se confirma el cupo.
-            </div>
-          </div>
-        )}
-
-        <div className="form-group">
-          <label>Cupo Máximo (opcional)</label>
-          <input
-            type="number"
-            name="cupo"
-            value={formData.cupo}
-            onChange={handleChange}
-            min="1"
-            className="bg-white"
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Duración (minutos)</label>
-          <input
-            type="number"
-            name="duracion"
-            value={formData.duracion}
-            onChange={handleChange}
-            min="0"
-            className="bg-white"
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              name="requiereAprobacion"
-              checked={formData.requiereAprobacion}
-              onChange={handleChange}
-              className="mr-2 w-4 h-4 text-primary focus:ring-primary rounded"
-            />
-            <span>Requiere Aprobación</span>
-          </label>
-        </div>
-
-        <div className="form-group">
-          <label>Estado</label>
-          <select
-            name="estado"
-            value={formData.estado}
-            onChange={handleChange}
-            className="bg-white"
-          >
-            <option value="borrador">Borrador</option>
-            <option value="publicada">Publicada</option>
-          </select>
-        </div>
-
-        <div className="form-group">
-          <label>Visibilidad</label>
-          <select
-            name="visibilidad"
-            value={formData.visibilidad}
-            onChange={handleChange}
-            className="bg-white"
-          >
-            <option value="publica">Pública (visible para todos los usuarios aprobados)</option>
-            <option value="privada">Privada (solo visible para usuarios con las tags requeridas)</option>
-          </select>
-          {formData.visibilidad === 'privada' && formData.tagsPrivados.length === 0 && (
-            <p className="text-sm text-yellow-600 mt-2">
-              ⚠️ Debes seleccionar al menos una tag privada para que la actividad privada sea visible a quien corresponda
-            </p>
-          )}
-        </div>
-
-        {formData.visibilidad === 'privada' && (
-          <div className="form-group">
-            <label>Tags privados (audiencia)</label>
-            <p className="text-sm text-gray-600 mb-2">
-              Catálogo privado: el servidor decide qué usuarios ven esta actividad según sus tags privados. No se envían al
-              participante.
-            </p>
-            <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-stretch">
-              <select
-                value={tagInputPrivate}
-                onChange={(e) => setTagInputPrivate(e.target.value)}
-                className="min-w-0 flex-1 bg-white"
-              >
-                <option value="">Seleccionar tag privada</option>
-                {availablePrivateTags.length > 0 ? (
-                  availablePrivateTags
-                    .filter(tag => {
-                      const tagNombreLower = tag.nombre.toLowerCase();
-                      return !formData.tagsPrivados.some(t => t.toLowerCase() === tagNombreLower);
-                    })
-                    .map(tag => (
-                      <option key={tag._id} value={tag.nombre}>
-                        {tag.nombre.charAt(0).toUpperCase() + tag.nombre.slice(1)}
-                        {tag.descripcion && ` - ${tag.descripcion}`}
-                      </option>
-                    ))
-                ) : (
-                  <option value="" disabled>No hay tags privadas disponibles</option>
-                )}
-              </select>
-              <button
-                type="button"
-                onClick={addPrivateTagFromSelect}
-                className="btn btn-secondary w-full shrink-0 justify-center sm:w-auto"
-                disabled={!tagInputPrivate}
-              >
-                Agregar
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {formData.tagsPrivados.map(tagNombre => {
-                const tag = availablePrivateTags.find(t => t.nombre === tagNombre);
-                const tagColor = tag?.color || '#F59E0B';
-                return (
-                  <span
-                    key={tagNombre}
-                    className="badge flex items-center gap-2 text-white"
-                    style={{ backgroundColor: tagColor }}
-                  >
-                    {tagNombre.charAt(0).toUpperCase() + tagNombre.slice(1)}
-                    <button
-                      type="button"
-                      onClick={() => removePrivateTag(tagNombre)}
-                      className="bg-transparent border-none text-white cursor-pointer hover:text-gray-200 font-bold"
-                    >
-                      ×
-                    </button>
-                  </span>
-                );
-              })}
-            </div>
-            {availablePrivateTags.length === 0 && (
-              <p className="text-sm text-gray-500 mt-2">
-                No hay tags privadas.{' '}
-                <a href="/admin/tags-privados" className="text-primary hover:underline">
-                  Crear en catálogo privado
-                </a>
+            {borrador.guardadoEn && JSON.stringify(formData) !== JSON.stringify(deEntrada.current) && (
+              <p className="flex items-center gap-1.5 text-xs text-ink-muted">
+                <Icon name="check" size="xs" className="text-success-700" />
+                Lo que cargás queda guardado en este navegador hasta que guardes.
               </p>
             )}
           </div>
-        )}
-
-        <div className="form-group">
-          <label>Política de Cancelación</label>
-          <textarea
-            name="politicaCancelacion"
-            value={formData.politicaCancelacion}
-            onChange={handleChange}
-            placeholder="Describe la política de cancelación..."
-            className="bg-white"
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              name="recordatoriosAutomaticos"
-              checked={formData.recordatoriosAutomaticos}
-              onChange={handleChange}
-              className="mr-2 w-4 h-4 text-primary focus:ring-primary rounded"
-            />
-            <span>Recordatorios Automáticos</span>
-          </label>
-        </div>
-
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={() => navigate('/admin/activities')}
-            className="btn btn-secondary w-full justify-center sm:w-auto"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            className="btn btn-primary w-full justify-center sm:w-auto sm:flex-1 sm:max-w-xs"
-            disabled={loading}
-          >
-            {loading ? 'Guardando...' : isEdit ? 'Actualizar' : 'Crear'} Actividad
-          </button>
-        </div>
+        </aside>
       </form>
     </PageContainer>
   );

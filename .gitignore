@@ -35,3 +35,8 @@ data/
 /playwright-report/
 /playwright/.cache/
 
+# Salida de build y config del CLI de la vista previa de la landing. Se
+# generan en esta misma carpeta de trabajo al deployar la revisión, así que
+# sin esto un `git add -A` las mete en un commit que no les corresponde.
+dist-landing/
+.vercel/

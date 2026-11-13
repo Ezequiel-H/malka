@@ -1,125 +1,112 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { Alert, Button, Field, Input } from '../../components/ui';
+import { DotsAccess, useDotsAccess } from '../../components/auth/dots_access';
 import logoMalka from '../../assets/logo-malka-positivo.png';
+import { SelectorIdioma, useIdioma } from '../../i18n';
 
-const Login = () => {
+const LoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const dots = useDotsAccess();
+  const { t } = useIdioma();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    const result = await login(email, password);
+    const result = await login(email, password, { beforeEnter: dots.succeed });
 
     if (!result.success) {
       setError(result.message);
+      setLoading(false);
+      dots.fail();
     }
     // Tras login exitoso, App renderiza PostAuthRedirect en /login
-
-    setLoading(false);
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#fdfaf5] via-light-bg to-[#ebe4d8]">
-      {/* Textura suave tipo “casa” / papel */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.35]"
-        aria-hidden
-        style={{
-          backgroundImage: `radial-gradient(circle at 20% 20%, rgba(104, 155, 120, 0.12) 0%, transparent 45%),
-            radial-gradient(circle at 80% 80%, rgba(104, 155, 120, 0.08) 0%, transparent 40%),
-            radial-gradient(circle at 50% 100%, rgba(235, 228, 216, 0.9) 0%, transparent 55%)`,
-        }}
-      />
-
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-12 sm:px-6">
-        <header className="mb-10 flex w-full max-w-lg flex-col items-center text-center">
-          <img
-            src={logoMalka}
-            alt="Malka"
-            className="mb-8 h-14 w-auto sm:h-16"
-          />
-          <h1 className="font-display text-[1.65rem] font-semibold leading-snug tracking-tight text-malka-ink sm:text-3xl md:text-[2.15rem]">
-            El punto de encuentro para tu identidad judía
-          </h1>
-        </header>
-
-        <div className="w-full max-w-md">
-          <div className="rounded-2xl border border-primary/15 bg-white/95 p-6 shadow-xl shadow-primary/5 backdrop-blur-sm sm:p-8">
-            <h2 className="mb-6 text-center font-display text-xl font-semibold text-primary sm:text-2xl">
-              Iniciar sesión
-            </h2>
-
-            {error && <div className="alert alert-error">{error}</div>}
-
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label htmlFor="login-email">Email</label>
-                <input
-                  id="login-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                  className="bg-[#fffcf7]"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="login-password">Contraseña</label>
-                <input
-                  id="login-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                  className="bg-[#fffcf7]"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="btn btn-primary w-full rounded-xl py-3 text-base shadow-md"
-                disabled={loading}
-              >
-                {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
-              </button>
-            </form>
-
-            <p className="mt-8 text-center text-sm text-gray-600">
-              ¿No tenés cuenta?{' '}
-              <Link
-                to="/register"
-                className="font-medium text-primary underline decoration-primary/30 underline-offset-2 transition-colors hover:text-primary/90 hover:decoration-primary/60"
-              >
-                Registrate aquí
-              </Link>
-            </p>
-          </div>
-
-          <p className="mt-10 text-center text-xs text-gray-500">
-            <a
-              href="https://casamalka.org/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary/80 underline-offset-2 transition-colors hover:text-primary hover:underline"
-            >
-              casamalka.org
-            </a>
-            {' · '}
-            Casa abierta para la comunidad
-          </p>
-        </div>
+    <>
+      {/* El logo es latino en todos los idiomas; el selector va enfrente. */}
+      <div className="flex items-center justify-between gap-4">
+        <img src={logoMalka} alt="Malka" className="h-12 w-auto sm:h-14" />
+        <SelectorIdioma />
       </div>
-    </div>
+      <header>
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+          {t('login.titulo')}
+        </h1>
+        <p className="mt-2 text-base text-ink-soft">{t('login.subtitulo')}</p>
+      </header>
+
+      <div>
+        {error && (
+          <Alert tone="danger" className="mb-5">
+            {error}
+          </Alert>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <Field label={t('login.email')} htmlFor="login-email">
+            <Input
+              type="email"
+              icon="mail"
+              dir="ltr"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+            />
+          </Field>
+
+          <Field label={t('login.contrasena')} htmlFor="login-password">
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+            />
+          </Field>
+
+          <Button type="submit" size="lg" fullWidth loading={loading}>
+            {loading ? t('login.entrando') : t('login.entrar')}
+          </Button>
+        </form>
+      </div>
+
+      <div className="flex flex-col gap-2 text-sm text-ink-muted">
+        <p>
+          {t('login.sinCuenta')}{' '}
+          <Button variant="link" size="sm" to="/register" className="px-0 py-0 min-h-0 align-baseline">
+            {t('login.registrate')}
+          </Button>
+        </p>
+        <p className="hidden text-xs sm:block">
+          <a
+            href="https://casamalka.org/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary-700 underline-offset-2 transition-control duration-fast hover:underline"
+          >
+            casamalka.org
+          </a>
+          {' · '}
+          {t('login.casaAbierta')}
+        </p>
+      </div>
+    </>
   );
 };
+
+const Login = () => (
+  <DotsAccess name="Malka" markSrc={logoMalka}>
+    <LoginForm />
+  </DotsAccess>
+);
 
 export default Login;

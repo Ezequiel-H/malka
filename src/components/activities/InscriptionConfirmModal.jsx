@@ -1,13 +1,17 @@
+import { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { formatUtcCalendarDateEsAR } from '../../utils/dateUtils';
 import { formatActivityPrice } from '../../utils/priceUtils';
-import Modal from '../layout/Modal';
+import { renderPlantilla, plantillaContext, buildWaLink } from '../../utils/whatsapp';
+import { Alert, Button, Field, FileInput, Modal } from '../ui';
+import { useIdioma } from '../../i18n/IdiomaContext';
 
 const LONG_DATE_OPTS = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
 
 const InfoRow = ({ label, children }) => (
   <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
-    <span className="shrink-0 font-semibold text-gray-700 sm:w-24">{label}</span>
-    <span className="min-w-0 break-words text-gray-800">{children}</span>
+    <span className="shrink-0 font-semibold text-ink-soft sm:w-24">{label}</span>
+    <span className="min-w-0 break-words text-ink">{children}</span>
   </div>
 );
 
@@ -23,127 +27,143 @@ const InscriptionConfirmModal = ({
   onAddToCalendar,
   onClose,
 }) => {
+  /* El archivo se refleja acá sólo para poder mostrarlo en el FileInput; la
+     página sigue siendo la dueña del valor que se envía. */
+  const [comprobante, setComprobante] = useState(null);
+  const { user } = useAuth();
+  const { t } = useIdioma();
+
   if (!activity || !selectedDate) return null;
 
   const esViaje = activity.tipo === 'viaje';
 
+  /* El número y la plantilla vienen de Ajustes (resueltos por el back en la
+     actividad); las variables se completan acá, que conocemos al usuario. */
+  const waViajeLink = buildWaLink(
+    activity.whatsappViaje?.numero,
+    renderPlantilla(
+      activity.whatsappViaje?.mensaje,
+      plantillaContext({ user, activity, fecha: selectedDate.fecha, hora: selectedDate.hora })
+    )
+  );
+
+  const handleComprobante = (file) => {
+    setComprobante(file);
+    onComprobanteChange(file);
+  };
+
   return (
-    <Modal onClose={onClose} title="Confirmar Inscripción" closeOnBackdrop={false} closeOnEsc={false}>
+    <Modal
+      open
+      onClose={onClose}
+      title={t('confirmar.titulo')}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            {t('comun.cancelar')}
+          </Button>
+          <Button icon="check" onClick={onConfirm}>
+            {t('confirmar.titulo')}
+          </Button>
+        </>
+      }
+    >
       <div className="space-y-4">
         <div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">{activity.titulo}</h3>
+          <h3 dir="auto" className="mb-2 text-xl font-semibold text-ink">{activity.titulo}</h3>
           {activity.descripcion && (
-            <p className="text-gray-600 mb-4 whitespace-pre-wrap">{activity.descripcion}</p>
+            <p dir="auto" className="mb-4 whitespace-pre-wrap text-ink-muted">{activity.descripcion}</p>
           )}
         </div>
 
-        <div className="space-y-3 rounded-lg bg-gray-50 p-4">
-          <InfoRow label={esViaje ? 'Inicio:' : 'Fecha:'}>
+        <div className="space-y-3 rounded-card border border-surface-border bg-surface p-4">
+          <InfoRow label={esViaje ? t('info.inicio') : t('info.fecha')}>
             {formatUtcCalendarDateEsAR(selectedDate.fecha, LONG_DATE_OPTS)}
             {esViaje && selectedDate.hora ? ` · ${selectedDate.hora}` : ''}
           </InfoRow>
 
           {esViaje && activity.fechaFin && (
-            <InfoRow label="Finaliza:">
+            <InfoRow label={t('info.finaliza')}>
               {formatUtcCalendarDateEsAR(activity.fechaFin, LONG_DATE_OPTS)}
               {activity.horaFin ? ` · ${activity.horaFin}` : ''}
             </InfoRow>
           )}
 
-          {selectedDate.hora && !esViaje && <InfoRow label="Hora:">{selectedDate.hora}</InfoRow>}
+          {selectedDate.hora && !esViaje && <InfoRow label={t('info.hora')}>{selectedDate.hora}</InfoRow>}
 
-          {activity.lugar && <InfoRow label="Lugar:">{activity.lugar}</InfoRow>}
+          {activity.lugar && <InfoRow label={t('info.lugar')}>{activity.lugar}</InfoRow>}
 
-          {activity.ubicacionOnline && (
-            <InfoRow label="Ubicación:">
-              <a
+          <InfoRow label={t('info.precio')}>{formatActivityPrice(activity)}</InfoRow>
+
+          {activity.duracion && <InfoRow label={t('info.duracion')}>{t('info.minutos', { minutos: activity.duracion })}</InfoRow>}
+
+          {/* Las acciones sobre la fecha y el lugar viven junto a los datos a
+              los que refieren, no sueltas al pie del modal. */}
+          <div className="flex flex-wrap gap-2 border-t border-surface-border pt-3">
+            {activity.ubicacionOnline && (
+              <Button
+                variant="secondary"
+                size="sm"
+                icon="location"
                 href={activity.ubicacionOnline}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 hover:underline"
+                title={t('cartelera.comoLlegoTitulo')}
               >
-                Ver en Google Maps
-              </a>
-            </InfoRow>
-          )}
-
-          <InfoRow label="Precio:">{formatActivityPrice(activity)}</InfoRow>
-
-          {activity.duracion && <InfoRow label="Duración:">{activity.duracion} minutos</InfoRow>}
+                {t('cartelera.comoLlego')}
+              </Button>
+            )}
+            <Button
+              variant="secondary"
+              size="sm"
+              icon="addToCalendar"
+              onClick={onAddToCalendar}
+              title={t('confirmar.agregarCalendario')}
+            >
+              {t('confirmar.agregarCalendario')}
+            </Button>
+          </div>
         </div>
 
         {!activity.esGratuita && !esViaje && (
-          <div className="space-y-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-            <h4 className="font-semibold text-gray-800">Instrucciones de pago</h4>
+          <Alert tone="warning" title={t('confirmar.instruccionesPago')}>
             {activity.instruccionesPagoResueltas ? (
-              <p className="text-gray-700 whitespace-pre-wrap">{activity.instruccionesPagoResueltas}</p>
+              <p dir="auto" className="whitespace-pre-wrap">{activity.instruccionesPagoResueltas}</p>
             ) : (
-              <p className="text-gray-600 text-sm">
-                Realizá la transferencia por el monto indicado y subí el comprobante.
-              </p>
+              <p>{t('confirmar.transferencia')}</p>
             )}
-            <div>
-              <label className="block font-semibold text-gray-700 mb-1">
-                Comprobante de transferencia *
-              </label>
-              <input
-                type="file"
+
+            <Field label={t('confirmar.comprobante')} className="mb-0 mt-3" required>
+              <FileInput
                 accept="image/*,application/pdf"
-                onChange={(e) => onComprobanteChange(e.target.files?.[0] || null)}
-                className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-primary file:text-white hover:file:opacity-90"
+                value={comprobante}
+                onChange={handleComprobante}
+                maxSize={5 * 1024 * 1024}
+                hint={t('confirmar.comprobanteAyuda')}
               />
-              <p className="text-xs text-gray-500 mt-1">Imagen o PDF, máximo 5MB</p>
-            </div>
-          </div>
+            </Field>
+          </Alert>
         )}
 
         {!activity.esGratuita && esViaje && (
-          <div className="space-y-2 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-            <h4 className="font-semibold text-gray-800">Pago del viaje</h4>
-            <p className="text-gray-700 text-sm">
-              No necesitás transferir ni subir comprobante ahora. Una vez confirmado tu cupo,
-              coordinamos el pago por WhatsApp.
-            </p>
-            <a
-              href="https://wa.me/5491134405730"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-secondary w-full justify-center sm:w-auto"
-            >
-              💬 Escribinos por WhatsApp
-            </a>
-          </div>
+          <Alert tone="warning" title={t('confirmar.pagoViaje')}>
+            {t('confirmar.pagoViajeTexto')}
+            {waViajeLink && (
+              <div className="mt-3">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon="whatsapp"
+                  href={waViajeLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {t('confirmar.escribinos')}
+                </Button>
+              </div>
+            )}
+          </Alert>
         )}
-
-        <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:flex-wrap">
-          <button
-            onClick={onConfirm}
-            className="btn btn-primary w-full justify-center min-w-0 sm:w-auto sm:min-w-[140px] sm:flex-1"
-          >
-            Confirmar Inscripción
-          </button>
-          {activity.ubicacionOnline && (
-            <a
-              href={activity.ubicacionOnline}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-secondary w-full justify-center text-center sm:w-auto sm:whitespace-nowrap"
-              title="Ver ubicación en Google Maps"
-            >
-              🗺️ ¿Cómo llego?
-            </a>
-          )}
-          <button
-            onClick={onAddToCalendar}
-            className="btn btn-secondary w-full justify-center sm:w-auto"
-            title="Agregar al calendario"
-          >
-            📅 Agregar al Calendario
-          </button>
-          <button onClick={onClose} className="btn btn-outline w-full justify-center sm:w-auto">
-            Cancelar
-          </button>
-        </div>
       </div>
     </Modal>
   );

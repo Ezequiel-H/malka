@@ -1,18 +1,78 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useToast } from '../../contexts/ToastContext';
 import { userPrivateTags } from '../../utils/tagFields';
 import { formatUtcCalendarDayAndTime } from '../../utils/dateUtils';
 import LoadingScreen from '../../components/layout/LoadingScreen';
 import PageContainer from '../../components/layout/PageContainer';
-import EmptyState from '../../components/common/EmptyState';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Field,
+  Input,
+  Select,
+  Spinner,
+  Table,
+  useConfirm,
+} from '../../components/ui';
 import InscriptionStatusTag from '../../components/activities/InscriptionStatusTag';
+import TagAssigner from '../../components/tags/TagAssigner';
+import { etiquetaResidencia, nombrePais } from '../../utils/paises';
+import ResumenPersona from '../../components/admin/ResumenPersona';
+import { Segmentado } from '../../components/admin/metricas/piezas';
 
+const VISTAS_FICHA = [
+  { valor: 'resumen', etiqueta: 'Cómo viene' },
+  { valor: 'datos', etiqueta: 'Datos' },
+];
+const ESTADO_OPTIONS = [
+  { value: 'pending', label: 'Pendiente' },
+  { value: 'approved', label: 'Aprobado' },
+  { value: 'rejected', label: 'Rechazado' },
+];
+/* Color de respaldo cuando la tag del catálogo no define el suyo. */
+const DEFAULT_PUBLIC_TAG_COLOR = '#689b78';
+const DEFAULT_PRIVATE_TAG_COLOR = '#835710';
+const INSCRIPTION_COLUMNS = [
+  {
+    key: 'evento',
+    header: 'Evento',
+    render: (i) => (
+      <span className="font-medium text-ink">
+        {i.activityId?.titulo || 'Actividad eliminada'}
+      </span>
+    ),
+  },
+  {
+    key: 'fecha',
+    header: 'Fecha y hora',
+    render: (i) => (
+      <span className="whitespace-nowrap tabular-nums text-ink-soft">
+        {formatUtcCalendarDayAndTime(i.fecha, i.hora || i.activityId?.hora)}
+      </span>
+    ),
+  },
+  {
+    key: 'estado',
+    header: 'Estado',
+    render: (i) => (
+      <span onClick={(e) => e.stopPropagation()}>
+        <InscriptionStatusTag estado={i.estado} />
+      </span>
+    ),
+  },
+];
 const UserDetail = () => {
+  const [params, setParams] = useSearchParams();
+  const vistaFicha = params.get('vista') === 'datos' ? 'datos' : 'resumen';
   const { id } = useParams();
   const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
+  const confirm = useConfirm();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -26,7 +86,6 @@ const UserDetail = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
-
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',
@@ -40,19 +99,16 @@ const UserDetail = () => {
     restriccionesAlimentarias: [],
     comoSeEntero: ''
   });
-
   useEffect(() => {
     fetchUser();
     fetchAvailableTags();
     fetchAvailablePrivateTags();
   }, [id]);
-
   useEffect(() => {
     if (user && user._id) {
       fetchUserInscriptions();
     }
   }, [user]);
-
   const fetchUser = async () => {
     try {
       setLoading(true);
@@ -87,7 +143,6 @@ const UserDetail = () => {
       setLoading(false);
     }
   };
-
   const fetchAvailableTags = async () => {
     try {
       const response = await axios.get('/tags?activa=true');
@@ -96,7 +151,6 @@ const UserDetail = () => {
       console.error('Error fetching tags:', error);
     }
   };
-
   const fetchAvailablePrivateTags = async () => {
     try {
       const response = await axios.get('/tags-privados?activa=true');
@@ -106,7 +160,6 @@ const UserDetail = () => {
       setAvailablePrivateTags([]);
     }
   };
-
   const fetchUserInscriptions = async () => {
     try {
       setLoadingInscriptions(true);
@@ -121,13 +174,11 @@ const UserDetail = () => {
       setLoadingInscriptions(false);
     }
   };
-
   const handleRowClick = (inscription) => {
     if (inscription.activityId?._id) {
       navigate(`/admin/activities/${inscription.activityId._id}/inscriptions`);
     }
   };
-
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     const next =
@@ -137,7 +188,6 @@ const UserDetail = () => {
       [name]: next
     }));
   };
-
   const handleAddTag = () => {
     if (tagInput) {
       const tagNombreLower = tagInput.toLowerCase();
@@ -153,14 +203,12 @@ const UserDetail = () => {
       }
     }
   };
-
   const handleRemoveTag = (tag) => {
     setFormData(prev => ({
       ...prev,
       tags: prev.tags.filter(t => t !== tag)
     }));
   };
-
   const handleAddPrivateTag = () => {
     if (!tagInputPrivados) return;
     const tagNombreLower = tagInputPrivados.toLowerCase();
@@ -173,18 +221,20 @@ const UserDetail = () => {
     }));
     setTagInputPrivados('');
   };
-
   const handleRemovePrivateTag = (tag) => {
     setFormData(prev => ({
       ...prev,
       tagsPrivados: prev.tagsPrivados.filter(t => t !== tag)
     }));
   };
-
   const handleApprove = async () => {
-    if (!window.confirm('¿Estás seguro de que deseas aprobar este usuario?')) {
-      return;
-    }
+    const ok = await confirm({
+      title: '¿Aprobar este usuario?',
+      description: 'Va a poder ingresar y anotarse en actividades.',
+      confirmLabel: 'Aprobar',
+      tone: 'primary',
+    });
+    if (!ok) return;
     try {
       await axios.put(`/users/${id}/approve`);
       showSuccess('Usuario aprobado exitosamente');
@@ -193,11 +243,13 @@ const UserDetail = () => {
       showError(error.response?.data?.message || 'Error al aprobar usuario');
     }
   };
-
   const handleReject = async () => {
-    if (!window.confirm('¿Estás seguro de que deseas rechazar este usuario?')) {
-      return;
-    }
+    const ok = await confirm({
+      title: '¿Rechazar este usuario?',
+      description: 'No va a poder ingresar al sistema. Podés revertirlo después.',
+      confirmLabel: 'Rechazar',
+    });
+    if (!ok) return;
     try {
       await axios.put(`/users/${id}/reject`);
       showSuccess('Usuario rechazado');
@@ -206,11 +258,14 @@ const UserDetail = () => {
       showError(error.response?.data?.message || 'Error al rechazar usuario');
     }
   };
-
   const handleSetPending = async () => {
-    if (!window.confirm('¿Estás seguro de que deseas poner este usuario como pendiente?')) {
-      return;
-    }
+    const ok = await confirm({
+      title: '¿Poner este usuario como pendiente?',
+      description: 'Vuelve a la cola de aprobación y pierde el acceso mientras tanto.',
+      confirmLabel: 'Poner pendiente',
+      tone: 'warning',
+    });
+    if (!ok) return;
     try {
       await axios.put(`/users/${id}`, {
         nombre: formData.nombre,
@@ -227,21 +282,31 @@ const UserDetail = () => {
       showError(error.response?.data?.message || 'Error al cambiar estado del usuario');
     }
   };
-
-  const handleEstadoChange = async (e) => {
-    const newEstado = e.target.value;
-    if (newEstado === formData.estado) return;
-
-    const confirmMessages = {
-      approved: '¿Estás seguro de que deseas aprobar este usuario?',
-      rejected: '¿Estás seguro de que deseas rechazar este usuario?',
-      pending: '¿Estás seguro de que deseas poner este usuario como pendiente?'
+  // Recibe el valor directo: el Select del DS es controlado por `value`, así
+  // que ya no hace falta revertir el DOM a mano cuando la request falla.
+  const handleEstadoChange = async (newEstado) => {
+    if (!newEstado || newEstado === formData.estado) return;
+    const confirms = {
+      approved: {
+        title: '¿Aprobar este usuario?',
+        description: 'Va a poder ingresar y anotarse en actividades.',
+        confirmLabel: 'Aprobar',
+        tone: 'primary',
+      },
+      rejected: {
+        title: '¿Rechazar este usuario?',
+        description: 'No va a poder ingresar al sistema. Podés revertirlo después.',
+        confirmLabel: 'Rechazar',
+      },
+      pending: {
+        title: '¿Poner este usuario como pendiente?',
+        description: 'Vuelve a la cola de aprobación y pierde el acceso mientras tanto.',
+        confirmLabel: 'Poner pendiente',
+        tone: 'warning',
+      },
     };
-
-    if (!window.confirm(confirmMessages[newEstado])) {
-      return;
-    }
-
+    const ok = await confirm(confirms[newEstado]);
+    if (!ok) return;
     try {
       if (newEstado === 'approved') {
         await axios.put(`/users/${id}/approve`);
@@ -264,11 +329,10 @@ const UserDetail = () => {
       fetchUser();
     } catch (error) {
       showError(error.response?.data?.message || 'Error al cambiar estado del usuario');
-      // Revertir el select al estado anterior
-      e.target.value = formData.estado;
+      // No hay que revertir nada: el Select se pinta desde formData.estado,
+      // que no cambió porque fetchUser() no llegó a correr.
     }
   };
-
   const handleChangePassword = async (e) => {
     e?.preventDefault?.();
     if (newPassword.length < 6) {
@@ -279,9 +343,13 @@ const UserDetail = () => {
       showError('Las contraseñas no coinciden');
       return;
     }
-    if (!window.confirm('¿Estás seguro de que deseas cambiar la contraseña de este usuario?')) {
-      return;
-    }
+    const ok = await confirm({
+      title: '¿Cambiar la contraseña de este usuario?',
+      description: 'La contraseña anterior deja de funcionar de inmediato.',
+      confirmLabel: 'Cambiar contraseña',
+      tone: 'warning',
+    });
+    if (!ok) return;
     setSavingPassword(true);
     try {
       await axios.put(`/users/${id}/password`, { password: newPassword });
@@ -298,12 +366,10 @@ const UserDetail = () => {
       setSavingPassword(false);
     }
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSaving(true);
-
     try {
       await axios.put(`/users/${id}`, {
         nombre: formData.nombre,
@@ -321,154 +387,159 @@ const UserDetail = () => {
       setSaving(false);
     }
   };
-
   if (loading) {
     return <LoadingScreen message="Cargando información del usuario..." />;
   }
-
   if (!user && !loading) {
     return (
       <PageContainer>
-          <div className="card">
+          <Card>
             {error ? (
               <>
-                <p className="text-red-600 font-semibold mb-2">Error al cargar el usuario</p>
-                <p className="text-gray-600 mb-4">{error}</p>
+                <p className="mb-2 font-semibold text-danger-600">Error al cargar el usuario</p>
+                <p className="mb-4 text-ink-muted">{error}</p>
               </>
             ) : (
-              <p className="text-red-600">Usuario no encontrado</p>
+              <p className="text-danger-600">Usuario no encontrado</p>
             )}
-            <button onClick={() => navigate('/admin/users')} className="btn btn-secondary mt-4">
-              Volver a Usuarios
-            </button>
-          </div>
+            <Button variant="secondary" icon="back" to="/admin/users" className="mt-4">
+              Volver a usuarios
+            </Button>
+          </Card>
       </PageContainer>
     );
   }
-
   return (
     <PageContainer
       title={`${user.nombre} ${user.apellido}`}
       actions={
-        <button
+        <Button
+          variant="secondary"
+          icon="back"
           onClick={() => navigate('/admin/users')}
-          className="btn btn-secondary w-full shrink-0 justify-center sm:w-auto"
+          className="w-full shrink-0 sm:w-auto"
         >
-          ← Volver
-        </button>
+          Volver
+        </Button>
       }
     >
-
         {error && (
-          <div className="alert alert-error mb-4">{error}</div>
+          <Alert tone="danger" className="mb-4">
+            {error}
+          </Alert>
         )}
-
-        <form onSubmit={handleSubmit} className="card">
+        {/* La ficha abre en cómo viene la persona (estado, números e
+            historial); los datos para editar quedan en la otra pestaña. */}
+        <Segmentado
+          opciones={VISTAS_FICHA}
+          valor={vistaFicha}
+          onChange={(v) => setParams((p) => {
+            const n = new URLSearchParams(p);
+            if (v === 'resumen') n.delete('vista');
+            else n.set('vista', v);
+            return n;
+          }, { replace: true })}
+          etiqueta="Qué ver de la persona"
+          className="mb-6"
+        />
+        {vistaFicha === 'resumen' ? (
+          <div key="resumen" className="animate-fade-in">
+            <ResumenPersona userId={user._id} />
+          </div>
+        ) : (
+        <Card as="form" onSubmit={handleSubmit} key="datos" className="animate-fade-in">
           {/* Información Básica */}
           <div className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Información Básica</h2>
+            <h2 className="mb-4 text-2xl font-semibold text-ink">Información Básica</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="form-group">
-                <label>Email</label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  disabled
-                  className="bg-gray-100 cursor-not-allowed"
-                />
-                <p className="text-sm text-gray-500 mt-1">El email no se puede modificar</p>
-              </div>
-
-              <div className="form-group">
-                <label>Estado</label>
-                <select
+              <Field label="Email" hint="El email no se puede modificar">
+                <Input type="email" icon="mail" value={formData.email} disabled />
+              </Field>
+              <Field label="Estado">
+                <Select
                   name="estado"
+                  options={ESTADO_OPTIONS}
                   value={formData.estado}
                   onChange={handleEstadoChange}
-                  className="bg-white"
-                >
-                  <option value="pending">Pendiente</option>
-                  <option value="approved">Aprobado</option>
-                  <option value="rejected">Rechazado</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Nombre *</label>
-                <input
+                />
+              </Field>
+              <Field label="Nombre" required>
+                <Input
                   type="text"
                   name="nombre"
                   value={formData.nombre}
                   onChange={handleChange}
                   required
-                  className="bg-white"
                 />
-              </div>
-
-              <div className="form-group">
-                <label>Apellido *</label>
-                <input
+              </Field>
+              <Field label="Apellido" required>
+                <Input
                   type="text"
                   name="apellido"
                   value={formData.apellido}
                   onChange={handleChange}
                   required
-                  className="bg-white"
                 />
-              </div>
-
-              <div className="form-group">
-                <label>DNI</label>
-                <input
-                  type="text"
-                  name="dni"
-                  value={formData.dni}
-                  onChange={handleChange}
-                  inputMode="numeric"
-                  autoComplete="off"
-                  minLength={7}
-                  maxLength={10}
-                  pattern="\d{7,10}"
-                  title="Entre 7 y 10 dígitos"
-                  className="bg-white"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Teléfono</label>
-                <input
+              </Field>
+              {/* El número va en el mismo campo; el formato depende del tipo
+                  de documento con el que se registró. */}
+              {user?.tipoDocumento === 'pasaporte' ? (
+                <Field label="Pasaporte" hint="Letras y números, sin espacios">
+                  <Input
+                    type="text"
+                    name="dni"
+                    value={formData.dni}
+                    onChange={handleChange}
+                    autoComplete="off"
+                    minLength={5}
+                    maxLength={20}
+                    pattern="[A-Za-z0-9]{5,20}"
+                    title="Entre 5 y 20 letras o números"
+                  />
+                </Field>
+              ) : (
+                <Field label="DNI" hint="Entre 7 y 10 dígitos, sin puntos">
+                  <Input
+                    type="text"
+                    name="dni"
+                    value={formData.dni}
+                    onChange={handleChange}
+                    inputMode="numeric"
+                    autoComplete="off"
+                    minLength={7}
+                    maxLength={10}
+                    pattern="\d{7,10}"
+                    title="Entre 7 y 10 dígitos"
+                  />
+                </Field>
+              )}
+              <Field label="Teléfono">
+                <Input
                   type="tel"
+                  icon="phone"
                   name="telefono"
                   value={formData.telefono}
                   onChange={handleChange}
-                  className="bg-white"
                 />
-              </div>
-
-              <div className="form-group">
-                <label>Rol</label>
-                <input
+              </Field>
+              <Field label="Rol" hint="El rol no se puede modificar desde aquí">
+                <Input
                   type="text"
                   value={formData.role === 'admin' ? 'Administrador' : 'Participante'}
                   disabled
-                  className="bg-gray-100 cursor-not-allowed"
                 />
-                <p className="text-sm text-gray-500 mt-1">El rol no se puede modificar desde aquí</p>
-              </div>
+              </Field>
             </div>
           </div>
-
           {/* Contraseña (admin) */}
           <div className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Contraseña</h2>
-            <p className="text-sm text-gray-600 mb-4">
+            <h2 className="mb-4 text-2xl font-semibold text-ink">Contraseña</h2>
+            <p className="mb-4 text-sm text-ink-muted">
               Establecé una nueva contraseña para este usuario. No podés ver la contraseña actual.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="form-group">
-                <label htmlFor="admin-new-password">Nueva contraseña</label>
-                <input
-                  id="admin-new-password"
+              <Field label="Nueva contraseña" htmlFor="admin-new-password" hint="Mínimo 6 caracteres">
+                <Input
                   type="password"
                   autoComplete="new-password"
                   value={newPassword}
@@ -479,14 +550,19 @@ const UserDetail = () => {
                       handleChangePassword(e);
                     }
                   }}
-                  className="bg-white"
                   minLength={6}
                 />
-              </div>
-              <div className="form-group">
-                <label htmlFor="admin-confirm-password">Confirmar contraseña</label>
-                <input
-                  id="admin-confirm-password"
+              </Field>
+              <Field
+                label="Confirmar contraseña"
+                htmlFor="admin-confirm-password"
+                error={
+                  confirmPassword && newPassword !== confirmPassword
+                    ? 'Las contraseñas no coinciden'
+                    : undefined
+                }
+              >
+                <Input
                   type="password"
                   autoComplete="new-password"
                   value={confirmPassword}
@@ -497,210 +573,134 @@ const UserDetail = () => {
                       handleChangePassword(e);
                     }
                   }}
-                  className="bg-white"
                   minLength={6}
                 />
-              </div>
+              </Field>
               <div className="md:col-span-2">
-                <button
+                <Button
                   type="button"
-                  className="btn btn-secondary"
+                  variant="secondary"
+                  icon="settings"
+                  loading={savingPassword}
                   disabled={savingPassword || !newPassword || !confirmPassword}
                   onClick={handleChangePassword}
                 >
                   {savingPassword ? 'Guardando…' : 'Actualizar contraseña'}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
-
           {/* Información del Onboarding */}
           <div className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Información del Onboarding</h2>
+            <h2 className="mb-4 text-2xl font-semibold text-ink">Información del Onboarding</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="form-group md:col-span-2">
-                <label>Restricciones Alimentarias</label>
+              <Field label="Restricciones alimentarias" className="md:col-span-2">
                 {formData.restriccionesAlimentarias && formData.restriccionesAlimentarias.length > 0 ? (
-                  <div className="flex flex-wrap gap-2 mt-2">
+                  <div className="flex flex-wrap gap-2">
                     {formData.restriccionesAlimentarias.map((restriccion, index) => (
-                      <span
-                        key={index}
-                        className="badge badge-secondary"
-                      >
+                      <Badge key={index} tone="neutral">
                         {restriccion}
-                      </span>
+                      </Badge>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 mt-2 italic">No tiene restricciones alimentarias</p>
+                  <p className="italic text-ink-faint">No tiene restricciones alimentarias</p>
                 )}
-              </div>
-
-              <div className="form-group md:col-span-2">
-                <label>¿Cómo se enteró de esta propuesta?</label>
+              </Field>
+              <Field label="Nacionalidad">
+                {user?.nacionalidad ? (
+                  <p className="text-ink">{nombrePais(user.nacionalidad)}</p>
+                ) : (
+                  <p className="italic text-ink-faint">No especificada</p>
+                )}
+              </Field>
+              <Field label="Dónde vive">
+                {user?.residencia ? (
+                  <p className="text-ink">
+                    {etiquetaResidencia(user.residencia)}
+                    {user.ciudad ? ` · ${user.ciudad}` : ''}
+                  </p>
+                ) : (
+                  <p className="italic text-ink-faint">No especificado</p>
+                )}
+              </Field>
+              <Field label="¿Cómo se enteró de esta propuesta?" className="md:col-span-2">
                 {formData.comoSeEntero ? (
-                  <p className="mt-2 text-gray-700 bg-gray-50 p-3 rounded border border-gray-200">
+                  <p className="rounded-control border border-surface-border bg-surface p-3 text-ink-soft">
                     {formData.comoSeEntero}
                   </p>
                 ) : (
-                  <p className="text-gray-500 mt-2 italic">No especificado</p>
+                  <p className="italic text-ink-faint">No especificado</p>
                 )}
-              </div>
+              </Field>
             </div>
           </div>
-
           {/* Tags públicos */}
           <div className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Tags públicos</h2>
-            <p className="text-sm text-gray-600 mb-4">
+            <h2 className="mb-4 text-2xl font-semibold text-ink">Tags públicos</h2>
+            <p className="mb-4 text-sm text-ink-muted">
               Intereses del participante (también puede editarlos en &quot;Mis intereses&quot;). Catálogo:{' '}
-              <a href="/admin/tags" className="text-primary hover:underline">tags públicos</a>.
+              <Link to="/admin/tags" className="font-medium text-primary hover:underline">tags públicos</Link>.
             </p>
-            <div className="form-group">
-              <label>Tags del usuario</label>
-              <div className="flex gap-3 mb-3">
-                <select
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  className="flex-1 bg-white"
-                >
-                  <option value="">Seleccionar tag</option>
-                  {availableTags.length > 0 ? (
-                    availableTags
-                      .filter(tag => {
-                        const tagNombreLower = tag.nombre.toLowerCase();
-                        return !formData.tags.some(t => t.toLowerCase() === tagNombreLower);
-                      })
-                      .map(tag => (
-                        <option key={tag._id} value={tag.nombre}>
-                          {tag.nombre.charAt(0).toUpperCase() + tag.nombre.slice(1)}
-                          {tag.descripcion && ` - ${tag.descripcion}`}
-                        </option>
-                      ))
-                  ) : (
-                    <option value="" disabled>No hay tags disponibles</option>
-                  )}
-                </select>
-                <button
-                  type="button"
-                  onClick={handleAddTag}
-                  className="btn btn-secondary"
-                  disabled={!tagInput}
-                >
-                  Agregar
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {formData.tags.map(tagNombre => {
-                  const tag = availableTags.find(t => t.nombre.toLowerCase() === tagNombre.toLowerCase());
-                  const tagColor = tag?.color || '#3B82F6';
-                  return (
-                    <span
-                      key={tagNombre}
-                      className="badge flex items-center gap-2 text-white"
-                      style={{ backgroundColor: tagColor }}
-                    >
-                      {tagNombre.charAt(0).toUpperCase() + tagNombre.slice(1)}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTag(tagNombre)}
-                        className="bg-transparent border-none text-white cursor-pointer hover:text-gray-200 font-bold"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  );
-                })}
-              </div>
-              {availableTags.length === 0 && (
-                <p className="text-sm text-gray-500 mt-2">
-                  No hay tags disponibles. <a href="/admin/tags" className="text-primary hover:underline">Crear tags</a>
+            <TagAssigner
+              label="Tags del usuario"
+              placeholder="Seleccionar tag"
+              emptyMessage="No hay tags disponibles"
+              catalog={availableTags}
+              assigned={formData.tags}
+              value={tagInput}
+              onValueChange={setTagInput}
+              onAdd={handleAddTag}
+              onRemove={handleRemoveTag}
+              defaultColor={DEFAULT_PUBLIC_TAG_COLOR}
+              emptyHint={
+                <p className="mt-2 text-sm text-ink-muted">
+                  No hay tags disponibles.{' '}
+                  <Button variant="link" size="sm" to="/admin/tags" className="min-h-0 px-0 py-0">
+                    Crear tags
+                  </Button>
                 </p>
-              )}
-            </div>
+              }
+            />
           </div>
-
           {/* Tags privados (admin) */}
           <div className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Tags privados</h2>
-            <p className="text-sm text-gray-600 mb-4">
+            <h2 className="mb-4 text-2xl font-semibold text-ink">Tags privados</h2>
+            <p className="mb-4 text-sm text-ink-muted">
               Solo administración: segmentan qué actividades privadas puede ver este usuario. No se muestran al
               participante. Gestioná el catálogo en{' '}
-              <a href="/admin/tags-privados" className="text-primary hover:underline">Tags privados</a>.
+              <Link to="/admin/tags-privados" className="font-medium text-primary hover:underline">Tags privados</Link>.
             </p>
-            <div className="form-group">
-              <label>Tags privados del usuario</label>
-              <div className="flex gap-3 mb-3">
-                <select
-                  value={tagInputPrivados}
-                  onChange={(e) => setTagInputPrivados(e.target.value)}
-                  className="flex-1 bg-white"
-                >
-                  <option value="">Seleccionar tag privada</option>
-                  {availablePrivateTags.length > 0 ? (
-                    availablePrivateTags
-                      .filter(tag => {
-                        const tagNombreLower = tag.nombre.toLowerCase();
-                        return !formData.tagsPrivados.some(t => t.toLowerCase() === tagNombreLower);
-                      })
-                      .map(tag => (
-                        <option key={tag._id} value={tag.nombre}>
-                          {tag.nombre.charAt(0).toUpperCase() + tag.nombre.slice(1)}
-                          {tag.descripcion && ` - ${tag.descripcion}`}
-                        </option>
-                      ))
-                  ) : (
-                    <option value="" disabled>No hay tags privadas disponibles</option>
-                  )}
-                </select>
-                <button
-                  type="button"
-                  onClick={handleAddPrivateTag}
-                  className="btn btn-secondary"
-                  disabled={!tagInputPrivados}
-                >
-                  Agregar
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {formData.tagsPrivados.map(tagNombre => {
-                  const tag = availablePrivateTags.find(
-                    t => t.nombre.toLowerCase() === tagNombre.toLowerCase()
-                  );
-                  const tagColor = tag?.color || '#92400E';
-                  return (
-                    <span
-                      key={tagNombre}
-                      className="badge flex items-center gap-2 text-white"
-                      style={{ backgroundColor: tagColor }}
-                    >
-                      {tagNombre.charAt(0).toUpperCase() + tagNombre.slice(1)}
-                      <button
-                        type="button"
-                        onClick={() => handleRemovePrivateTag(tagNombre)}
-                        className="bg-transparent border-none text-white cursor-pointer hover:text-gray-200 font-bold"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  );
-                })}
-              </div>
-              {availablePrivateTags.length === 0 && (
-                <p className="text-sm text-gray-500 mt-2">
+            <TagAssigner
+              label="Tags privados del usuario"
+              placeholder="Seleccionar tag privada"
+              emptyMessage="No hay tags privadas disponibles"
+              catalog={availablePrivateTags}
+              assigned={formData.tagsPrivados}
+              value={tagInputPrivados}
+              onValueChange={setTagInputPrivados}
+              onAdd={handleAddPrivateTag}
+              onRemove={handleRemovePrivateTag}
+              defaultColor={DEFAULT_PRIVATE_TAG_COLOR}
+              emptyHint={
+                <p className="mt-2 text-sm text-ink-muted">
                   No hay tags privadas.{' '}
-                  <a href="/admin/tags-privados" className="text-primary hover:underline">
+                  <Button
+                    variant="link"
+                    size="sm"
+                    to="/admin/tags-privados"
+                    className="min-h-0 px-0 py-0"
+                  >
                     Crear en catálogo privado
-                  </a>
+                  </Button>
                 </p>
-              )}
-            </div>
+              }
+            />
           </div>
-
           {/* Inscripciones Recientes */}
           <div className="mb-8">
-            <h2 className="text-2xl font-semibold mb-2 text-gray-800">Inscripciones Recientes</h2>
-            <p className="text-sm text-gray-600 mb-4 break-words">
+            <h2 className="mb-2 text-2xl font-semibold text-ink">Inscripciones Recientes</h2>
+            <p className="mb-4 break-words text-sm text-ink-muted">
               {[formData.nombre, formData.apellido].filter(Boolean).join(' ').trim() || '—'}
               {' · '}
               {formData.telefono || '—'}
@@ -708,77 +708,42 @@ const UserDetail = () => {
               {formData.email || '—'}
             </p>
             {loadingInscriptions ? (
-              <div className="text-center py-8">
-                <div className="spinner mx-auto"></div>
-                <p className="mt-4 text-gray-600">Cargando inscripciones...</p>
+              <div className="flex flex-col items-center py-8">
+                <Spinner size="lg" label="Cargando inscripciones" />
+                <p className="mt-4 text-ink-muted">Cargando inscripciones...</p>
               </div>
             ) : inscriptions.length === 0 ? (
-              <EmptyState message="Este usuario no tiene inscripciones." />
+              <EmptyState
+                icon="activity"
+                title="Sin inscripciones"
+                description="Este usuario todavía no se anotó en ninguna actividad."
+              />
             ) : (
-              <div className="card overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b-2 border-gray-300">
-                      <th className="p-3 text-left align-middle font-semibold text-gray-700 text-sm">Evento</th>
-                      <th className="p-3 text-left align-middle font-semibold text-gray-700 text-sm">Fecha y hora</th>
-                      <th className="p-3 text-left align-middle font-semibold text-gray-700 text-sm whitespace-nowrap">Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {inscriptions.map(inscription => (
-                      <tr 
-                        key={inscription._id} 
-                        className="border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
-                        onClick={() => handleRowClick(inscription)}
-                      >
-                        <td className="p-3 text-sm align-middle">
-                          <div className="font-medium text-gray-800">
-                            {inscription.activityId?.titulo || 'Actividad eliminada'}
-                          </div>
-                        </td>
-                        <td className="p-3 text-sm align-middle text-gray-700 tabular-nums whitespace-nowrap">
-                          {formatUtcCalendarDayAndTime(
-                            inscription.fecha,
-                            inscription.hora || inscription.activityId?.hora
-                          )}
-                        </td>
-                        <td className="p-3 text-sm align-middle" onClick={(e) => e.stopPropagation()}>
-                          <InscriptionStatusTag estado={inscription.estado} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {inscriptions.length >= 10 && (
-                  <div className="p-4 text-center text-sm text-gray-500">
-                    Mostrando las últimas 10 inscripciones
-                  </div>
-                )}
-              </div>
+              <Table
+                columns={INSCRIPTION_COLUMNS}
+                rows={inscriptions}
+                rowKey={(i) => i._id}
+                onRowClick={handleRowClick}
+              />
+            )}
+            {inscriptions.length >= 10 && (
+              <p className="mt-2 text-center text-sm text-ink-muted">
+                Mostrando las últimas 10 inscripciones
+              </p>
             )}
           </div>
-
           {/* Botones de Acción */}
           <div className="flex gap-4">
-            <button
-              type="submit"
-              className="btn btn-primary flex-1"
-              disabled={saving}
-            >
-              {saving ? 'Guardando...' : 'Guardar Cambios'}
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/admin/users')}
-              className="btn btn-secondary"
-            >
+            <Button type="submit" icon="check" loading={saving} className="flex-1">
+              {saving ? 'Guardando...' : 'Guardar cambios'}
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => navigate('/admin/users')}>
               Cancelar
-            </button>
+            </Button>
           </div>
-        </form>
+        </Card>
+        )}
     </PageContainer>
   );
 };
-
 export default UserDetail;
-

@@ -1,32 +1,24 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Route, Routes } from 'react-router-dom';
-import { render, screen, waitFor } from '@testing-library/react';
-import * as AuthContext from '../../contexts/AuthContext.jsx';
-import { AppTestShell } from '../../test/AppTestShell.jsx';
+import { describe, it, expect } from 'vitest';
+import { Route, Routes, useLocation } from 'react-router-dom';
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import MyInterests from './MyInterests.jsx';
 
+const Donde = () => {
+  const l = useLocation();
+  return <p>{`${l.pathname}${l.hash}`}</p>;
+};
+
 describe('MyInterests', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks();
-    vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
-      user: { _id: '1', tags: [], nombre: 'N', apellido: 'A' },
-      loading: false,
-      fetchUser: vi.fn().mockResolvedValue(null),
-      updateMyTags: vi.fn().mockResolvedValue({ success: true })
-    });
-  });
-
-  it('renders interests heading', async () => {
+  it('lleva a los intereses dentro del perfil', () => {
     render(
-      <AppTestShell initialEntries={['/interests']}>
+      <MemoryRouter initialEntries={['/my-interests']}>
         <Routes>
-          <Route path="/interests" element={<MyInterests />} />
+          <Route path="/my-interests" element={<MyInterests />} />
+          <Route path="/my-profile" element={<Donde />} />
         </Routes>
-      </AppTestShell>
+      </MemoryRouter>
     );
-
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /Mis intereses/i })).toBeInTheDocument();
-    });
+    expect(screen.getByText('/my-profile#intereses')).toBeInTheDocument();
   });
 });

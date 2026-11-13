@@ -1,401 +1,276 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useRef, useState } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
 import { DateTime } from 'luxon';
-import LoadingScreen from '../../components/layout/LoadingScreen';
 import PageContainer from '../../components/layout/PageContainer';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis
-} from 'recharts';
 import { useAuth } from '../../contexts/AuthContext';
-import {
-  defaultFourWeeksArgentinaRange,
-  isoWeekMondaySlotsArgentina,
-  mergeWeeklyCounts
-} from '../../utils/adminDashboardDates';
+import { useToast } from '../../contexts/ToastContext';
+import useCargaSuave from '../../hooks/useCargaSuave';
+import { Alert, Button, Icon, Skeleton, cn } from '../../components/ui';
+import { AR_TZ, BLOQUES } from '../../components/admin/panel/bloques';
+import { BarraBloque, BarraEdicion, Bandeja, OpcionesBloque } from '../../components/admin/panel/Edicion';
+import { DEFAULT_PUBLIC_TAG_COLOR, publicTagColor, publicTagIcon } from '../../utils/tagFields';
 
-const TOP_LIMIT = 10;
-const AR_TZ = 'America/Argentina/Buenos_Aires';
+const saludo = (hora) => (hora < 13 ? 'Buen día' : hora < 20 ? 'Buenas tardes' : 'Buenas noches');
 
+/* Una pieza que falla no tira el panel entero: queda vacía y lo demás sale. */
+const pedirTodo = async (signal) => {
+  const hoy = DateTime.now().setZone(AR_TZ);
+  const pedidos = {
+    inicio: axios.get('/admin/inicio', { signal }),
+    hoy: axios.get('/admin/hoy', { signal }),
+    // Doce meses: la barrita de cada número puede mostrar hasta un año.
+    metricas: axios.get('/admin/metrics', { params: { from: hoy.startOf('month').minus({ months: 11 }).toISODate(), to: hoy.toISODate() }, signal }),
+    actividades: axios.get('/admin/actividades-resumen', { signal }),
+    tags: axios.get('/tags', { signal }),
+  };
+  const claves = Object.keys(pedidos);
+  const respuestas = await Promise.allSettled(Object.values(pedidos));
+  if (signal.aborted) throw new DOMException('cancelado', 'AbortError');
+  return Object.fromEntries(claves.map((k, i) => [k, respuestas[i].status === 'fulfilled' ? respuestas[i].value.data : null]));
+};
+
+/* Si el panel guardado no llega, se dibuja el de siempre (sin poder armarlo). */
+const DE_RESPALDO = [
+  { id: 'pendientes', visible: true, ancho: 'entera', opciones: { mostrar: ['personas', 'inscripciones', 'comprobantes'] } },
+  { id: 'numeros', visible: true, ancho: 'entera', opciones: { cuales: ['vinieron', 'vuelven', 'veces', 'cubrio'], meses: 6 } },
+  { id: 'semana', visible: true, ancho: 'entera', opciones: { borradores: false } },
+  { id: 'proximo', visible: true, ancho: 'media', opciones: { criterio: 'mas_gente', dias: 7 } },
+  { id: 'cumples', visible: true, ancho: 'media', opciones: { semanaQueViene: true } },
+];
+
+const deSiempre = (catalogo) =>
+  catalogo.map((c) => ({ id: c.id, visible: c.visible, ancho: c.ancho, opciones: Object.fromEntries(Object.entries(c.opciones).map(([k, o]) => [k, o.defecto])) }));
+const tieneOpciones = (catalogo, id) => Object.keys(catalogo.find((c) => c.id === id)?.opciones ?? {}).length > 0;
+
+/**
+ * El panel del equipo, «Hoy en Malka». Cada persona lo arma a su gusto sobre
+ * la misma pantalla: «Armar mi panel» pone los bloques en modo edición
+ * (ordenar, ancho, opciones, ocultar y sumar), y el engranaje de cada bloque
+ * cambia sólo sus opciones. Lo elegido se guarda en el servidor.
+ */
 const AdminDashboard = () => {
-  const { user, loading: authLoading } = useAuth();
-  const [stats, setStats] = useState({
-    pendingUsers: 0,
-    publishedActivities: 0,
-    acceptedInscriptionsLast30Days: 0,
-    pendingInscriptions: 0,
-    firstInscriptionRepeat: {
-      cohortSize: 0,
-      withMoreThanOneInscription: 0,
-      minDaysSinceFirstInscription: 15,
-      rate: null
-    }
-  });
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
+  const [ahora] = useState(() => DateTime.now().setZone(AR_TZ).setLocale('es'));
+  const { datos, error, recargar } = useCargaSuave(pedirTodo, 'panel');
 
-  const [{ from, to }, setRange] = useState(() => defaultFourWeeksArgentinaRange());
-  const [chartLoading, setChartLoading] = useState(false);
-  const [chartError, setChartError] = useState(null);
-  const [weeklyGlobal, setWeeklyGlobal] = useState([]);
-  const [weeklyActivity, setWeeklyActivity] = useState([]);
-  const [topOccurrences, setTopOccurrences] = useState([]);
-  const [activities, setActivities] = useState([]);
-  const [selectedActivityId, setSelectedActivityId] = useState('');
-  const [showReturnInfo, setShowReturnInfo] = useState(false);
+  const [guardado, setGuardado] = useState(null); // lo último que devolvió el back al guardar
+  const [editando, setEditando] = useState(null); // null | 'todo' | id de un bloque
+  const [borrador, setBorrador] = useState(null);
+  const [guardando, setGuardando] = useState(false);
+  const [arrastrado, setArrastrado] = useState(null);
+  // También en un ref: el primer «dragover» llega antes de que React vuelva a dibujar.
+  const enLaMano = useRef(null);
+  const ultimoCambio = useRef(0);
+  const etiquetaArrastre = useRef(null);
 
-  const fetchStats = async () => {
+  const inicio = guardado ?? datos?.inicio;
+  const catalogo = inicio?.catalogo ?? null;
+  const bloques = borrador ?? inicio?.bloques ?? (datos ? DE_RESPALDO : []);
+
+  const tags = datos?.tags?.tags ?? [];
+  const tagDe = (a) => a.categorias?.[0];
+  const colorDe = (a) => (tagDe(a) ? publicTagColor(tags, tagDe(a)) : DEFAULT_PUBLIC_TAG_COLOR);
+  const iconoDe = (a) => (tagDe(a) && publicTagIcon(tags, tagDe(a))) || 'activity';
+
+  /* La frase de arriba: lo de hoy, en palabras. */
+  const actividades = (datos?.actividades?.actividades ?? []).filter((a) => a.estado === 'publicada');
+  const hoyIso = datos?.actividades?.semana?.hoy ?? ahora.toISODate();
+  const deHoy = actividades.flatMap((a) => (a.semana ?? []).filter((e) => e.fecha === hoyIso).map((e) => ({ ...e, titulo: a.titulo })));
+  const frase = deHoy.length ? `Hoy hay ${deHoy.map((e) => `${e.titulo}${e.hora ? ` a las ${e.hora}` : ''}`).join(' y ')}.` : 'Hoy no hay actividades en la agenda.';
+
+  /* ---- Edición ---- */
+  const empezar = (que) => {
+    setBorrador(inicio.bloques.map((b) => ({ ...b, opciones: { ...b.opciones } })));
+    setEditando(que);
+  };
+  const cancelar = () => {
+    setBorrador(null);
+    setEditando(null);
+  };
+  const guardar = async () => {
+    setGuardando(true);
     try {
-      const [usersRes, activitiesRes, acceptedRecentRes, pendingInscriptionsRes, repeatRes] =
-        await Promise.all([
-          axios.get('/users/pending'),
-          axios.get('/activities?estado=publicada'),
-          axios.get('/inscriptions/stats/accepted-last-30-days').catch(() => ({ data: { count: 0 } })),
-          axios.get('/inscriptions?estado=pendiente').catch(() => ({ data: { inscriptions: [], count: 0 } })),
-          axios
-            .get('/admin/first-inscription-repeat-stats')
-            .catch(() => ({
-              data: {
-                cohortSize: 0,
-                withMoreThanOneInscription: 0,
-                minDaysSinceFirstInscription: 15,
-                rate: null
-              }
-            }))
-        ]);
-
-      const fr = repeatRes.data || {};
-      setStats({
-        pendingUsers: usersRes.data.users?.length || 0,
-        publishedActivities: activitiesRes.data.count || 0,
-        acceptedInscriptionsLast30Days: acceptedRecentRes.data.count ?? 0,
-        pendingInscriptions: pendingInscriptionsRes.data.count || 0,
-        firstInscriptionRepeat: {
-          cohortSize: fr.cohortSize ?? 0,
-          withMoreThanOneInscription: fr.withMoreThanOneInscription ?? 0,
-          minDaysSinceFirstInscription: fr.minDaysSinceFirstInscription ?? 15,
-          rate: fr.rate ?? null
-        }
-      });
-    } catch (error) {
-      console.error('Error fetching stats:', error);
+      const res = await axios.put('/admin/inicio', { bloques: borrador });
+      setGuardado(res.data);
+      setBorrador(null);
+      setEditando(null);
+      showSuccess(res.data.personalizado ? 'Tu panel quedó guardado' : 'Volviste al panel de siempre');
+    } catch (e) {
+      showError(e.response?.data?.message || 'No se pudo guardar el panel');
     } finally {
-      setLoading(false);
+      setGuardando(false);
+    }
+  };
+  const cambiarBloque = (id, cambio) => setBorrador((bs) => bs.map((b) => (b.id === id ? { ...b, ...cambio } : b)));
+  const visibles = bloques.filter((b) => b.visible);
+  /* Mueve un bloque al lugar de otro (los ocultos quedan donde estaban). */
+  const moverA = (id, destino) =>
+    setBorrador((bs) => {
+      const desde = bs.findIndex((b) => b.id === id);
+      const hasta = bs.findIndex((b) => b.id === destino);
+      const sin = bs.filter((b) => b.id !== id);
+      const i = sin.findIndex((b) => b.id === destino);
+      sin.splice(desde < hasta ? i + 1 : i, 0, bs[desde]);
+      return sin;
+    });
+  const correr = (id, paso) => {
+    const i = visibles.findIndex((b) => b.id === id);
+    const otro = visibles[i + paso];
+    if (otro) moverA(id, otro.id);
+  };
+  const sumar = (id) =>
+    setBorrador((bs) => {
+      const b = bs.find((x) => x.id === id);
+      return [...bs.filter((x) => x.id !== id), { ...b, visible: true }];
+    });
+
+  /* Arrastrar: en la mano va una etiqueta con el nombre, no la foto del bloque. */
+  const alAgarrar = (e, id) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', id);
+    if (etiquetaArrastre.current) {
+      etiquetaArrastre.current.textContent = BLOQUES[id].nombre;
+      e.dataTransfer.setDragImage(etiquetaArrastre.current, 16, 16);
+    }
+    enLaMano.current = id;
+    setArrastrado(id);
+  };
+  /* Pasa al lugar del otro apenas el puntero cruza su mitad, con un freno de
+     150 ms para que no se intercambien ida y vuelta. */
+  const alPasar = (e, id) => {
+    e.preventDefault();
+    const agarrado = enLaMano.current;
+    if (!agarrado || agarrado === id || Date.now() - ultimoCambio.current < 150) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const avance = (e.clientY - r.top) / r.height + (e.clientX - r.left) / r.width;
+    const haciaAdelante = visibles.findIndex((b) => b.id === id) > visibles.findIndex((b) => b.id === agarrado);
+    if (haciaAdelante ? avance > 1 : avance < 1) {
+      ultimoCambio.current = Date.now();
+      moverA(agarrado, id);
     }
   };
 
-  const loadActivitiesOptions = useCallback(async () => {
-    try {
-      const res = await axios.get('/activities');
-      const list = (res.data.activities || []).filter((a) => a.estado !== 'eliminada');
-      const sorted = [...list].sort((a, b) =>
-        String(a.titulo || '').localeCompare(String(b.titulo || ''), 'es', { sensitivity: 'base' })
-      );
-      setActivities(sorted);
-      setSelectedActivityId((prev) =>
-        prev && !sorted.some((a) => String(a._id) === String(prev)) ? '' : prev
-      );
-    } catch (e) {
-      console.error('Error loading activities for dashboard:', e);
-    }
-  }, []);
-
-  const loadInscriptionCharts = useCallback(async () => {
-    setChartLoading(true);
-    setChartError(null);
-    try {
-      const params = { from, to, limit: TOP_LIMIT };
-      const requests = [axios.get('/admin/inscription-stats', { params })];
-      if (selectedActivityId) {
-        requests.push(
-          axios.get('/admin/inscription-stats', {
-            params: { ...params, activityId: selectedActivityId }
-          })
-        );
-      }
-      const results = await Promise.all(requests);
-      const globalData = results[0].data;
-      const slots = isoWeekMondaySlotsArgentina(from, to);
-      setWeeklyGlobal(mergeWeeklyCounts(slots, globalData.weeklyNewInscriptions));
-      setTopOccurrences(globalData.topOccurrencesAccepted || []);
-      if (selectedActivityId && results[1]) {
-        setWeeklyActivity(mergeWeeklyCounts(slots, results[1].data.weeklyNewInscriptions));
-      } else {
-        setWeeklyActivity([]);
-      }
-    } catch (e) {
-      console.error(e);
-      setChartError(e.response?.data?.message || 'No se pudieron cargar las estadísticas de inscripciones.');
-      setWeeklyGlobal([]);
-      setWeeklyActivity([]);
-      setTopOccurrences([]);
-    } finally {
-      setChartLoading(false);
-    }
-  }, [from, to, selectedActivityId]);
-
-  useEffect(() => {
-    if (!authLoading && user) {
-      fetchStats();
-    }
-  }, [authLoading, user]);
-
-  useEffect(() => {
-    if (!authLoading && user?.role === 'admin') {
-      loadActivitiesOptions();
-    }
-  }, [authLoading, user, loadActivitiesOptions]);
-
-  useEffect(() => {
-    if (!authLoading && user?.role === 'admin') {
-      loadInscriptionCharts();
-    }
-  }, [authLoading, user, loadInscriptionCharts]);
-
-  const handleRangeChange = (field, value) => {
-    setRange((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const chartCommon = useMemo(
-    () => ({
-      margin: { top: 8, right: 8, left: 0, bottom: 0 }
-    }),
-    []
-  );
-
-  const weeklyTooltipLabel = useCallback((_, payload) => {
-    const tick = payload?.[0]?.payload?.weekTick;
-    return tick ? `Semana desde ${tick}` : '';
-  }, []);
-
-  if (authLoading || loading) {
-    return <LoadingScreen />;
-  }
+  const armando = editando === 'todo';
 
   return (
-    <PageContainer title="Panel de Administración">
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
-          <div className="card text-center hover:shadow-xl transition-shadow flex flex-col">
-            <h2 className="text-4xl sm:text-5xl font-bold text-yellow-500 mb-3">{stats.pendingUsers}</h2>
-            <p className="text-lg font-bold text-gray-800 mb-4">Usuarios Pendientes</p>
-            <Link to="/admin/users/pending" className="btn btn-warning mt-auto">
-              Ver Pendientes
-            </Link>
+    <PageContainer>
+      <div className="space-y-8">
+        <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-sm font-medium text-ink-muted first-letter:uppercase">{ahora.toFormat("cccc d 'de' LLLL")}</p>
+            <h1 className="mt-1 font-grotesk text-[clamp(1.8rem,3vw,2.4rem)] font-semibold tracking-tight text-ink">
+              {saludo(ahora.hour)}
+              {user?.nombre ? `, ${user.nombre}` : ''}
+            </h1>
+            {datos?.actividades ? <p className="mt-1 animate-fade-in text-ink-soft">{frase}</p> : <Skeleton className="mt-2 h-5 w-80 max-w-full" />}
           </div>
-
-          <div className="card text-center hover:shadow-xl transition-shadow flex flex-col">
-            <h2 className="text-4xl sm:text-5xl font-bold text-primary mb-3">{stats.publishedActivities}</h2>
-            <p className="text-lg font-bold text-gray-800 mb-4">Actividades Publicadas</p>
-            <Link to="/admin/activities" className="btn btn-primary mt-auto">
-              Gestionar Actividades
-            </Link>
+          <div className="flex flex-wrap gap-2">
+            {catalogo && !editando && (
+              <Button variant="ghost" size="sm" icon="dashboard" onClick={() => empezar('todo')}>
+                Armar mi panel
+              </Button>
+            )}
+            <Button variant="secondary" size="sm" icon="users" to="/admin/historial">
+              Sumar visita
+            </Button>
+            <Button size="sm" icon="add" to="/admin/activities/new">
+              Nueva actividad
+            </Button>
           </div>
+        </header>
 
-          <div className="card text-center hover:shadow-xl transition-shadow flex flex-col">
-            <h2 className="text-4xl sm:text-5xl font-bold text-orange-500 mb-3">{stats.pendingInscriptions}</h2>
-            <p className="text-lg font-bold text-gray-800 mb-4">Inscripciones Pendientes</p>
-            <Link to="/admin/inscriptions?estado=pendiente" className="btn btn-warning mt-auto">
-              Gestionar Inscripciones
-            </Link>
-          </div>
+        {error && <Alert tone="danger">No se pudo cargar el panel. Probá recargar la página.</Alert>}
+        {datos && !datos.inicio && (
+          <Alert tone="warning">
+            No se pudo leer tu panel guardado: estás viendo el de siempre.{' '}
+            <button type="button" className="font-semibold underline" onClick={recargar}>
+              Reintentar
+            </button>
+          </Alert>
+        )}
 
-          <div className="card text-center hover:shadow-xl transition-shadow flex flex-col">
-            <h2 className="text-4xl sm:text-5xl font-bold text-green-600 mb-3">
-              {stats.acceptedInscriptionsLast30Days}
-            </h2>
-            <p className="text-lg font-bold text-gray-800 mb-4">Inscripciones aceptadas (últimos 30 días)</p>
-            <Link to="/admin/inscriptions?estado=aceptada" className="btn btn-success mt-auto">
-              Ver aceptadas
-            </Link>
-          </div>
+        {armando && <BarraEdicion arriba onDeSiempre={() => setBorrador(deSiempre(catalogo))} onCancelar={cancelar} onGuardar={guardar} guardando={guardando} />}
 
-          <div className="card text-center hover:shadow-xl transition-shadow flex flex-col">
-            <h2 className="text-3xl sm:text-4xl font-bold text-teal-600 mb-1 tabular-nums">
-              {stats.firstInscriptionRepeat.withMoreThanOneInscription}
-              <span className="text-2xl font-semibold text-gray-500"> / </span>
-              {stats.firstInscriptionRepeat.cohortSize}
-            </h2>
-            <p className="text-sm text-gray-600 mb-2 tabular-nums">
-              {stats.firstInscriptionRepeat.cohortSize > 0 && stats.firstInscriptionRepeat.rate != null
-                ? `${(stats.firstInscriptionRepeat.rate * 100).toFixed(1)} % con más de una inscripción`
-                : '—'}
-            </p>
-            <div className="mb-4 flex items-center justify-center gap-2">
-              <p className="text-lg font-bold text-gray-800">
-                Retorno tras primera inscripción ({stats.firstInscriptionRepeat.minDaysSinceFirstInscription}+ días)
-              </p>
-              <div className="relative">
-                <button
-                  type="button"
-                  className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-gray-300 text-gray-500 cursor-help"
-                  onClick={() => setShowReturnInfo((prev) => !prev)}
-                  aria-expanded={showReturnInfo}
-                  aria-label="Mostrar información sobre esta métrica"
-                >
-                  i
-                </button>
-                {showReturnInfo && (
-                  <div
-                    className="absolute right-0 z-20 mt-2 w-64 rounded-md border border-gray-200 bg-white p-3 text-left text-xs leading-relaxed text-gray-600 shadow-lg"
-                    role="tooltip"
-                  >
-                    Entre quienes se anotaron a un evento por primera vez hace al menos{' '}
-                    {stats.firstInscriptionRepeat.minDaysSinceFirstInscription} días, cuántos tienen más de un evento
-                    total. Cualquier estado de inscripción.
+        {/* Fuera de pantalla: lo que se ve en la mano al arrastrar. */}
+        <span ref={etiquetaArrastre} aria-hidden className="fixed -left-[9999px] top-0 rounded-pill bg-ink px-3 py-1.5 text-sm font-semibold text-surface" />
+
+        <div className="grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
+          {visibles.map((b, i) => {
+            const { Componente } = BLOQUES[b.id];
+            const solo = editando === b.id;
+            const conOpciones = catalogo && tieneOpciones(catalogo, b.id);
+            return (
+              <div
+                key={b.id}
+                draggable={armando}
+                onDragStart={armando ? (e) => alAgarrar(e, b.id) : undefined}
+                onDragOver={armando ? (e) => alPasar(e, b.id) : undefined}
+                onDragEnd={() => {
+                  enLaMano.current = null;
+                  setArrastrado(null);
+                }}
+                className={cn(
+                  'group relative flex flex-col transition-[opacity,box-shadow] duration-base',
+                  b.ancho === 'entera' && 'lg:col-span-2',
+                  armando && 'rounded-[24px] border-2 border-dashed border-primary-600/40 p-3',
+                  solo && 'rounded-[24px] ring-2 ring-primary-600/40 ring-offset-4 ring-offset-surface-page',
+                  arrastrado === b.id && 'opacity-40',
+                )}
+              >
+                {armando && (
+                  <BarraBloque
+                    bloque={b}
+                    primero={i === 0}
+                    ultimo={i === visibles.length - 1}
+                    onAncho={(ancho) => cambiarBloque(b.id, { ancho })}
+                    onSubir={() => correr(b.id, -1)}
+                    onBajar={() => correr(b.id, 1)}
+                    onOcultar={() => cambiarBloque(b.id, { visible: false })}
+                  />
+                )}
+                {(armando || solo) && conOpciones && (
+                  <div className="mb-3 animate-fade-in">
+                    <OpcionesBloque catalogo={catalogo.find((c) => c.id === b.id)} bloque={b} onChange={(opciones) => cambiarBloque(b.id, { opciones })} />
+                    {solo && (
+                      <div className="mt-2 flex justify-end gap-2">
+                        <Button size="sm" variant="secondary" onClick={cancelar}>
+                          Cancelar
+                        </Button>
+                        <Button size="sm" icon="check" onClick={guardar} loading={guardando}>
+                          Guardar
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
+                {/* Mientras se arma, lo de adentro queda quieto: un toque no navega. */}
+                <div inert={armando ? '' : undefined} className={cn('flex-1 [&>*]:h-full', armando && 'pointer-events-none select-none')}>
+                  <Componente datos={datos} opciones={b.opciones} ancho={b.ancho} colorDe={colorDe} iconoDe={iconoDe} />
+                </div>
+                {!editando && conOpciones && (
+                  <button
+                    type="button"
+                    onClick={() => empezar(b.id)}
+                    aria-label={`Opciones de «${BLOQUES[b.id].nombre}»`}
+                    title="Opciones de este bloque"
+                    className="absolute -top-2 end-2 z-10 flex h-8 w-8 items-center justify-center rounded-pill border border-surface-border bg-surface text-ink-soft opacity-0 shadow-card transition-opacity duration-base hover:text-ink focus-visible:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+                  >
+                    <Icon name="settings" size="sm" />
+                  </button>
+                )}
               </div>
-            </div>
-            <Link
-              to="/admin/inscriptions"
-              className="btn btn-outline btn-sm border-teal-600 text-teal-700 mt-auto"
-            >
-              Ver inscripciones
-            </Link>
-          </div>
+            );
+          })}
         </div>
 
-        <section className="card mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Inscripciones nuevas por semana</h2>
-
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-            <label className="flex min-w-0 flex-col gap-1 text-sm font-medium text-gray-700">
-              Desde
-              <input
-                type="date"
-                value={from}
-                onChange={(e) => handleRangeChange('from', e.target.value)}
-                className="rounded border border-gray-300 px-3 py-2 text-gray-800"
-              />
-            </label>
-            <label className="flex min-w-0 flex-col gap-1 text-sm font-medium text-gray-700">
-              Hasta
-              <input
-                type="date"
-                value={to}
-                onChange={(e) => handleRangeChange('to', e.target.value)}
-                className="rounded border border-gray-300 px-3 py-2 text-gray-800"
-              />
-            </label>
-          </div>
-
-          {chartError && (
-            <div className="alert alert-error mb-4" role="alert">
-              {chartError}
-            </div>
-          )}
-
-          {chartLoading ? (
-            <div className="flex h-64 items-center justify-center text-gray-600">Cargando estadísticas…</div>
-          ) : (
-            <div className="h-72 w-full min-w-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weeklyGlobal} {...chartCommon}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="weekTick" tick={{ fontSize: 11 }} interval={0} angle={-35} textAnchor="end" height={50} />
-                  <YAxis allowDecimals={false} width={36} />
-                  <Tooltip
-                    formatter={(value) => [value, 'Nuevas inscripciones']}
-                    labelFormatter={weeklyTooltipLabel}
-                  />
-                  <Bar dataKey="count" fill="#689b78" name="Nuevas" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </section>
-
-        <section className="card mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Por actividad</h2>
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
-            <label
-              htmlFor="admin-dashboard-activity"
-              className="flex min-w-0 flex-1 flex-col gap-1 text-sm font-medium text-gray-700"
-            >
-              Actividad
-              <select
-                id="admin-dashboard-activity"
-                value={selectedActivityId}
-                onChange={(e) => setSelectedActivityId(e.target.value)}
-                className="w-full min-w-0 rounded border border-gray-300 bg-white px-3 py-2 text-gray-800"
-              >
-                <option value="">— Elegí una actividad —</option>
-                {activities.map((a) => (
-                  <option key={a._id} value={a._id}>
-                    {a.titulo}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          {!selectedActivityId ? (
-            <p className="text-center text-gray-500 py-12">Elegí una actividad para ver el gráfico.</p>
-          ) : chartLoading ? (
-            <div className="flex h-64 items-center justify-center text-gray-600">Cargando…</div>
-          ) : (
-            <div className="h-72 w-full min-w-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weeklyActivity} {...chartCommon}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="weekTick" tick={{ fontSize: 11 }} interval={0} angle={-35} textAnchor="end" height={50} />
-                  <YAxis allowDecimals={false} width={36} />
-                  <Tooltip
-                    formatter={(value) => [value, 'Nuevas inscripciones']}
-                    labelFormatter={weeklyTooltipLabel}
-                  />
-                  <Bar dataKey="count" fill="#0d9488" name="Nuevas" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </section>
-
-        <section className="card mb-8 overflow-x-auto">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Top {TOP_LIMIT} ocurrencias (inscripciones aceptadas)</h2>
-          {chartLoading ? (
-            <p className="text-gray-600 py-8 text-center">Cargando…</p>
-          ) : topOccurrences.length === 0 ? (
-            <p className="text-gray-600 py-8 text-center">No hay datos en este período.</p>
-          ) : (
-            <table className="min-w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 text-gray-600">
-                  <th className="py-2 pr-4 font-semibold">Actividad</th>
-                  <th className="py-2 pr-4 font-semibold">Fecha de la clase</th>
-                  <th className="py-2 pr-4 font-semibold text-right">Aceptadas</th>
-                  <th className="py-2 font-semibold"> </th>
-                </tr>
-              </thead>
-              <tbody>
-                {topOccurrences.map((row) => (
-                  <tr key={`${row.activityId}-${row.occurrenceDate}`} className="border-b border-gray-100">
-                    <td className="py-2 pr-4 font-medium text-gray-900">{row.titulo || '—'}</td>
-                    <td className="py-2 pr-4 tabular-nums text-gray-700">
-                      {DateTime.fromFormat(String(row.occurrenceDate), 'yyyy-LL-dd', { zone: AR_TZ })
-                        .setLocale('es-AR')
-                        .toLocaleString(DateTime.DATE_MED)}
-                    </td>
-                    <td className="py-2 pr-4 text-right tabular-nums">{row.count}</td>
-                    <td className="py-2">
-                      <Link
-                        to={`/admin/activities/${row.activityId}/inscriptions?fecha=${encodeURIComponent(row.occurrenceDate)}`}
-                        className="text-primary hover:underline font-medium"
-                      >
-                        Inscripciones
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </section>
+        {armando && (
+          <>
+            <Bandeja ocultos={bloques.filter((b) => !b.visible)} onSumar={sumar} />
+            <BarraEdicion onCancelar={cancelar} onGuardar={guardar} guardando={guardando} />
+          </>
+        )}
+      </div>
     </PageContainer>
   );
 };

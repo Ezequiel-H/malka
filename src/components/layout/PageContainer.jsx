@@ -11,32 +11,47 @@ const MAX_WIDTHS = {
 };
 
 /**
- * Layout estándar de página: fondo, márgenes verticales, padding horizontal,
- * ancho máximo centrado y (opcionalmente) el título tipografiado.
+ * Layout estándar de página.
  *
- * - `title`: si se pasa, renderiza el <h1> con la tipografía estándar.
+ * El título es una barra compacta —tinta, tamaño contenido, acciones a la
+ * derecha en la misma fila— y no un cartel: la sección ya la anuncia el ítem
+ * activo del sidebar, así que el h1 confirma dónde estás sin gritarlo. En
+ * desktop la barra queda pegajosa al scrollear, para que las acciones de la
+ * pantalla no se pierdan al bajar.
+ *
+ * - `title`: si se pasa, renderiza la barra con el <h1>.
+ * - `back`: botón/vínculo de vuelta, a la izquierda del título.
  * - `actions`: contenido alineado a la derecha del título (botones, etc.).
  * - `maxWidth`: ancho máximo del contenedor interno (por defecto '7xl').
  * - `className`: clases extra para el contenedor interno.
  */
-const PageContainer = ({ title, actions, maxWidth = '7xl', className = '', children }) => {
+const PageContainer = ({ title, back, actions, maxWidth = '7xl', className = '', children }) => {
   const maxWidthClass = MAX_WIDTHS[maxWidth] || MAX_WIDTHS['7xl'];
 
   return (
-    <div className="min-h-screen bg-light-bg py-8 sm:py-12 px-4 sm:px-6">
-      <div className={`${maxWidthClass} mx-auto min-w-0 ${className}`.trim()}>
-        {title != null && (
-          actions ? (
-            <div className="mb-6 sm:mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <h1 className="min-w-0 text-2xl sm:text-3xl md:text-4xl font-bold text-primary">{title}</h1>
-              {actions}
+    <div className="min-h-screen bg-surface-page pb-8 sm:pb-12">
+      {title != null && (
+        <header className="border-b border-surface-border/70 bg-surface-page/85 backdrop-blur-md lg:sticky lg:top-0 lg:z-30">
+          {/* La barra usa siempre el ancho completo aunque el contenido sea
+              angosto (Ajustes, perfiles): así el título queda en la misma X
+              en todas las pantallas y el ojo no lo busca. */}
+          <div className="mx-auto flex min-w-0 max-w-7xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div className="flex min-w-0 items-center gap-3">
+              {back}
+              <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-ink">
+                {title}
+              </h1>
             </div>
-          ) : (
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8 text-primary">
-              {title}
-            </h1>
-          )
-        )}
+            {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
+          </div>
+        </header>
+      )}
+
+      <div
+        className={`${maxWidthClass} mx-auto min-w-0 px-4 sm:px-6 ${
+          title != null ? 'pt-6' : 'pt-8 sm:pt-12'
+        } ${className}`.trim()}
+      >
         {children}
       </div>
     </div>

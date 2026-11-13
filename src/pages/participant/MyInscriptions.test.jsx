@@ -15,7 +15,7 @@ describe('MyInscriptions', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /Mis Inscripciones/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Mis cosas' })).toBeInTheDocument();
     });
   });
 });

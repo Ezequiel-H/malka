@@ -1,205 +1,242 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
-import {
-  formatLocalDateToString,
-  formatUtcCalendarDateToString,
-  formatUtcCalendarDayAndTime,
-} from '../../utils/dateUtils';
-import { getPagoEstadoLabel, getPagoEstadoBadgeClass, putComprobante } from '../../utils/paymentUtils';
-import LoadingScreen from '../../components/layout/LoadingScreen';
+import useCargaSuave from '../../hooks/useCargaSuave';
+import { getPagoEstadoLabel, getPagoEstadoTone, putComprobante } from '../../utils/paymentUtils';
+import { activityPublicTags, publicTagColor, DEFAULT_PUBLIC_TAG_COLOR } from '../../utils/tagFields';
+import { diasHasta, fechaEn, hoyIso } from '../../utils/participante';
+import { formatUtcCalendarDateToString } from '../../utils/dateUtils';
 import PageContainer from '../../components/layout/PageContainer';
-import EmptyState from '../../components/common/EmptyState';
-import InscriptionStatusTag from '../../components/activities/InscriptionStatusTag';
+import { Badge, Button, EmptyState, FileInput, Icon, Skeleton, cn, useConfirm } from '../../components/ui';
+import { useIdioma } from '../../i18n';
 
+const TONOS = {
+  aceptada: 'bg-success-50 text-success-700',
+  pendiente: 'bg-warning-50 text-warning-700',
+  en_espera: 'bg-info-50 text-info-700',
+};
+
+const pedir = (signal) =>
+  Promise.all([
+    axios.get('/inscriptions/my', { signal }).then((r) => r.data.inscriptions ?? []),
+    axios.get('/me/resumen', { signal }).then((r) => r.data).catch(() => null),
+    axios.get('/tags', { signal }).then((r) => r.data.tags ?? []).catch(() => []),
+  ]).then(([inscripciones, resumen, tags]) => ({ inscripciones, resumen, tags }));
+
+/**
+ * «Mis cosas»: cuántas veces vino este año y lo que viene, como una línea de
+ * tiempo con su estado. Lo que ya pasó no se lista (sólo cuenta en el número).
+ */
 const MyInscriptions = () => {
   const { showSuccess, showError } = useToast();
-  const [inscriptions, setInscriptions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('');
-  const [reuploadingId, setReuploadingId] = useState(null);
-  const [reuploadFile, setReuploadFile] = useState(null);
+  const { t, idioma, locale } = useIdioma();
+  const confirm = useConfirm();
+  const { datos, cargando, recargar } = useCargaSuave(pedir, 'mis-cosas');
+  const [subiendoId, setSubiendoId] = useState(null);
+  const [archivo, setArchivo] = useState(null);
 
-  useEffect(() => {
-    fetchInscriptions();
-  }, [filter]);
+  const hoy = hoyIso();
+  const conDia = (datos?.inscripciones ?? [])
+    .filter((i) => i.fecha)
+    .map((i) => ({ ...i, dia: formatUtcCalendarDateToString(i.fecha) }))
+    .filter((i) => i.dia >= hoy)
+    .sort((a, b) => a.dia.localeCompare(b.dia));
+  const proximas = conDia.filter((i) => i.estado !== 'cancelada');
+  const canceladas = conDia.filter((i) => i.estado === 'cancelada' && i.activityId);
+  const tags = datos?.tags ?? [];
+  const colorDe = (a) => {
+    const tag = a && activityPublicTags(a)[0];
+    return tag ? publicTagColor(tags, tag) : DEFAULT_PUBLIC_TAG_COLOR;
+  };
+  const cuando = (dia) => {
+    const n = diasHasta(dia, hoy);
+    return n === 0 ? t('inicio.hoy') : n === 1 ? t('inicio.maniana') : n < 7 ? t('inicio.enDias', { dias: n }) : null;
+  };
 
-  const fetchInscriptions = async () => {
+  const cancelar = async (inscription) => {
+    const titulo = inscription.activityId?.titulo;
+    const ok = await confirm({
+      title: titulo ? t('misInscripciones.cancelarTitulo', { titulo }) : t('misInscripciones.cancelarEsta'),
+      description: t('misInscripciones.cancelarTexto'),
+      confirmLabel: t('misInscripciones.cancelarInscripcion'),
+      cancelLabel: t('comun.volver'),
+    });
+    if (!ok) return;
     try {
-      setLoading(true);
-      const params = filter ? `?estado=${filter}` : '';
-      const response = await axios.get(`/inscriptions/my${params}`);
-      
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      yesterday.setHours(0, 0, 0, 0);
-      
-      const yesterdayStr = formatLocalDateToString(yesterday);
-
-      const filteredInscriptions = response.data.inscriptions.filter((inscription) => {
-        if (!inscription.fecha) return false;
-        const dayStr = formatUtcCalendarDateToString(inscription.fecha);
-        if (!dayStr) return false;
-        return dayStr >= yesterdayStr;
-      });
-      
-      setInscriptions(filteredInscriptions);
+      await axios.put(`/inscriptions/${inscription._id}/cancel`);
+      showSuccess(t('misInscripciones.cancelada'));
+      recargar();
     } catch (error) {
-      console.error('Error fetching inscriptions:', error);
-    } finally {
-      setLoading(false);
+      showError(error.response?.data?.message || t('misInscripciones.errorCancelar'));
     }
   };
 
-  const handleCancel = async (inscriptionId) => {
-    if (!window.confirm('¿Estás seguro de que deseas cancelar esta inscripción?')) {
-      return;
-    }
-
-    try {
-      await axios.put(`/inscriptions/${inscriptionId}/cancel`);
-      showSuccess('Inscripción cancelada exitosamente');
-      fetchInscriptions();
-    } catch (error) {
-      showError(error.response?.data?.message || 'Error al cancelar inscripción');
-    }
-  };
-
-  const handleReupload = async (inscriptionId) => {
-    if (!reuploadFile) {
-      showError('Seleccioná un comprobante para subir');
+  const subir = async (inscriptionId) => {
+    if (!archivo) {
+      showError(t('misInscripciones.elegiComprobante'));
       return;
     }
     try {
-      const response = await putComprobante(axios, inscriptionId, reuploadFile);
-      showSuccess(response.data.message || 'Comprobante actualizado');
-      setReuploadingId(null);
-      setReuploadFile(null);
-      fetchInscriptions();
+      const response = await putComprobante(axios, inscriptionId, archivo);
+      showSuccess((idioma === 'es' && response.data.message) || t('misInscripciones.comprobanteOk'));
+      setSubiendoId(null);
+      setArchivo(null);
+      recargar();
     } catch (error) {
-      showError(error.response?.data?.message || 'Error al subir comprobante');
+      showError(error.response?.data?.message || t('misInscripciones.errorComprobante'));
     }
   };
 
-  if (loading) {
-    return <LoadingScreen message="Cargando inscripciones..." />;
-  }
+  const veces = datos?.resumen?.veces;
 
   return (
-    <PageContainer title="Mis Inscripciones">
+    <PageContainer title={t('misCosas.titulo')} maxWidth="3xl">
+      <div className="space-y-8">
+        {/* Cuánto viene, para que se vea parte. Sólo el número. */}
+        <section className="flex items-center gap-4 rounded-[22px] border border-surface-border bg-surface p-5">
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-pill bg-primary-600/[0.12] text-primary-800">
+            <Icon name="heart" />
+          </span>
+          {datos ? (
+            <span className="animate-fade-in">
+              <span className="block font-grotesk text-3xl font-semibold tabular-nums text-ink">
+                {veces ?? '—'} <span className="text-base font-medium text-ink-muted">{t(veces === 1 ? 'misCosas.vez' : 'misCosas.veces')}</span>
+              </span>
+              <span className="text-sm text-ink-muted">{t('misCosas.vinisteAnio', { anio: datos.resumen?.anio ?? new Date().getFullYear() })}</span>
+            </span>
+          ) : (
+            <Skeleton className="h-12 w-40" />
+          )}
+        </section>
 
-        <div className="card mb-8">
-          <div className="form-group">
-            <label>Filtrar por estado</label>
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="bg-white max-w-xs"
-            >
-              <option value="">Todos</option>
-              <option value="aceptada">Confirmadas</option>
-              <option value="pendiente">Pendientes</option>
-              <option value="cancelada">Canceladas</option>
-              <option value="en_espera">En lista de espera</option>
-            </select>
-          </div>
-        </div>
-
-        {inscriptions.length === 0 ? (
-          <EmptyState message="No tienes inscripciones registradas." />
-        ) : (
-          <div className="card divide-y divide-gray-200 p-0 overflow-hidden">
-            {inscriptions.map(inscription => {
-              const activity = inscription.activityId;
-              const horaEv = inscription.hora || activity?.hora || '';
-              const hasPago = !!inscription.pago?.comprobante?.url;
-              return (
-                <div
-                  key={inscription._id}
-                  className="px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4 hover:bg-gray-50/80"
-                >
-                  <div className="min-w-0 flex-1 flex flex-col gap-2">
-                    <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-6">
-                      <div className="font-semibold text-gray-900 truncate text-base sm:max-w-[42%] sm:shrink-0 sm:pr-2">
-                        {activity?.titulo || 'Actividad eliminada'}
-                      </div>
-                      <div className="text-gray-800 tabular-nums text-base font-medium sm:text-lg sm:flex-1 sm:min-w-0">
-                        {formatUtcCalendarDayAndTime(inscription.fecha, horaEv)}
-                      </div>
-                    </div>
-                    {hasPago && (
-                      <div className="text-sm text-gray-600 space-y-1">
-                        <span className={`badge ${getPagoEstadoBadgeClass(inscription.pago.estadoPago)}`}>
-                          {getPagoEstadoLabel(inscription.pago.estadoPago)}
+        <section aria-labelledby="proximas">
+          <h2 id="proximas" className="mb-3 font-grotesk text-lg font-semibold text-ink">
+            {t('misCosas.proximas')}
+          </h2>
+          {cargando || !datos ? (
+            <Skeleton className="h-40 rounded-[18px]" />
+          ) : proximas.length === 0 ? (
+            <div className="rounded-[18px] border border-surface-border bg-surface">
+              <EmptyState
+                icon="activity"
+                title={t('misInscripciones.vacioTitulo')}
+                description={t('misInscripciones.vacioTexto')}
+                action={
+                  <Button to="/activities" icon="activity" size="sm">
+                    {t('misInscripciones.verActividades')}
+                  </Button>
+                }
+              />
+            </div>
+          ) : (
+            <ol className="relative animate-fade-in space-y-3 ps-6 before:absolute before:bottom-3 before:start-[7px] before:top-3 before:w-px before:bg-surface-border">
+              {proximas.map((i) => {
+                const a = i.activityId;
+                const hora = i.hora || a?.hora || '';
+                const pago = i.pago?.comprobante?.url ? i.pago.estadoPago : null;
+                const pronto = cuando(i.dia);
+                return (
+                  <li key={i._id} className="relative">
+                    <span className="absolute -start-6 top-5 h-3.5 w-3.5 rounded-pill ring-4 ring-surface-page" style={{ background: colorDe(a) }} aria-hidden />
+                    <div className="rounded-[18px] border border-surface-border bg-surface p-4">
+                      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+                        <span className="min-w-0">
+                          {a ? (
+                            <Link to={`/activities/${a._id}`} dir="auto" className="block font-grotesk font-semibold text-ink hover:underline">
+                              {a.titulo}
+                            </Link>
+                          ) : (
+                            <span className="block font-grotesk font-semibold text-ink-muted">{t('misInscripciones.eliminada')}</span>
+                          )}
+                          <span className="text-sm text-ink-muted">
+                            <span className="inline-block first-letter:uppercase">{fechaEn(i.dia, locale, { weekday: 'long', day: 'numeric', month: 'short' })}</span>
+                            {hora && ` · ${hora}`}
+                            {pronto && ` · ${pronto}`}
+                          </span>
                         </span>
-                        {inscription.pago.estadoPago === 'rechazado' && inscription.pago.motivoRechazo && (
-                          <p className="text-red-600">Motivo: {inscription.pago.motivoRechazo}</p>
-                        )}
-                        {inscription.pago.estadoPago === 'pendiente' && inscription.estado === 'pendiente' && (
-                          <p>Tu comprobante está en revisión. Te avisaremos cuando se confirme la inscripción.</p>
-                        )}
+                        <span className={cn('shrink-0 rounded-pill px-2.5 py-0.5 text-xs font-semibold', TONOS[i.estado])}>{t(`estadoInscripcion.largo.${i.estado}`)}</span>
                       </div>
-                    )}
-                    {hasPago && inscription.pago.estadoPago === 'rechazado' && (
-                      <div className="mt-1 space-y-2">
-                        {reuploadingId === inscription._id ? (
-                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                            <input
-                              type="file"
-                              accept="image/*,application/pdf"
-                              onChange={(e) => setReuploadFile(e.target.files?.[0] || null)}
-                              className="text-sm"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleReupload(inscription._id)}
-                              className="btn btn-primary text-xs py-1.5 px-3"
-                            >
-                              Enviar nuevo comprobante
-                            </button>
-                            <button
-                              type="button"
+
+                      {pago && (
+                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
+                          <Badge tone={getPagoEstadoTone(pago)} dot>
+                            {getPagoEstadoLabel(pago)}
+                          </Badge>
+                          {pago === 'rechazado' && i.pago.motivoRechazo && <span className="text-danger-600">{t('misInscripciones.motivo', { motivo: i.pago.motivoRechazo })}</span>}
+                          {pago === 'pendiente' && i.estado === 'pendiente' && <span>{t('misInscripciones.enRevision')}</span>}
+                        </div>
+                      )}
+
+                      {subiendoId === i._id ? (
+                        <div className="mt-3 space-y-2">
+                          <FileInput accept="image/*,application/pdf" value={archivo} onChange={setArchivo} maxSize={5 * 1024 * 1024} hint={t('confirmar.comprobanteAyuda')} />
+                          <div className="flex flex-wrap gap-2">
+                            <Button size="sm" icon="upload" onClick={() => subir(i._id)}>
+                              {t('misInscripciones.enviarComprobante')}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
                               onClick={() => {
-                                setReuploadingId(null);
-                                setReuploadFile(null);
+                                setSubiendoId(null);
+                                setArchivo(null);
                               }}
-                              className="btn btn-outline text-xs py-1.5 px-3"
                             >
-                              Cancelar
-                            </button>
+                              {t('comun.cancelar')}
+                            </Button>
                           </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setReuploadingId(inscription._id);
-                              setReuploadFile(null);
-                            }}
-                            className="btn btn-secondary text-xs py-1.5 px-3"
-                          >
-                            Volver a subir comprobante
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 shrink-0 sm:justify-end text-sm">
-                    <InscriptionStatusTag estado={inscription.estado} aceptadaLabel="Confirmada" />
-                    {inscription.estado !== 'cancelada' && (
-                      <button
-                        type="button"
-                        onClick={() => handleCancel(inscription._id)}
-                        className="btn btn-danger text-xs py-1.5 px-3"
-                      >
-                        Cancelar
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {pago === 'rechazado' && (
+                            <Button
+                              size="sm"
+                              icon="upload"
+                              onClick={() => {
+                                setSubiendoId(i._id);
+                                setArchivo(null);
+                              }}
+                            >
+                              {t('misCosas.subirComprobante')}
+                            </Button>
+                          )}
+                          <Button size="sm" variant="ghost" icon="close" onClick={() => cancelar(i)} className="text-danger-600 hover:bg-danger-50 hover:text-danger-700">
+                            {t('misInscripciones.cancelarInscripcion')}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+        </section>
+
+        {canceladas.length > 0 && (
+          <section aria-labelledby="canceladas">
+            <h2 id="canceladas" className="mb-3 text-sm font-semibold uppercase tracking-label text-ink-muted">
+              {t('misInscripciones.grupos.cancelada')}
+            </h2>
+            <ul className="divide-y divide-surface-border rounded-[18px] border border-surface-border bg-surface">
+              {canceladas.map((i) => (
+                <li key={i._id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                  <span className="min-w-0">
+                    <span dir="auto" className="block text-sm font-semibold text-ink-soft">
+                      {i.activityId.titulo}
+                    </span>
+                    <span className="text-xs text-ink-muted first-letter:uppercase">{fechaEn(i.dia, locale, { weekday: 'long', day: 'numeric', month: 'short' })}</span>
+                  </span>
+                  <Button size="sm" variant="soft" to={`/activities/${i.activityId._id}?fecha=${i.dia}`}>
+                    {t('misInscripciones.deNuevo')}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
+      </div>
     </PageContainer>
   );
 };

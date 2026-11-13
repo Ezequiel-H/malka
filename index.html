@@ -2,15 +2,69 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#f9f2e8" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Malka" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!--
+      Tres familias en un solo pedido. Archivo es variable (un archivo cubre de
+      400 a 800) y la usan la landing y la app; Cormorant queda para los
+      títulos de acceso, y Heebo pone las letras hebreas (Archivo no las
+      tiene). Google Fonts sólo descarga el .woff2 de la familia que la página
+      realmente pinta.
+    -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@400..800&family=Heebo:wght@400..800&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap"
       rel="stylesheet"
     />
     <link rel="icon" type="image/png" sizes="32x32" href="/cropped-favicon-32x32.png" />
-    <title>Malka</title>
+
+    <title>Malka — Una casa para compartir nuestra espiritualidad judía</title>
+
+    <!--
+      Metadatos para compartir. Hoy pasar el link de Malka por WhatsApp no
+      muestra absolutamente nada: ni título, ni bajada, ni imagen.
+
+      Las URLs absolutas son obligatorias — WhatsApp y Facebook no resuelven
+      rutas relativas en `og:image`. Si la app termina viviendo en un dominio
+      distinto de casamalka.org, hay que cambiarlo en los tres lugares de acá
+      abajo y en ningún otro.
+    -->
+    <meta
+      name="description"
+      content="Malka es un espacio de reunión, intercambio y actividades para jóvenes judíos de 18 a 35 años. Cowork, Shabat, estudio, asaditos y música en 3 de Febrero 1325, CABA. Registrate y mirá la agenda."
+    />
+    <link rel="canonical" href="https://casamalka.org/" />
+    <link rel="alternate" hreflang="es" href="https://casamalka.org/" />
+    <link rel="alternate" hreflang="en" href="https://casamalka.org/en" />
+    <link rel="alternate" hreflang="he" href="https://casamalka.org/he" />
+    <link rel="alternate" hreflang="x-default" href="https://casamalka.org/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Malka" />
+    <meta property="og:locale" content="es_AR" />
+    <meta property="og:url" content="https://casamalka.org/" />
+    <meta property="og:title" content="Malka — Una casa para compartir nuestra espiritualidad judía" />
+    <meta
+      property="og:description"
+      content="Un espacio de reunión, intercambio y actividades para jóvenes judíos de 18 a 35 años. Registrate y mirá qué se viene esta semana."
+    />
+    <meta property="og:image" content="https://casamalka.org/og-malka.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="La mesa larga de Shabat en el salón de Malka, llena de gente" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Malka — Una casa para compartir nuestra espiritualidad judía" />
+    <meta
+      name="twitter:description"
+      content="Un espacio de reunión, intercambio y actividades para jóvenes judíos de 18 a 35 años."
+    />
+    <meta name="twitter:image" content="https://casamalka.org/og-malka.jpg" />
   </head>
   <body>
     <div id="root"></div>

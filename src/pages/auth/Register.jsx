@@ -1,12 +1,29 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import PublicTagPicker from '../../components/tags/PublicTagPicker';
-import DateInput from '../../components/common/DateInput';
 import { formatLocalDateToString } from '../../utils/dateUtils';
+import {
+  Alert,
+  Button,
+  Checkbox,
+  DatePicker,
+  Field,
+  Input,
+  RadioGroup,
+  Select,
+  Spinner,
+} from '../../components/ui';
+import { DotsAccess, useDotsAccess } from '../../components/auth/dots_access';
+import logoMalka from '../../assets/logo-malka-positivo.png';
+import { invalidEs } from '../../utils/formValidation';
+import { RESIDENCIAS, opcionesPaises } from '../../utils/paises';
+import { SelectorIdioma, useIdioma } from '../../i18n';
+import { RESTRICCIONES } from '../../utils/restricciones';
 
-const Register = () => {
+
+const RegisterForm = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -14,9 +31,13 @@ const Register = () => {
     apellido: '',
     fechaNacimiento: '',
     dni: '',
+    tipoDocumento: 'dni',
     telefono: '',
     restriccionesAlimentarias: [],
-    comoSeEntero: ''
+    comoSeEntero: '',
+    nacionalidad: '',
+    residencia: '',
+    ciudad: ''
   });
   const [tags, setTags] = useState([]);
   const [availableTags, setAvailableTags] = useState([]);
@@ -25,6 +46,9 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
+  const dots = useDotsAccess();
+  const { t, idioma } = useIdioma();
+  const paises = useMemo(() => opcionesPaises(idioma), [idioma]);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,7 +74,7 @@ const Register = () => {
     const { name, value } = e.target;
     const next =
       name === 'dni'
-        ? value.replace(/ /g, '').trim()
+        ? value.replace(/ /g, '').trim().toUpperCase()
         : name === 'telefono'
           ? value.replace(/\s/g, '').trim()
           : value;
@@ -80,107 +104,222 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // DatePicker guarda el valor en un input hidden, y el navegador no valida
+    // los hidden: el `required` del Field es sólo la marca visual, así que la
+    // fecha se chequea acá a mano.
+    if (!formData.fechaNacimiento) {
+      setError(t('registro.faltaFecha'));
+      dots.fail();
+      return;
+    }
+    // Igual que la fecha: el Select y los radios no los valida el navegador.
+    if (!formData.nacionalidad || !formData.residencia) {
+      setError(t('registro.faltaResidencia'));
+      dots.fail();
+      return;
+    }
+
     setLoading(true);
 
     const result = await register({
       ...formData,
       dni: formData.dni.replace(/ /g, '').trim(),
       telefono: formData.telefono.replace(/\s/g, '').trim(),
-      tags
+      tags,
+      idioma
     });
-    
+
     if (result.success) {
+      // Fuera de Buenos Aires o con pasaporte el registro sigue por WhatsApp:
+      // la pantalla de bienvenida le muestra el botón para escribirnos.
       navigate('/dashboard');
     } else {
       setError(result.message);
+      dots.fail();
     }
-    
+
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-light-bg flex items-center justify-center px-4 py-10 sm:px-6 sm:py-12">
-      <div className="max-w-lg w-full min-w-0">
-        <div className="card">
-          <h1 className="text-2xl sm:text-3xl font-bold text-center mb-5 sm:mb-6 text-primary">
-            Registro
-          </h1>
-          
+    <>
+      <div className="flex items-center justify-between gap-4">
+        <img src={logoMalka} alt="Malka" className="h-12 w-auto sm:h-14" />
+        <SelectorIdioma />
+      </div>
+      <h1 className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+        {t('registro.titulo')}
+      </h1>
+      <div>
           {error && (
-            <div className="alert alert-error">{error}</div>
+            <Alert tone="danger" className="mb-5">
+              {error}
+            </Alert>
           )}
 
           <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label>Nombre</label>
-              <input
+            <Field label={t('registro.nombre')} required>
+              <Input
                 type="text"
                 name="nombre"
+                data-figura="persona"
                 value={formData.nombre}
                 onChange={handleChange}
                 required
-                className="bg-white"
               />
-            </div>
+            </Field>
 
-            <div className="form-group">
-              <label>Apellido</label>
-              <input
+            <Field label={t('registro.apellido')} required>
+              <Input
                 type="text"
                 name="apellido"
+                data-figura="persona"
                 value={formData.apellido}
                 onChange={handleChange}
                 required
-                className="bg-white"
               />
-            </div>
+            </Field>
 
-            <div className="form-group">
-              <label>Fecha de nacimiento</label>
-              <DateInput
+            <Field label={t('registro.fechaNacimiento')} required>
+              <DatePicker
                 name="fechaNacimiento"
+                data-figura="calendario"
                 value={formData.fechaNacimiento}
-                onChange={handleChange}
-                required
+                onChange={(fechaNacimiento) =>
+                  setFormData((previo) => ({ ...previo, fechaNacimiento }))
+                }
                 max={formatLocalDateToString(new Date())}
               />
-            </div>
+            </Field>
 
-            <div className="form-group">
-              <label>DNI</label>
-              <input
-                type="text"
-                name="dni"
-                value={formData.dni}
-                onChange={handleChange}
-                required
-                inputMode="numeric"
-                autoComplete="off"
-                minLength={7}
-                maxLength={10}
-                pattern="\d{7,10}"
-                title="Ingresá entre 7 y 10 dígitos"
-                className="bg-white"
+            <Field label={t('registro.nacionalidad')} htmlFor="registro-nacionalidad" required>
+              <Select
+                id="registro-nacionalidad"
+                name="nacionalidad"
+                data-figura="globo"
+                options={paises}
+                value={formData.nacionalidad}
+                onChange={(nacionalidad) => setFormData((previo) => ({ ...previo, nacionalidad: nacionalidad ?? '' }))}
+                placeholder={t('registro.elegiPais')}
+                searchable
               />
+            </Field>
+
+            <div data-figura="casa">
+            <RadioGroup
+              label={t('registro.dondeVivis')}
+              name="residencia"
+              options={RESIDENCIAS.map((r) => ({ value: r.value, label: t(`registro.residencias.${r.value}`) }))}
+              value={formData.residencia}
+              onChange={(residencia) => setFormData((previo) => ({ ...previo, residencia }))}
+              className="mb-5"
+            />
             </div>
 
-            <div className="form-group">
-              <label>Email</label>
-              <input
+            {formData.residencia && formData.residencia !== 'buenos_aires' && (
+              <div className="mb-5 animate-fade-in-up">
+                <Field label={t('registro.ciudad')} htmlFor="registro-ciudad" required className="mb-3">
+                  <Input
+                    id="registro-ciudad"
+                    name="ciudad"
+                    data-figura="casa"
+                    value={formData.ciudad}
+                    onChange={handleChange}
+                    required
+                    maxLength={80}
+                    autoComplete="address-level2"
+                  />
+                </Field>
+                <Alert tone="info">
+                  {t('registro.avisoWhatsapp')}
+                </Alert>
+              </div>
+            )}
+
+            {/* DNI primero; el pasaporte queda de última opción para quien no
+                tiene DNI, y con él el registro sigue por WhatsApp. */}
+            <div data-figura="credencial">
+            <RadioGroup
+              label={t('registro.documento')}
+              name="tipoDocumento"
+              direction="horizontal"
+              options={[
+                { value: 'dni', label: t('registro.tiposDocumento.dni') },
+                { value: 'pasaporte', label: t('registro.tiposDocumento.pasaporte') },
+              ]}
+              value={formData.tipoDocumento}
+              onChange={(tipoDocumento) => setFormData((previo) => ({ ...previo, tipoDocumento, dni: '' }))}
+              className="mb-3"
+            />
+            </div>
+            {formData.tipoDocumento === 'pasaporte' ? (
+              <div key="pasaporte" className="animate-fade-in">
+                <Field label={t('registro.pasaporte')} hint={t('registro.pasaporteAyuda')} required>
+                  <Input
+                    type="text"
+                    name="dni"
+                    data-figura="credencial"
+                    dir="ltr"
+                    value={formData.dni}
+                    onChange={handleChange}
+                    required
+                    autoComplete="off"
+                    minLength={5}
+                    maxLength={20}
+                    pattern="[A-Za-z0-9]{5,20}"
+                    title={t('registro.pasaporteInvalido')}
+                    {...invalidEs(t('registro.pasaporteInvalido'))}
+                  />
+                </Field>
+                {/* Fuera de Buenos Aires ya hay un aviso igual más arriba. */}
+                {(!formData.residencia || formData.residencia === 'buenos_aires') && (
+                  <Alert tone="info" className="-mt-2 mb-5">
+                    {t('registro.avisoPasaporte')}
+                  </Alert>
+                )}
+              </div>
+            ) : (
+              <Field label={t('registro.dni')} hint={t('registro.dniAyuda')} required>
+                <Input
+                  type="text"
+                  name="dni"
+                  data-figura="credencial"
+                  dir="ltr"
+                  value={formData.dni}
+                  onChange={handleChange}
+                  required
+                  inputMode="numeric"
+                  autoComplete="off"
+                  minLength={7}
+                  maxLength={10}
+                  pattern="\d{7,10}"
+                  title={t('registro.dniInvalido')}
+                  {...invalidEs(t('registro.dniAyuda'))}
+                />
+              </Field>
+            )}
+
+            <Field label={t('registro.email')} required>
+              <Input
                 type="email"
+                icon="mail"
                 name="email"
+                dir="ltr"
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="bg-white"
+                autoComplete="email"
               />
-            </div>
+            </Field>
 
-            <div className="form-group">
-              <label>Teléfono</label>
-              <input
+            <Field label={t('registro.telefono')} hint={t('registro.telefonoAyuda')} required>
+              <Input
                 type="tel"
+                icon="phone"
                 name="telefono"
+                data-figura="telefono"
+                dir="ltr"
                 value={formData.telefono}
                 onChange={handleChange}
                 required
@@ -189,95 +328,98 @@ const Register = () => {
                 minLength={8}
                 maxLength={22}
                 pattern="^[+]?[0-9]{8,20}$"
-                title="Ingresá un teléfono con al menos 8 dígitos (podés usar + y código de país)"
-                className="bg-white"
+                title={t('registro.telefonoInvalido')}
+                {...invalidEs(t('registro.telefonoInvalido'))}
               />
-            </div>
+            </Field>
 
-            <div className="form-group">
-              <label>Contraseña</label>
-              <input
+            <Field label={t('registro.contrasena')} hint={t('registro.contrasenaAyuda')} required>
+              <Input
                 type="password"
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
                 required
                 minLength={6}
-                className="bg-white"
+                autoComplete="new-password"
               />
-            </div>
+            </Field>
 
-            <div className="form-group">
-              <label className="mb-2 block">Toda la comida es Kosher. ¿Tenés algún tipo de restricción?</label>
+            {/* Grupo de checkboxes: el <fieldset> es lo que hace que un lector
+                de pantalla anuncie la pregunta antes de cada opción. */}
+            <fieldset className="mb-5" data-figura="cubiertos">
+              <legend className="mb-2 block text-sm font-medium text-ink-soft">
+                {t('registro.restriccionesPregunta')}
+              </legend>
               <div className="space-y-2.5">
-                {['Vegetariano', 'Vegano', 'Sin TACC', 'Sin lactosa', 'Sin nueces', 'Diabético'].map((restriccion) => (
-                  <label
-                    key={restriccion}
-                    className="flex max-w-none cursor-pointer items-center gap-3 font-normal"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.restriccionesAlimentarias?.includes(restriccion) || false}
-                      onChange={() => handleRestriccionChange(restriccion)}
-                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                    <span className="text-gray-700">{restriccion}</span>
-                  </label>
+                {RESTRICCIONES.map(({ valor, clave }) => (
+                  <Checkbox
+                    key={valor}
+                    label={t(`registro.restricciones.${clave}`)}
+                    checked={formData.restriccionesAlimentarias?.includes(valor) || false}
+                    onChange={() => handleRestriccionChange(valor)}
+                  />
                 ))}
               </div>
-            </div>
+            </fieldset>
 
-            <div className="form-group">
-              <label>¿Cómo te enteraste de esta propuesta?</label>
-              <input
+            <Field label={t('registro.comoTeEnteraste')} required>
+              <Input
                 type="text"
                 name="comoSeEntero"
+                data-figura="dialogo"
                 value={formData.comoSeEntero}
                 onChange={handleChange}
-                placeholder="Escribe cómo te enteraste..."
+                placeholder={t('registro.comoTeEnterastePlaceholder')}
                 required
-                className="bg-white"
               />
-            </div>
+            </Field>
 
-            <div className="form-group">
-              <label>¿Qué te interesa?</label>
-              <p className="text-sm text-gray-600 mb-2">
-                Elegí una o más áreas (tags públicos). Podés cambiarlas después en &quot;Mis intereses&quot;.
-              </p>
+            <Field
+              label={t('registro.intereses')}
+              hint={t('registro.interesesAyuda')}
+            >
               {tagsLoading ? (
-                <p className="text-sm text-gray-500">Cargando intereses...</p>
+                <div className="flex items-center gap-2 py-2 text-sm text-ink-muted">
+                  <Spinner size="sm" label={t('registro.cargandoIntereses')} />
+                  {t('registro.cargandoIntereses')}
+                </div>
               ) : (
+                <div data-figura="corazon">
                 <PublicTagPicker
                   availableTags={availableTags}
                   selectedNames={tags}
                   onChange={setTags}
                   emptyHint={
-                    <p className="text-sm text-gray-500 mt-2">
-                      Si no aparecen opciones, podés completar tus intereses luego desde tu cuenta.
+                    <p className="mt-2 text-sm text-ink-muted">
+                      {t('registro.sinIntereses')}
                     </p>
                   }
                 />
+                </div>
               )}
-            </div>
+            </Field>
 
-            <button
-              type="submit"
-              className="btn btn-primary w-full"
-              disabled={loading}
-            >
-              {loading ? 'Registrando...' : 'Registrarse'}
-            </button>
+            <Button type="submit" size="lg" fullWidth loading={loading}>
+              {loading ? t('registro.registrando') : t('registro.registrarse')}
+            </Button>
           </form>
 
-          <p className="mt-6 text-center text-gray-600">
-            ¿Ya tienes cuenta? <Link to="/login" className="text-primary hover:text-primary/80 font-medium">Inicia sesión aquí</Link>
+          <p className="mt-6 text-center text-sm text-ink-muted">
+            {t('registro.yaTenesCuenta')}{' '}
+            <Button variant="link" size="sm" to="/login" className="min-h-0 px-0 py-0 align-baseline">
+              {t('registro.iniciaSesion')}
+            </Button>
           </p>
-        </div>
       </div>
-    </div>
+    </>
   );
 };
 
-export default Register;
+const Register = () => (
+  <DotsAccess name="Malka" markSrc={logoMalka}>
+    <RegisterForm />
+  </DotsAccess>
+);
 
+export default Register;

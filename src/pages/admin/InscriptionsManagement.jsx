@@ -3,12 +3,42 @@ import axios from 'axios';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
 import { formatUtcCalendarDayAndTime } from '../../utils/dateUtils';
-import { getPagoEstadoLabel, getPagoEstadoBadgeClass } from '../../utils/paymentUtils';
+import { getPagoEstadoLabel, getPagoEstadoTone } from '../../utils/paymentUtils';
 import PendingPaymentProofsModal from '../../components/admin/PendingPaymentProofsModal';
-import LoadingScreen from '../../components/layout/LoadingScreen';
+import WaitlistExitModal from '../../components/activities/WaitlistExitModal';
 import PageContainer from '../../components/layout/PageContainer';
-import EmptyState from '../../components/common/EmptyState';
-import InscriptionStatusTag from '../../components/activities/InscriptionStatusTag';
+import {
+  Badge,
+  Button,
+  Card,
+  DatePicker,
+  EmptyState,
+  Field,
+  Select,
+  SkeletonRows,
+  useConfirm,
+} from '../../components/ui';
+
+const ESTADO_OPTIONS = [
+  { value: 'pendiente', label: 'Pendiente' },
+  { value: 'aceptada', label: 'Aceptada' },
+  { value: 'cancelada', label: 'Cancelada' },
+  { value: 'en_espera', label: 'En lista de espera' },
+];
+
+const ESTADO_FILTER_OPTIONS = [
+  { value: '', label: 'Todos los estados' },
+  ...ESTADO_OPTIONS,
+];
+
+/* Números en tinta: cuatro colores fuertes convertían el resumen en un
+   semáforo. El estado ya lo dice el label. */
+const RESUMEN = [
+  { estado: 'pendiente', label: 'Pendientes' },
+  { estado: 'aceptada', label: 'Aceptadas' },
+  { estado: 'cancelada', label: 'Canceladas' },
+  { estado: 'en_espera', label: 'En espera' },
+];
 
 const adminUserPath = (userRef) => {
   const uid = typeof userRef === 'object' && userRef !== null ? userRef._id : userRef;
@@ -17,12 +47,14 @@ const adminUserPath = (userRef) => {
 
 const InscriptionsManagement = () => {
   const { showSuccess, showError } = useToast();
+  const confirm = useConfirm();
   const [searchParams] = useSearchParams();
   const [inscriptions, setInscriptions] = useState([]);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pendingPaymentsCount, setPendingPaymentsCount] = useState(0);
-  const [showProofsModal, setShowProofsModal] = useState(false);
+  // El panel manda acá con ?comprobantes=1 para abrir la revisión de una.
+  const [showProofsModal, setShowProofsModal] = useState(() => searchParams.get('comprobantes') === '1');
   const [filters, setFilters] = useState({
     estado: searchParams.get('estado') || 'pendiente',
     activityId: searchParams.get('activityId') || '',
@@ -78,7 +110,38 @@ const InscriptionsManagement = () => {
     }
   };
 
-  const handleStatusChange = async (inscriptionId, newStatus) => {
+  /* Sacar a alguien de la lista de espera tiene su propio modal: ahí el admin
+     decide si le manda el mail y lo ve antes. */
+  const [waitlistExit, setWaitlistExit] = useState(null);
+
+  const handleWaitlistExit = async (notificar) => {
+    const { inscription, estado } = waitlistExit;
+    try {
+      await axios.put(`/inscriptions/${inscription._id}/status`, { estado, notificar });
+      showSuccess(notificar ? 'Estado actualizado y aviso enviado' : `Estado actualizado a ${getEstadoLabel(estado)}`);
+      setWaitlistExit(null);
+      fetchInscriptions();
+      fetchPendingCount();
+    } catch (error) {
+      showError(error.response?.data?.message || 'Error al actualizar estado');
+    }
+  };
+
+  const handleStatusChange = async (inscription, newStatus) => {
+    if (inscription.estado === 'en_espera' && ['pendiente', 'aceptada'].includes(newStatus)) {
+      setWaitlistExit({ inscription, estado: newStatus });
+      return;
+    }
+
+    const inscriptionId = inscription._id;
+    const ok = await confirm({
+      title: `¿Cambiar el estado a "${getEstadoLabel(newStatus)}"?`,
+      description: 'La persona ve este estado en sus inscripciones.',
+      confirmLabel: 'Cambiar estado',
+      tone: newStatus === 'cancelada' ? 'danger' : 'primary',
+    });
+    if (!ok) return;
+
     try {
       await axios.put(`/inscriptions/${inscriptionId}/status`, { estado: newStatus });
       showSuccess(`Estado actualizado a ${getEstadoLabel(newStatus)}`);
@@ -105,186 +168,180 @@ const InscriptionsManagement = () => {
   };
 
   if (loading) {
-    return <LoadingScreen message="Cargando inscripciones..." />;
+    return (
+      <PageContainer title="Inscripciones">
+        <SkeletonRows count={8} />
+      </PageContainer>
+    );
   }
+
+  const activityOptions = [
+    { value: '', label: 'Todas las actividades' },
+    ...activities.map((activity) => ({ value: activity._id, label: activity.titulo })),
+  ];
 
   return (
     <PageContainer
-      title="Gestión de Inscripciones"
+      title="Inscripciones"
       actions={
-        <button
-          type="button"
+        <Button
+          icon="document"
           onClick={() => setShowProofsModal(true)}
-          className="btn btn-secondary w-full sm:w-auto justify-center relative"
+          className="w-full sm:w-auto"
         >
           Revisar comprobantes
           {pendingPaymentsCount > 0 && (
-            <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-yellow-500 text-white text-xs font-bold">
+            /* Contador integrado al botón: pill translúcido del mismo esquema,
+               no un badge de otro color peleando con el fondo verde. */
+            <span className="ml-1 rounded-pill bg-white/25 px-2 py-0.5 text-xs font-semibold tabular-nums text-white">
               {pendingPaymentsCount}
             </span>
           )}
-        </button>
+        </Button>
       }
     >
 
-        <div className="card mb-8">
-          <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-gray-800">Filtros</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="form-group">
-              <label>Estado</label>
-              <select
+        <Card className="mb-8">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Field label="Estado" className="mb-0">
+              <Select
+                options={ESTADO_FILTER_OPTIONS}
                 value={filters.estado}
-                onChange={(e) => setFilters({ ...filters, estado: e.target.value })}
-                className="bg-white"
-              >
-                <option value="">Todos los estados</option>
-                <option value="pendiente">Pendiente</option>
-                <option value="aceptada">Aceptada</option>
-                <option value="cancelada">Cancelada</option>
-                <option value="en_espera">En lista de espera</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Actividad</label>
-              <select
-                value={filters.activityId}
-                onChange={(e) => setFilters({ ...filters, activityId: e.target.value })}
-                className="bg-white"
-              >
-                <option value="">Todas las actividades</option>
-                {activities.map(activity => (
-                  <option key={activity._id} value={activity._id}>
-                    {activity.titulo}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Fecha</label>
-              <input
-                type="date"
-                value={filters.fecha}
-                onChange={(e) => setFilters({ ...filters, fecha: e.target.value })}
-                className="bg-white"
+                onChange={(value) => setFilters({ ...filters, estado: value ?? '' })}
               />
-            </div>
+            </Field>
+
+            <Field label="Actividad" className="mb-0">
+              <Select
+                options={activityOptions}
+                value={filters.activityId}
+                onChange={(value) => setFilters({ ...filters, activityId: value ?? '' })}
+                searchable={activityOptions.length > 8}
+              />
+            </Field>
+
+            <Field label="Fecha" className="mb-0">
+              <DatePicker
+                value={filters.fecha}
+                onChange={(value) => setFilters({ ...filters, fecha: value })}
+                placeholder="Todas las fechas"
+                clearable
+              />
+            </Field>
           </div>
-        </div>
+        </Card>
 
         {inscriptions.length === 0 ? (
-          <EmptyState message="No se encontraron inscripciones con los filtros seleccionados." />
+          <Card padding="none">
+            <EmptyState
+              icon="search"
+              title="Sin resultados"
+              description="No encontramos inscripciones con los filtros seleccionados."
+            />
+          </Card>
         ) : (
-          <div className="card divide-y divide-gray-200 p-0 overflow-hidden">
+          <Card padding="none" className="divide-y divide-surface-border overflow-hidden">
+            {/* Encabezado: la lista sin rótulos obligaba a adivinar qué era
+                cada columna. */}
+            <div className="hidden border-b border-surface-border px-4 py-2 text-xs font-semibold uppercase tracking-wide text-ink-muted sm:grid sm:grid-cols-12 sm:gap-x-3">
+              <div className="sm:col-span-4">Participante</div>
+              <div className="sm:col-span-4">Actividad</div>
+              <div className="sm:col-span-4 text-right">Estado</div>
+            </div>
+
             {inscriptions.map(inscription => {
               const horaEv = inscription.hora || inscription.activityId?.hora || '';
               const nombreCompleto = [inscription.userId?.nombre, inscription.userId?.apellido]
                 .filter(Boolean)
                 .join(' ')
                 .trim();
-              const tel = inscription.userId?.telefono || '—';
-              const mail = inscription.userId?.email || '—';
+              const contacto = [inscription.userId?.email, inscription.userId?.telefono]
+                .filter(Boolean)
+                .join(' · ');
               const userHref = adminUserPath(inscription.userId);
               const linkLabel =
                 nombreCompleto ||
                 (typeof inscription.userId === 'object' && inscription.userId?.email) ||
                 'Ver perfil';
-              const contactoSinLink = [
-                nombreCompleto || '—',
-                tel,
-                mail,
-              ].join(' · ');
+
               return (
                 <div
                   key={inscription._id}
-                  className="px-4 py-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 text-sm hover:bg-gray-50/80"
+                  className="grid grid-cols-1 gap-2 px-4 py-3 text-sm transition-control duration-fast hover:bg-primary-50/40 sm:grid-cols-12 sm:items-center sm:gap-x-3"
                 >
-                  <div className="min-w-0 flex-1 grid gap-1 sm:grid-cols-12 sm:gap-x-3 sm:items-center">
-                    <div className="sm:col-span-4 font-medium text-gray-900 truncate">
-                      {inscription.activityId?.titulo || 'Actividad no encontrada'}
-                    </div>
-                    <div className="sm:col-span-3 text-gray-600 tabular-nums whitespace-nowrap">
-                      {formatUtcCalendarDayAndTime(inscription.fecha, horaEv)}
-                    </div>
-                    <div className="sm:col-span-5 text-gray-700 min-w-0 break-words">
-                      {userHref ? (
-                        <>
-                          <Link to={userHref} className="text-primary font-medium hover:underline">
-                            {linkLabel}
-                          </Link>
-                          <span>
-                            {' · '}
-                            {tel}
-                            {' · '}
-                            {mail}
-                          </span>
-                        </>
-                      ) : (
-                        contactoSinLink
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 shrink-0">
-                    <InscriptionStatusTag estado={inscription.estado} />
-                    {inscription.pago?.comprobante?.url && (
-                      <span className={`badge ${getPagoEstadoBadgeClass(inscription.pago.estadoPago)}`}>
-                        {getPagoEstadoLabel(inscription.pago.estadoPago)}
-                      </span>
+                  {/* Persona: nombre arriba, contacto abajo en chico. Todo en
+                      una línea aplastaba la fila y rompía en dos renglones. */}
+                  <div className="min-w-0 sm:col-span-4">
+                    {userHref ? (
+                      <Link
+                        to={userHref}
+                        className="block truncate font-medium text-ink hover:text-primary hover:underline"
+                      >
+                        {linkLabel}
+                      </Link>
+                    ) : (
+                      <span className="block truncate font-medium text-ink">{nombreCompleto || '—'}</span>
                     )}
-                    <select
+                    <span className="block truncate text-xs text-ink-muted">{contacto || '—'}</span>
+                  </div>
+
+                  <div className="min-w-0 sm:col-span-4">
+                    <span className="block truncate text-ink-soft">
+                      {inscription.activityId?.titulo || 'Actividad no encontrada'}
+                    </span>
+                    <span className="block whitespace-nowrap text-xs tabular-nums text-ink-muted">
+                      {formatUtcCalendarDayAndTime(inscription.fecha, horaEv)}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 sm:col-span-4 sm:justify-end">
+                    {inscription.pago?.comprobante?.url && (
+                      <Badge tone={getPagoEstadoTone(inscription.pago.estadoPago)} dot>
+                        {getPagoEstadoLabel(inscription.pago.estadoPago)}
+                      </Badge>
+                    )}
+                    <Select
+                      options={ESTADO_OPTIONS}
                       value={inscription.estado}
-                      onChange={(e) => handleStatusChange(inscription._id, e.target.value)}
-                      className="px-2 py-1 border border-gray-300 rounded text-xs bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <option value="pendiente">Pendiente</option>
-                      <option value="aceptada">Aceptada</option>
-                      <option value="cancelada">Cancelada</option>
-                      <option value="en_espera">En lista de espera</option>
-                    </select>
+                      onChange={(value) => handleStatusChange(inscription, value)}
+                      size="sm"
+                      className="w-44"
+                    />
                   </div>
                 </div>
               );
             })}
-          </div>
+          </Card>
         )}
 
-        <div className="card mt-8">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-800">Resumen</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <p className="text-3xl font-bold text-yellow-500">
-                {inscriptions.filter(i => i.estado === 'pendiente').length}
-              </p>
-              <p className="text-gray-600">Pendientes</p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl font-bold text-green-600">
-                {inscriptions.filter(i => i.estado === 'aceptada').length}
-              </p>
-              <p className="text-gray-600">Aceptadas</p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl font-bold text-red-600">
-                {inscriptions.filter(i => i.estado === 'cancelada').length}
-              </p>
-              <p className="text-gray-600">Canceladas</p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl font-bold text-blue-600">
-                {inscriptions.filter(i => i.estado === 'en_espera').length}
-              </p>
-              <p className="text-gray-600">En espera</p>
-            </div>
+        <Card className="mt-8">
+          <h2 className="mb-4 text-2xl font-semibold text-ink">Resumen</h2>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {RESUMEN.map(({ estado, label }) => (
+              <div key={estado} className="rounded-card border border-surface-border bg-surface px-3 py-3 text-center">
+                <p className="text-2xl font-bold tabular-nums tracking-tight text-ink sm:text-3xl">
+                  {inscriptions.filter((i) => i.estado === estado).length}
+                </p>
+                <p className="mt-0.5 text-sm text-ink-muted">{label}</p>
+              </div>
+            ))}
           </div>
-        </div>
+        </Card>
 
       <PendingPaymentProofsModal
         open={showProofsModal}
         onClose={() => setShowProofsModal(false)}
         onReviewed={handleProofReviewed}
       />
+
+      {waitlistExit && (
+        <WaitlistExitModal
+          inscription={waitlistExit.inscription}
+          estado={waitlistExit.estado}
+          onClose={() => setWaitlistExit(null)}
+          onConfirm={handleWaitlistExit}
+        />
+      )}
     </PageContainer>
   );
 };

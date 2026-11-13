@@ -6,7 +6,7 @@
 const ActivityDescription = ({ activity, variant = 'detail' }) => {
   if (variant === 'card') {
     return (
-      <p className="text-gray-600 mb-4 line-clamp-3 whitespace-pre-wrap">
+      <p dir="auto" className="mb-4 line-clamp-3 whitespace-pre-wrap text-ink-muted">
         {activity?.descripcion}
       </p>
     );
@@ -14,11 +14,11 @@ const ActivityDescription = ({ activity, variant = 'detail' }) => {
 
   if (!activity?.descripcion) return null;
 
+  /* Sin heading "Descripción": debajo del título, el párrafo se explica solo. */
   return (
-    <div className="mb-6">
-      <h2 className="text-xl font-semibold text-gray-800 mb-2">Descripción</h2>
-      <p className="text-gray-600 whitespace-pre-wrap">{activity.descripcion}</p>
-    </div>
+    <p dir="auto" className="mb-6 whitespace-pre-wrap leading-relaxed text-ink-soft">
+      {activity.descripcion}
+    </p>
   );
 };
 

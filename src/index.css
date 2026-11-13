@@ -2,242 +2,119 @@
 @tailwind components;
 @tailwind utilities;
 
+/**
+ * Sólo lo que no puede vivir en un componente.
+ *
+ * Este archivo tenía ~210 líneas de clases de utilidad (.btn, .card, .alert,
+ * .badge, .spinner, .form-group) y overrides de react-datepicker. Todo eso lo
+ * reemplazaron los componentes de src/components/ui, así que se borró: dos
+ * fuentes de verdad para el mismo botón es exactamente lo que un design system
+ * viene a evitar.
+ */
 @layer base {
   body {
-    @apply bg-light-bg text-gray-800 font-sans antialiased;
+    @apply bg-surface-page text-ink font-sans antialiased;
   }
 }
 
-@layer components {
-  .btn {
-    @apply px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg font-medium transition-all duration-300 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed min-h-[44px] sm:min-h-0 inline-flex items-center justify-center;
-  }
-
-  .btn-primary {
-    @apply bg-primary text-white hover:bg-primary/90 shadow-md hover:shadow-lg;
-  }
-
-  .btn-secondary {
-    @apply bg-gray-500 text-white hover:bg-gray-600 shadow-md hover:shadow-lg;
-  }
-
-  .btn-success {
-    @apply bg-green-600 text-white hover:bg-green-700 shadow-md hover:shadow-lg;
-  }
-
-  .btn-danger {
-    @apply bg-red-600 text-white hover:bg-red-700 shadow-md hover:shadow-lg;
-  }
-
-  .btn-warning {
-    @apply bg-yellow-500 text-gray-900 hover:bg-yellow-600 shadow-md hover:shadow-lg;
-  }
-
-  .form-group {
-    @apply mb-5;
-  }
-
-  .form-group label {
-    @apply block mb-2 font-medium text-gray-700;
-  }
-
-  /* Fila checkbox/radio: misma línea y alineación vertical con el texto */
-  .form-group label:has(> input[type='checkbox']),
-  .form-group label:has(> input[type='radio']) {
-    @apply mb-0 flex items-center font-medium;
-  }
-
-  .form-group input:not([type='checkbox']):not([type='radio']):not([type='color']):not([type='range']):not([type='file']):not([type='hidden']):not(.form-input-hex):not(.form-input-date),
-  .form-group textarea,
-  .form-group select {
-    @apply w-full px-4 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all;
-  }
-
-  .form-group input[type='checkbox'],
-  .form-group input[type='radio'] {
-    @apply shrink-0 cursor-pointer align-middle;
-  }
-
-  .form-group textarea {
-    @apply min-h-[100px] resize-y;
-  }
-
-  /* Campo de código hex (junto al color picker): mismos estilos que otros inputs pero ancho acotado */
-  .form-group input.form-input-hex {
-    @apply px-4 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all;
-    width: auto;
-    max-width: 11ch;
-    min-width: 9ch;
-    flex-grow: 0;
-    flex-shrink: 0;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
-      'Courier New', monospace;
-  }
-
-  /* Fecha calendario con icono: ancho completo, misma altura que otros inputs */
-  .form-group .form-date-field {
-    @apply relative w-full min-w-0;
-  }
-
-  .form-group .form-date-field input.form-input-date {
-    @apply w-full min-w-0 h-11 max-h-11 px-4 py-2 pr-11 border border-gray-300 rounded-lg text-base leading-normal focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all;
-    max-width: 100%;
-    box-sizing: border-box;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-
-  .form-group .form-date-field input.form-input-date::-webkit-date-and-time-value {
-    text-align: left;
-  }
-
-  .form-group .form-date-field input.form-input-date::-webkit-calendar-picker-indicator {
-    position: absolute;
-    right: 0.75rem;
-    top: 50%;
-    width: 1.25rem;
-    height: 1.25rem;
-    margin: 0;
-    padding: 0;
-    transform: translateY(-50%);
-    opacity: 0;
-    cursor: pointer;
-  }
-
-  .card {
-    @apply bg-white rounded-xl p-4 sm:p-6 mb-5 shadow-md hover:shadow-lg transition-shadow;
-  }
-
-  .alert {
-    @apply p-4 rounded-lg mb-5;
-  }
-
-  .alert-success {
-    @apply bg-green-50 text-green-800 border border-green-200;
-  }
-
-  .alert-error {
-    @apply bg-red-50 text-red-800 border border-red-200;
-  }
-
-  .alert-info {
-    @apply bg-blue-50 text-blue-800 border border-blue-200;
-  }
-
-  .badge {
-    @apply inline-block px-3 py-1 rounded-full text-xs font-semibold;
-  }
-
-  .badge-success {
-    @apply bg-green-500 text-white;
-  }
-
-  .badge-warning {
-    @apply bg-yellow-400 text-gray-900;
-  }
-
-  .badge-danger {
-    @apply bg-red-500 text-white;
-  }
-
-  .badge-info {
-    @apply bg-blue-500 text-white;
-  }
-
-  .badge-secondary {
-    @apply bg-gray-500 text-white;
-  }
-
-  .spinner {
-    @apply border-4 border-gray-200 border-t-primary rounded-full w-10 h-10 animate-spin mx-auto;
-  }
+/*
+ * Pantallas de acceso con la grilla de puntos (`DotsAccess`). La grilla es
+ * el fondo y el formulario va en un panel opaco a un costado: los campos
+ * nunca quedan arriba de los puntos, que en movimiento marean. En el
+ * teléfono la grilla es sólo una franja arriba y el panel va abajo.
+ */
+.dots-access {
+	--dots-glow: theme('colors.primary.600');
+	--dots-ground: theme('colors.surface.page');
+	--dots-idle: theme('colors.ink.DEFAULT');
+	position: relative;
+	min-height: 100dvh;
+	container-type: inline-size;
+	background: var(--dots-ground);
 }
-
-@keyframes slide-in {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+.dots-access__canvas {
+	position: fixed;
+	inset: 0;
+	width: 100%;
+	height: 100%;
 }
-
-.animate-slide-in {
-  animation: slide-in 0.3s ease-out;
+.dots-access__panel {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 1.75rem;
+	min-height: 100dvh;
+	width: min(28rem, calc(100cqw - 4rem));
+	/* Lógico: en hebreo el panel va del otro lado con el mismo margen. */
+	margin-inline-start: clamp(2rem, 8cqw, 8rem);
+	padding-block: calc(env(safe-area-inset-top) + 2rem)
+		calc(env(safe-area-inset-bottom) + 2rem);
+	transition:
+		opacity 0.45s ease,
+		transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
-
-/* Estilos personalizados para react-datepicker */
-.react-datepicker-wrapper {
-  width: 100%;
+.dots-access__tarjeta {
+	display: flex;
+	flex-direction: column;
+	gap: 1.75rem;
+	padding: 2rem;
+	border: 1px solid theme('colors.surface.border');
+	border-radius: theme('borderRadius.card');
+	background: theme('colors.surface.DEFAULT');
+	box-shadow: theme('boxShadow.raised');
 }
-
-.react-datepicker__input-container {
-  width: 100%;
+.dots-access__tarjeta > * {
+	animation: dots-access-rise 0.95s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-
-.react-datepicker__input-container input {
-  width: 100%;
+.dots-access__tarjeta > :nth-child(2) {
+	animation-delay: 0.1s;
 }
-
-.react-datepicker {
-  font-family: inherit;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+.dots-access__tarjeta > :nth-child(3) {
+	animation-delay: 0.22s;
 }
-
-.react-datepicker__header {
-  background-color: #3B82F6;
-  border-bottom: none;
-  border-top-left-radius: 0.5rem;
-  border-top-right-radius: 0.5rem;
-  padding-top: 0.75rem;
+.dots-access__tarjeta > :nth-child(4) {
+	animation-delay: 0.34s;
 }
-
-.react-datepicker__current-month {
-  color: white;
-  font-weight: 600;
-  font-size: 0.875rem;
+.dots-access.is-leaving .dots-access__panel {
+	opacity: 0;
+	transform: translateY(-1.5rem);
 }
-
-.react-datepicker__day-name {
-  color: #000;
-  font-weight: 500;
+@keyframes dots-access-rise {
+	from {
+		opacity: 0;
+		filter: blur(8px);
+		transform: translateY(1.6rem);
+	}
 }
-
-.react-datepicker__day--selected,
-.react-datepicker__day--keyboard-selected {
-  background-color: #3B82F6 !important;
-  color: white !important;
+/* En el teléfono la grilla no acompaña el scroll: es una franja arriba que
+   se va con la página, así nunca queda detrás de los campos. */
+@media (max-width: 639px) {
+	.dots-access__canvas {
+		position: absolute;
+		height: 32dvh;
+		/* La franja se funde con el fondo en vez de cortar en una línea. */
+		mask-image: linear-gradient(to bottom, #000 70%, transparent);
+	}
 }
-
-.react-datepicker__day--selected:hover,
-.react-datepicker__day--keyboard-selected:hover {
-  background-color: #2563eb !important;
-  color: white !important;
+@container (max-width: 639px) {
+	.dots-access__panel {
+		justify-content: flex-start;
+		gap: 1.25rem;
+		width: calc(100cqw - 2rem);
+		margin-inline: auto;
+		padding-top: 30dvh;
+	}
+	.dots-access__tarjeta {
+		gap: 1.25rem;
+		padding: 1.25rem;
+	}
 }
-
-.react-datepicker__day:hover {
-  background-color: #dbeafe;
-  border-radius: 0.375rem;
-}
-
-.react-datepicker__day--today {
-  font-weight: 600;
-  color: #3B82F6;
-}
-
-.react-datepicker__day--today.react-datepicker__day--selected,
-.react-datepicker__day--today.react-datepicker__day--keyboard-selected {
-  color: white !important;
-}
-
-.react-datepicker__navigation-icon::before {
-  border-color: white;
-}
-
-.react-datepicker__navigation:hover *::before {
-  border-color: #dbeafe;
+@media (prefers-reduced-motion: reduce) {
+	.dots-access__panel,
+	.dots-access__tarjeta > * {
+		animation: none;
+		transition: none;
+	}
 }

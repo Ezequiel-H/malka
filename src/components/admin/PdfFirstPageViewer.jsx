@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { getPdfPreviewUrl } from '../../utils/paymentUtils';
+import { Button, Spinner } from '../ui';
 
 const renderPdfFirstPage = async (data, container, canvas, renderTaskRef) => {
   const { getDocument, GlobalWorkerOptions } = await import('pdfjs-dist');
@@ -84,8 +85,8 @@ const PdfFirstPageViewer = ({ url, inscriptionId, className = '' }) => {
     >
       {status === 'loading' && (
         <div className="flex flex-col items-center py-10">
-          <div className="spinner" />
-          <p className="text-sm text-gray-600 mt-3">Cargando PDF...</p>
+          <Spinner size="lg" label="Cargando PDF" />
+          <p className="mt-3 text-sm text-ink-muted">Cargando PDF...</p>
         </div>
       )}
 
@@ -95,7 +96,7 @@ const PdfFirstPageViewer = ({ url, inscriptionId, className = '' }) => {
           alt="Primera página del comprobante PDF"
           onLoad={handleImageLoad}
           onError={handleImageError}
-          className={`max-w-full max-h-[22rem] lg:max-h-[26rem] rounded border border-gray-200 bg-white shadow-sm object-contain ${
+          className={`max-w-full max-h-[22rem] lg:max-h-[26rem] rounded-control border border-surface-border bg-surface object-contain shadow-subtle ${
             status === 'ready' ? 'block' : 'hidden'
           }`}
         />
@@ -104,28 +105,31 @@ const PdfFirstPageViewer = ({ url, inscriptionId, className = '' }) => {
       <canvas
         ref={canvasRef}
         aria-label="Primera página del comprobante PDF"
-        className={`max-w-full max-h-[22rem] lg:max-h-[26rem] rounded border border-gray-200 bg-white shadow-sm object-contain ${
+        className={`max-w-full max-h-[22rem] lg:max-h-[26rem] rounded-control border border-surface-border bg-surface object-contain shadow-subtle ${
           status === 'ready' && useCanvas ? 'block' : 'hidden'
         }`}
       />
 
       {status === 'error' && (
         <div className="text-center py-8 px-4">
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="mb-4 text-sm text-ink-muted">
             No se pudo mostrar el PDF en el visor.
           </p>
         </div>
       )}
 
       {(status === 'ready' || status === 'error') && (
-        <a
+        <Button
+          variant="secondary"
+          size="sm"
+          icon="document"
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="btn btn-secondary text-sm py-1.5 px-4 shrink-0"
+          className="shrink-0"
         >
           Abrir PDF en pestaña nueva
-        </a>
+        </Button>
       )}
     </div>
   );
