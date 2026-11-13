@@ -1,95 +1,150 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
-import { activityPublicTags, publicTagColor, publicTagIcon } from '../../utils/tagFields';
-import { formatUtcCalendarDateEsAR, formatUtcCalendarDateToString } from '../../utils/dateUtils';
+import { DEFAULT_PUBLIC_TAG_COLOR, publicTagColor, publicTagIcon } from '../../utils/tagFields';
+import { formatUtcCalendarDateToString } from '../../utils/dateUtils';
 import { getActivityShareUrl } from '../../utils/activityShareUrl';
 import { formatActivityPrice } from '../../utils/priceUtils';
+import useCargaSuave from '../../hooks/useCargaSuave';
 import PageContainer from '../../components/layout/PageContainer';
-import {
-  Badge,
-  Button,
-  Card,
-  EmptyState,
-  Field,
-  Icon,
-  Select,
-  SkeletonCards,
-  useConfirm,
-} from '../../components/ui';
+import { Alert, BarraCupo, Button, EmptyState, Icon, IconoColor, Modal, SkeletonRows, cn, useConfirm } from '../../components/ui';
+import { Segmentado } from '../../components/admin/metricas/piezas';
+import DetalleActividad from '../../components/admin/actividades/DetalleActividad';
+import SemanaActividades from '../../components/admin/actividades/SemanaActividades';
 import ExportModal from '../../components/activities/ExportModal';
 
-const ESTADO_OPTIONS = [
-  { value: '', label: 'Todas' },
-  { value: 'publicada', label: 'Publicadas' },
-  { value: 'borrador', label: 'Borradores' },
-  { value: 'eliminada', label: 'Eliminadas' },
+/* «Activas» son las publicadas y los borradores: lo que el equipo mira a
+   diario. Las eliminadas quedan a un toque para volver a activarlas. */
+const ESTADOS = [
+  { valor: '', etiqueta: 'Activas' },
+  { valor: 'publicada', etiqueta: 'Publicadas' },
+  { valor: 'borrador', etiqueta: 'Borradores' },
+  { valor: 'eliminada', etiqueta: 'Eliminadas' },
+];
+const capitalizar = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+const VISTAS = [
+  { valor: 'lista', etiqueta: 'Lista' },
+  { valor: 'semana', etiqueta: 'Semana' },
 ];
 
+/* En pantallas anchas el detalle va al costado; en las angostas, en una hoja
+   que sube desde abajo (nunca debajo de la lista, donde nadie lo ve). */
+const ANCHO = '(min-width: 1024px)';
+const useEsAncho = () => {
+  const [ancho, setAncho] = useState(() => window.matchMedia(ANCHO).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(ANCHO);
+    const cambio = () => setAncho(mq.matches);
+    mq.addEventListener('change', cambio);
+    return () => mq.removeEventListener('change', cambio);
+  }, []);
+  return ancho;
+};
+
+/**
+ * Actividades del equipo. Cada una es una fila que se lee de un vistazo: el
+ * ícono y color de su tag, cuándo es, cómo viene el cupo del próximo
+ * encuentro y cuántos esperan aprobación. Tocarla abre su detalle con las
+ * acciones. La vista «Semana» muestra los encuentros de esta semana como
+ * calendario. Vista, búsqueda, estado, tags y la actividad abierta viven en
+ * la URL; los filtros se suman y los resuelve el back.
+ */
 const ActivitiesManagement = () => {
   const { showSuccess, showError } = useToast();
   const confirm = useConfirm();
-  const [activities, setActivities] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('publicada');
-  const [publicTagCatalog, setPublicTagCatalog] = useState([]);
-  const [selectedTags, setSelectedTags] = useState([]);
+  const navigate = useNavigate();
+  const esAncho = useEsAncho();
+  const [params, setParams] = useSearchParams();
+  const vista = params.get('vista') === 'semana' ? 'semana' : 'lista';
+  const estado = params.get('estado') ?? '';
+  const q = params.get('q') ?? '';
+  const tags = (params.get('tags') ?? '').split(',').filter(Boolean);
+  const sel = params.get('act');
+
+  const [texto, setTexto] = useState(q);
+  const [catalogo, setCatalogo] = useState([]);
+  const [ocupado, setOcupado] = useState(null);
   const [exportActivity, setExportActivity] = useState(null);
   const [exportDates, setExportDates] = useState([]);
   const [exportDatesLoading, setExportDatesLoading] = useState(false);
-  const navigate = useNavigate();
 
-  const toggleTag = (tagName) => {
-    setSelectedTags(prev =>
-      prev.includes(tagName)
-        ? prev.filter(t => t !== tagName)
-        : [...prev, tagName]
-    );
-  };
+  /* Cambia un parámetro de la URL sin sumar una entrada al historial. */
+  const cambiar = useCallback(
+    (cambios) =>
+      setParams(
+        (prev) => {
+          const sig = new URLSearchParams(prev);
+          for (const [k, v] of Object.entries(cambios)) {
+            if (v === null || v === '' || (Array.isArray(v) && !v.length)) sig.delete(k);
+            else sig.set(k, Array.isArray(v) ? v.join(',') : v);
+          }
+          return sig;
+        },
+        { replace: true },
+      ),
+    [setParams],
+  );
 
-  const filteredActivities = selectedTags.length === 0
-    ? activities
-    : activities.filter(activity => {
-        const tags = activityPublicTags(activity);
-        return selectedTags.some(sel => tags.includes(sel));
-      });
+  /* La búsqueda va a la URL (y al back) 250 ms después de la última tecla. */
+  useEffect(() => {
+    if (texto.trim() === q) return undefined;
+    const t = window.setTimeout(() => cambiar({ q: texto.trim() }), 250);
+    return () => window.clearTimeout(t);
+  }, [texto, q, cambiar]);
 
   useEffect(() => {
-    fetchActivities();
-  }, [filter]);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await axios.get('/tags');
-        if (!cancelled) setPublicTagCatalog(res.data.tags || []);
-      } catch (e) {
-        console.error('Error loading tag catalog:', e);
-      }
-    })();
+    let cancelado = false;
+    axios
+      .get('/tags')
+      .then((res) => !cancelado && setCatalogo(res.data.tags || []))
+      .catch((e) => console.error('Error loading tag catalog:', e));
     return () => {
-      cancelled = true;
+      cancelado = true;
     };
   }, []);
 
-  const fetchActivities = async () => {
-    try {
-      setLoading(true);
-      const params = filter ? `?estado=${filter}` : '';
-      const response = await axios.get(`/activities${params}`);
-      setActivities(response.data.activities);
-    } catch (error) {
-      console.error('Error fetching activities:', error);
-    } finally {
-      setLoading(false);
-    }
+  const tagsClave = tags.join(',');
+  const { datos, cargando, actualizando, error, recargar } = useCargaSuave(
+    (signal) =>
+      axios
+        .get('/admin/actividades-resumen', {
+          params: {
+            estado: estado || undefined,
+            q: q || undefined,
+            tags: tagsClave || undefined,
+          },
+          signal,
+        })
+        .then((r) => r.data),
+    `${estado}|${q}|${tagsClave}`,
+  );
+  const actividades = datos?.actividades ?? [];
+
+  const tagDe = (a) => a.categorias?.[0];
+  const colorDe = (a) => (tagDe(a) ? publicTagColor(catalogo, tagDe(a)) : DEFAULT_PUBLIC_TAG_COLOR);
+  const iconoDe = (a) => (tagDe(a) && publicTagIcon(catalogo, tagDe(a))) || 'activity';
+
+  /* En pantalla ancha siempre hay una abierta (la primera si no se eligió);
+     en el teléfono, sólo la que se tocó. */
+  const elegida = actividades.find((a) => a.id === sel) ?? (esAncho ? actividades[0] : null) ?? null;
+  const elegir = (id) => cambiar({ act: id });
+  const cerrar = () => cambiar({ act: null });
+
+  const toggleTag = (nombre) =>
+    cambiar({
+      tags: tags.includes(nombre) ? tags.filter((t) => t !== nombre) : [...tags, nombre],
+    });
+  const hayFiltros = Boolean(q || tags.length || estado);
+  const limpiar = () => {
+    setTexto('');
+    cambiar({ q: null, tags: null, estado: null });
   };
+
+  /* ---------- Acciones ---------- */
 
   const handleDelete = async (activityId, currentEstado) => {
     const isEliminada = currentEstado === 'eliminada';
-
     const ok = await confirm(
       isEliminada
         ? {
@@ -102,42 +157,55 @@ const ActivitiesManagement = () => {
             title: '¿Eliminar esta actividad?',
             description: 'Deja de verse en la cartelera. Podés volver a activarla después.',
             confirmLabel: 'Eliminar',
-          }
+          },
     );
     if (!ok) return;
 
     try {
       if (isEliminada) {
-        // Obtener la actividad completa del backend
+        // Se vuelve a guardar la actividad completa, sin los campos del sistema, como publicada.
         const response = await axios.get(`/activities/${activityId}`);
-        const activity = response.data.activity;
-        
-        // Preparar los datos para actualizar, excluyendo campos del sistema
-        const { _id, __v, createdAt, updatedAt, organizadorId, ...updateData } = activity;
-        
-        // Actualizar solo el estado
+        // eslint-disable-next-line no-unused-vars -- se descartan los campos del sistema
+        const { _id, __v, createdAt, updatedAt, organizadorId, ...updateData } = response.data.activity;
         updateData.estado = 'publicada';
-        
         await axios.put(`/activities/${activityId}`, updateData);
         showSuccess('Actividad reactivada exitosamente');
       } else {
-        // Eliminar la actividad
         await axios.delete(`/activities/${activityId}`);
         showSuccess('Actividad eliminada exitosamente');
       }
-      fetchActivities();
-    } catch (error) {
-      const errorMessage = isEliminada
-        ? 'Error al reactivar actividad'
-        : 'Error al eliminar actividad';
-      showError(error.response?.data?.message || errorMessage);
+      recargar();
+    } catch (err) {
+      showError(err.response?.data?.message || (isEliminada ? 'Error al reactivar actividad' : 'Error al eliminar actividad'));
+    }
+  };
+
+  /* Duplicar arma una copia como borrador, para retocarla antes de publicarla. */
+  const handleDuplicate = async (activityId) => {
+    setOcupado('duplicar');
+    try {
+      const response = await axios.get(`/activities/${activityId}`);
+      // eslint-disable-next-line no-unused-vars -- se descartan los campos del sistema
+      const { _id, __v, createdAt, updatedAt, organizadorId, ...copia } = response.data.activity;
+      const creada = await axios.post('/activities', {
+        ...copia,
+        titulo: `${copia.titulo} (copia)`,
+        estado: 'borrador',
+      });
+      showSuccess('Actividad duplicada como borrador');
+      recargar();
+      const nueva = creada.data.activity?._id;
+      if (nueva) cambiar({ act: nueva });
+    } catch (err) {
+      showError(err.response?.data?.message || 'No se pudo duplicar la actividad');
+    } finally {
+      setOcupado(null);
     }
   };
 
   const handleCopyLink = async (activityId) => {
-    const url = getActivityShareUrl(activityId);
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(getActivityShareUrl(activityId));
       showSuccess('Link copiado al portapapeles');
     } catch {
       showError('No se pudo copiar el link');
@@ -146,30 +214,26 @@ const ActivitiesManagement = () => {
 
   const downloadExport = async (activity, { fecha, estados, columnas } = {}) => {
     try {
-      const params = {};
-      if (fecha) params.fecha = fecha;
-      if (estados?.length) params.estados = estados.join(',');
-      if (columnas?.length) params.columnas = columnas.join(',');
+      const exportParams = {};
+      if (fecha) exportParams.fecha = fecha;
+      if (estados?.length) exportParams.estados = estados.join(',');
+      if (columnas?.length) exportParams.columnas = columnas.join(',');
       const response = await axios.get(`/activities/${activity._id}/export`, {
-        params,
-        responseType: 'blob'
+        params: exportParams,
+        responseType: 'blob',
       });
 
       const formatDateTimeForFilename = (date) => {
         const d = new Date(date);
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        const hours = String(d.getHours()).padStart(2, '0');
-        const minutes = String(d.getMinutes()).padStart(2, '0');
-        const seconds = String(d.getSeconds()).padStart(2, '0');
-        return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
+        const p2 = (n) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}_${p2(d.getHours())}-${p2(d.getMinutes())}-${p2(d.getSeconds())}`;
       };
 
       const cleanTitle = activity.titulo.replace(/[^a-z0-9\s]/gi, '').replace(/\s+/g, '_');
-      const eventDate = fecha || formatUtcCalendarDateToString(activity.fecha) || 'sin-fecha';
-      const exportDateTime = formatDateTimeForFilename(new Date());
-      const filename = `${cleanTitle}_${eventDate}_exportado_${exportDateTime}.xlsx`;
+      /* Sin fecha elegida (recurrente, «Todas») el nombre dice «todas», como el CSV;
+         una única o un viaje llevan su propia fecha. */
+      const eventDate = fecha || (activity.tipo !== 'recurrente' && activity.fecha ? formatUtcCalendarDateToString(activity.fecha) : null) || 'todas';
+      const filename = `${cleanTitle}_${eventDate}_exportado_${formatDateTimeForFilename(new Date())}.xlsx`;
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -179,8 +243,8 @@ const ActivitiesManagement = () => {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error al exportar:', error);
+    } catch (err) {
+      console.error('Error al exportar:', err);
       showError('Error al exportar inscripciones');
     }
   };
@@ -194,32 +258,25 @@ const ActivitiesManagement = () => {
   const handleExportClick = async (activity) => {
     setExportActivity(activity);
     setExportDates([]);
-    if (activity.tipo !== 'recurrente') {
-      return;
-    }
+    if (activity.tipo !== 'recurrente') return;
     setExportDatesLoading(true);
 
     try {
       const response = await axios.get(`/inscriptions/activity/${activity._id}`);
-      const inscriptions = response.data.inscriptions || [];
       const byDate = {};
-
-      inscriptions.forEach((inscription) => {
+      for (const inscription of response.data.inscriptions || []) {
         const fechaStr = formatUtcCalendarDateToString(inscription.fecha);
-        if (!fechaStr) return;
-        if (!byDate[fechaStr]) {
-          byDate[fechaStr] = { fechaStr, count: 0 };
-        }
+        if (!fechaStr) continue;
+        byDate[fechaStr] ??= { fechaStr, count: 0 };
         byDate[fechaStr].count += 1;
-      });
-
+      }
       const todayStr = formatUtcCalendarDateToString(new Date());
       const sorted = Object.values(byDate).sort((a, b) => a.fechaStr.localeCompare(b.fechaStr));
       const past = sorted.filter((d) => d.fechaStr < todayStr).slice(-3);
       const upcoming = sorted.filter((d) => d.fechaStr >= todayStr).slice(0, 3);
       setExportDates([...past, ...upcoming]);
-    } catch (error) {
-      console.error('Error al cargar fechas para exportar:', error);
+    } catch (err) {
+      console.error('Error al cargar fechas para exportar:', err);
       showError('Error al cargar fechas para exportar');
       closeExportModal();
     } finally {
@@ -230,269 +287,241 @@ const ActivitiesManagement = () => {
   const handleExport = async (opciones) => {
     const activity = exportActivity;
     closeExportModal();
-    if (activity) {
-      await downloadExport(activity, opciones);
-    }
+    if (activity) await downloadExport(activity, opciones);
   };
 
-  const getEstadoBadge = (estado) => {
-    const badges = {
-      publicada: { tone: 'success', text: 'Publicada' },
-      borrador: { tone: 'warning', text: 'Borrador' },
-      eliminada: { tone: 'danger', text: 'Eliminada' },
-    };
-    const badge = badges[estado] || badges.borrador;
-    return (
-      <Badge tone={badge.tone} dot>
-        {badge.text}
-      </Badge>
-    );
+  /* En el teléfono la hoja se cierra antes de abrir otra cosa: nunca dos
+     ventanas apiladas. */
+  const soltarHoja = () => {
+    if (!esAncho) cerrar();
   };
+  const accionesDe = (a) => ({
+    verInscriptos: () => navigate(`/admin/activities/${a.id}/inscriptions`),
+    asistencia: () => navigate(`/admin/activities/${a.id}/inscriptions${a.proximo ? `?fecha=${a.proximo.fecha}` : ''}`),
+    exportar: () => {
+      soltarHoja();
+      handleExportClick({
+        _id: a.id,
+        titulo: a.titulo,
+        tipo: a.tipo,
+        fecha: a.fecha,
+      });
+    },
+    duplicar: () => handleDuplicate(a.id),
+    editar: () => navigate(`/admin/activities/edit/${a.id}`),
+    copiarLink: () => handleCopyLink(a.id),
+    eliminar: () => {
+      soltarHoja();
+      handleDelete(a.id, a.estado);
+    },
+  });
 
-  if (loading) {
-    return (
-      <PageContainer title="Actividades">
-        <SkeletonCards />
-      </PageContainer>
-    );
-  }
+  /* ---------- Pantalla ---------- */
+
+  const lista = (
+    <ul className="divide-y divide-surface-border overflow-hidden rounded-[22px] border border-surface-border bg-surface">
+      {actividades.map((a) => {
+        const p = a.proximo;
+        return (
+          <li key={a.id}>
+            <button
+              type="button"
+              onClick={() => elegir(a.id)}
+              aria-current={elegida?.id === a.id ? 'true' : undefined}
+              className={cn(
+                'group grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3.5 text-start transition-colors duration-base sm:grid-cols-[auto_minmax(0,1fr)_8rem_auto] sm:gap-4 sm:px-5 sm:py-4 md:grid-cols-[auto_minmax(0,1fr)_8rem_6.5rem_auto] xl:grid-cols-[auto_minmax(0,1fr)_8rem_6.5rem_9.5rem] 2xl:grid-cols-[auto_minmax(0,1fr)_8rem_6.5rem_13.5rem]',
+                elegida?.id === a.id ? 'bg-primary-50/70' : 'hover:bg-ink/[0.02]',
+              )}
+            >
+              <IconoColor icono={iconoDe(a)} color={colorDe(a)} />
+              <span className="min-w-0">
+                <span className="flex items-center gap-2">
+                  <span className="truncate font-grotesk font-semibold text-ink">{a.titulo}</span>
+                  {a.estado !== 'publicada' && (
+                    <span
+                      className={cn(
+                        'shrink-0 rounded-pill px-2 py-0.5 text-[0.7rem] font-medium',
+                        a.estado === 'eliminada' ? 'bg-danger-50 text-danger-700' : 'bg-ink/[0.06] text-ink-muted',
+                      )}
+                    >
+                      {a.estado === 'eliminada' ? 'Eliminada' : 'Borrador'}
+                    </span>
+                  )}
+                </span>
+                <span className="mt-0.5 block truncate text-sm text-ink-muted">{a.cuando}</span>
+              </span>
+              <span className="hidden sm:block">
+                {p ? (
+                  <BarraCupo inscriptos={p.aceptadas} cupo={a.cupo} textoSinCupo={`${p.aceptadas} anotados`} />
+                ) : (
+                  <span className="text-xs text-ink-faint">Sin encuentros</span>
+                )}
+              </span>
+              <span className="hidden flex-col items-end gap-1 md:flex">
+                <span className="text-xs text-ink-muted">Próximo</span>
+                <span className="whitespace-nowrap text-sm font-medium text-ink">{p ? capitalizar(p.texto) : '—'}</span>
+              </span>
+              <span className="flex items-center justify-end gap-3">
+                {p?.pendientes > 0 && (
+                  <span className="whitespace-nowrap rounded-pill bg-warning-50 px-2 py-0.5 text-xs font-semibold text-warning-700" title="Por aprobar">
+                    {p.pendientes}
+                    <span className="hidden sm:inline"> por aprobar</span>
+                  </span>
+                )}
+                <span className="hidden whitespace-nowrap text-sm font-semibold tabular-nums text-ink 2xl:inline">{formatActivityPrice(a)}</span>
+                <Icon
+                  name="chevronRight"
+                  size="sm"
+                  className="text-ink-faint transition-transform duration-base group-hover:translate-x-0.5 rtl:-scale-x-100"
+                />
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
 
   return (
-    <PageContainer
-      title="Actividades"
-      actions={
+    <PageContainer title="Actividades">
+      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <Segmentado opciones={VISTAS} valor={vista} onChange={(v) => cambiar({ vista: v === 'lista' ? null : v })} etiqueta="Cómo ver" />
+          <label className="flex min-h-[44px] min-w-0 flex-1 items-center gap-2 rounded-pill border border-surface-border bg-surface px-4 text-ink-muted focus-within:border-ink/30 lg:w-72 lg:flex-none">
+            <Icon name="search" size="sm" />
+            <input
+              type="search"
+              value={texto}
+              onChange={(e) => setTexto(e.target.value)}
+              placeholder="Buscar actividad"
+              aria-label="Buscar actividad"
+              className="w-full min-w-0 bg-transparent text-sm text-ink outline-none placeholder:text-ink-faint"
+            />
+          </label>
+        </div>
         <Button to="/admin/activities/new" icon="add" className="w-full shrink-0 sm:w-auto">
           Nueva actividad
         </Button>
-      }
-    >
+      </div>
 
-        {/* Filtro */}
-        <Card className="mb-8">
-          <Field label="Filtrar por estado" className="mb-0">
-            <Select
-              options={ESTADO_OPTIONS}
-              value={filter}
-              onChange={(value) => setFilter(value ?? '')}
-              className="max-w-xs"
-            />
-          </Field>
-
-          {publicTagCatalog.length > 0 && (
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <span className="block text-sm font-medium text-ink-soft">Filtrar por tags</span>
-                {selectedTags.length > 0 && (
-                  <Button
-                    variant="link"
-                    size="sm"
-                    onClick={() => setSelectedTags([])}
-                    className="min-h-0 px-0 py-0"
-                  >
-                    Limpiar
-                  </Button>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {publicTagCatalog.map(tag => {
-                  const isSelected = selectedTags.includes(tag.nombre);
-                  const color = publicTagColor(publicTagCatalog, tag.nombre);
-                  return (
-                    <button
-                      key={tag.nombre}
-                      type="button"
-                      onClick={() => toggleTag(tag.nombre)}
-                      aria-pressed={isSelected}
-                      className={`inline-flex items-center rounded-pill px-3 py-1 text-xs font-semibold transition-chrome duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 active:scale-95 motion-reduce:transition-none ${
-                        isSelected ? 'text-white' : 'text-ink-soft'
-                      }`}
-                      style={{
-                        backgroundColor: isSelected ? color : 'transparent',
-                        border: `1px solid ${color}`
-                      }}
-                    >
-                      {tag.nombre}
-                    </button>
-                  );
-                })}
-              </div>
-              {selectedTags.length > 0 && (
-                <p className="mt-2 text-sm text-ink-muted">
-                  Mostrando actividades con al menos uno de los tags seleccionados.
-                </p>
-              )}
-            </div>
-          )}
-        </Card>
-
-        {/* Lista de actividades */}
-        {filteredActivities.length === 0 ? (
-          <Card padding="none">
-            <EmptyState
-              icon="activity"
-              title="Sin actividades"
-              description="No hay actividades con el filtro seleccionado."
-              action={
-                <Button to="/admin/activities/new" icon="add" size="sm">
-                  Nueva actividad
-                </Button>
-              }
-            />
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredActivities.map(activity => (
-              <Card key={activity._id} className="flex flex-col">
-                <div className="mb-2 flex items-start justify-between gap-3">
-                  <h2 className="min-w-0 flex-1 text-lg font-bold leading-snug text-ink">
-                    {activity.titulo}
-                  </h2>
-                  <div className="shrink-0">{getEstadoBadge(activity.estado)}</div>
-                </div>
-
-                {/* Los datos en una línea envolvente con iconos, como en la
-                    cartelera: una fila por dato hacía la card el doble de alta. */}
-                <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-ink-soft">
-                  {activity.fecha && (
-                    <span className="flex items-center gap-1.5">
-                      <Icon name="activity" size="sm" className="shrink-0 text-ink-faint" />
-                      {formatUtcCalendarDateEsAR(activity.fecha)}
-                      {activity.tipo === 'viaje' && activity.fechaFin
-                        ? ` → ${formatUtcCalendarDateEsAR(activity.fechaFin)}`
-                        : ''}
-                    </span>
+      <div className="mb-6 space-y-3">
+        {/* En 375 px las cuatro opciones entran con menos aire, sin cortarse. */}
+        <Segmentado
+          opciones={ESTADOS}
+          valor={estado}
+          onChange={(v) => cambiar({ estado: v, act: null })}
+          etiqueta="Estado"
+          className="[&>button]:px-2 [&>button]:text-[0.8rem] sm:[&>button]:px-3.5 sm:[&>button]:text-sm"
+        />
+        {catalogo.length > 0 && (
+          <div
+            className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+            role="group"
+            aria-label="Filtrar por tag"
+          >
+            {catalogo.map((tag) => {
+              const activo = tags.includes(tag.nombre);
+              const color = publicTagColor(catalogo, tag.nombre);
+              const icono = publicTagIcon(catalogo, tag.nombre);
+              return (
+                <button
+                  key={tag.nombre}
+                  type="button"
+                  aria-pressed={activo}
+                  onClick={() => toggleTag(tag.nombre)}
+                  className={cn(
+                    'inline-flex min-h-[36px] shrink-0 items-center gap-2 rounded-pill border px-3 text-sm transition-colors duration-base motion-reduce:transition-none',
+                    activo ? 'border-transparent text-surface' : 'border-surface-border bg-surface text-ink-soft hover:border-ink/25',
                   )}
-                  {activity.hora && activity.tipo !== 'viaje' && (
-                    <span className="flex items-center gap-1.5">
-                      <Icon name="time" size="sm" className="shrink-0 text-ink-faint" />
-                      {activity.hora}
-                    </span>
-                  )}
-                  {activity.lugar && (
-                    <span className="flex min-w-0 items-center gap-1.5">
-                      <Icon name="location" size="sm" className="shrink-0 text-ink-faint" />
-                      <span className="truncate">{activity.lugar}</span>
-                    </span>
-                  )}
-                  {activity.cupo && (
-                    <span className="flex items-center gap-1.5">
-                      <Icon name="users" size="sm" className="shrink-0 text-ink-faint" />
-                      Cupo {activity.cupo}
-                    </span>
-                  )}
-                  <span className="flex items-center gap-1.5">
-                    <Icon name="payment" size="sm" className="shrink-0 text-ink-faint" />
-                    {activity.esGratuita ? (
-                      <Badge tone="success" size="sm">
-                        Gratis
-                      </Badge>
-                    ) : (
-                      <span className="font-semibold text-ink">{formatActivityPrice(activity)}</span>
-                    )}
-                  </span>
-                  <Badge tone="neutral" size="sm">
-                    {activity.tipo === 'recurrente'
-                      ? 'Recurrente'
-                      : activity.tipo === 'viaje'
-                        ? 'Viaje'
-                        : 'Única'}
-                  </Badge>
-                </div>
-
-                <p className="mb-3 line-clamp-2 whitespace-pre-line text-sm text-ink-muted">
-                  {activity.descripcion}
-                </p>
-
-                {activityPublicTags(activity).length > 0 && (
-                  <div className="mb-3 flex flex-wrap gap-1.5">
-                    {activityPublicTags(activity).map(cat => (
-                      <Badge
-                        key={cat}
-                        solid
-                        size="sm"
-                        icon={publicTagIcon(publicTagCatalog, cat) || undefined}
-                        style={{ backgroundColor: publicTagColor(publicTagCatalog, cat) }}
-                      >
-                        {cat}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-
-                {/* Una acción principal con texto; el resto, iconos con tooltip.
-                    Cinco botones llenos convertían cada card en una botonera. */}
-                <div className="mt-auto flex items-center justify-between gap-2 border-t border-surface-border pt-3">
-                  <Button
-                    size="sm"
-                    icon="users"
-                    onClick={() => navigate(`/admin/activities/${activity._id}/inscriptions`)}
-                  >
-                    Inscripciones
-                  </Button>
-
-                  <div className="flex items-center gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      icon="edit"
-                      iconOnly
-                      label="Editar"
-                      title="Editar"
-                      onClick={() => navigate(`/admin/activities/edit/${activity._id}`)}
-                    />
-                    {activity.estado === 'publicada' && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        icon="copy"
-                        iconOnly
-                        label="Copiar link"
-                        title="Copiar link"
-                        onClick={() => handleCopyLink(activity._id)}
-                      />
-                    )}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      icon="download"
-                      iconOnly
-                      label="Exportar Excel"
-                      title="Exportar Excel"
-                      onClick={() => handleExportClick(activity)}
-                    />
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      icon={activity.estado === 'eliminada' ? 'check' : 'delete'}
-                      iconOnly
-                      label={activity.estado === 'eliminada' ? 'Volver a activar' : 'Eliminar'}
-                      title={activity.estado === 'eliminada' ? 'Volver a activar' : 'Eliminar'}
-                      onClick={() => handleDelete(activity._id, activity.estado)}
-                      className={
-                        activity.estado === 'eliminada'
-                          ? 'hover:bg-success-50 hover:text-success-600'
-                          : 'hover:bg-danger-50 hover:text-danger-600'
-                      }
-                    />
-                  </div>
-                </div>
-              </Card>
-            ))}
+                  style={activo ? { background: color } : undefined}
+                >
+                  {icono ? <Icon name={icono} size="xs" /> : <span aria-hidden className="h-2 w-2 rounded-pill" style={{ background: color }} />}
+                  {tag.nombre}
+                  {activo && <Icon name="close" size="xs" />}
+                </button>
+              );
+            })}
+            {hayFiltros && (
+              <Button variant="ghost" size="sm" onClick={limpiar} className="shrink-0">
+                Limpiar filtros
+              </Button>
+            )}
           </div>
         )}
+      </div>
 
-        {exportActivity && (
-          <ExportModal
-            activity={exportActivity}
-            dates={exportDates}
-            loading={exportDatesLoading}
-            onClose={closeExportModal}
-            onExport={handleExport}
-          />
-        )}
+      {error && !datos ? (
+        <Alert
+          tone="danger"
+          title="No se pudieron cargar las actividades"
+          action={
+            <Button variant="secondary" size="sm" onClick={recargar}>
+              Reintentar
+            </Button>
+          }
+        />
+      ) : !datos ? (
+        /* El lugar queda reservado mientras carga; si es corta, no se ve nada. */
+        <div className={cn('min-h-[24rem] transition-opacity duration-base', cargando ? 'opacity-100' : 'opacity-0')}>
+          <div className="rounded-[22px] border border-surface-border bg-surface p-4">
+            <SkeletonRows count={6} />
+          </div>
+        </div>
+      ) : (
+        <div className="grid animate-fade-in gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] [&>*]:min-w-0">
+          <div className={cn('transition-opacity duration-base', actualizando && 'opacity-60')} aria-busy={actualizando}>
+            {actividades.length === 0 ? (
+              <div className="rounded-[22px] border border-surface-border bg-surface">
+                <EmptyState
+                  icon="activity"
+                  title="Sin actividades"
+                  description={hayFiltros ? 'No hay actividades con estos filtros.' : 'Todavía no hay actividades cargadas.'}
+                  action={
+                    hayFiltros ? (
+                      <Button variant="secondary" size="sm" onClick={limpiar}>
+                        Limpiar filtros
+                      </Button>
+                    ) : (
+                      <Button to="/admin/activities/new" icon="add" size="sm">
+                        Nueva actividad
+                      </Button>
+                    )
+                  }
+                />
+              </div>
+            ) : (
+              <div key={vista} className="animate-fade-in">
+                {vista === 'lista' ? (
+                  lista
+                ) : (
+                  <SemanaActividades semana={datos.semana} actividades={actividades} colorDe={colorDe} elegida={elegida?.id} onElegir={elegir} />
+                )}
+              </div>
+            )}
+          </div>
+          {esAncho && elegida && (
+            <aside className="lg:sticky lg:top-24 lg:self-start">
+              <div key={elegida.id} className="animate-fade-in-up">
+                <DetalleActividad actividad={elegida} color={colorDe(elegida)} icono={iconoDe(elegida)} acciones={accionesDe(elegida)} ocupado={ocupado} />
+              </div>
+            </aside>
+          )}
+        </div>
+      )}
+
+      {!esAncho && (
+        <Modal open={Boolean(elegida)} onClose={cerrar} title={elegida?.titulo} description={elegida?.cuando}>
+          {elegida && (
+            <DetalleActividad actividad={elegida} color={colorDe(elegida)} icono={iconoDe(elegida)} enHoja acciones={accionesDe(elegida)} ocupado={ocupado} />
+          )}
+        </Modal>
+      )}
+
+      {exportActivity && (
+        <ExportModal activity={exportActivity} dates={exportDates} loading={exportDatesLoading} onClose={closeExportModal} onExport={handleExport} />
+      )}
     </PageContainer>
   );
 };
 
 export default ActivitiesManagement;
-
