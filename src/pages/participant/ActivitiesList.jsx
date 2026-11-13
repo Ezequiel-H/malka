@@ -1,604 +1,298 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '../../contexts/ToastContext';
-import { activityPublicTags, publicTagColor, publicTagIcon, DEFAULT_PUBLIC_TAG_COLOR } from '../../utils/tagFields';
-import { formatDateEsAR, formatDateToString, formatUtcCalendarDateEsAR, formatUtcCalendarDateToString } from '../../utils/dateUtils';
-import { buildGoogleCalendarTemplateUrl } from '../../utils/googleCalendarActivityUrl';
-import { postInscription } from '../../utils/paymentUtils';
-import { formatActivityPrice } from '../../utils/priceUtils';
+import { Link, useSearchParams } from 'react-router-dom';
+import useCargaSuave from '../../hooks/useCargaSuave';
 import { useDebounce } from '../../hooks/useDebounce';
-import ActivityDescription from '../../components/activities/ActivityDescription';
-import ActivityTags from '../../components/activities/ActivityTags';
-import ActivityInfo from '../../components/activities/ActivityInfo';
+import { activityPublicTags, publicTagColor, publicTagIcon, DEFAULT_PUBLIC_TAG_COLOR } from '../../utils/tagFields';
+import { formatActivityPrice } from '../../utils/priceUtils';
+import { formatUtcCalendarDateToString } from '../../utils/dateUtils';
+import { diasHasta, fechaEn, hoyIso, horaDe, ocurreEl, sumarDias } from '../../utils/participante';
 import PageContainer from '../../components/layout/PageContainer';
-import InscriptionStatusTag from '../../components/activities/InscriptionStatusTag';
-import DateSelectionModal from '../../components/activities/DateSelectionModal';
-import InscriptionConfirmModal from '../../components/activities/InscriptionConfirmModal';
 import BirthDatePrompt from '../../components/profile/BirthDatePrompt';
 import DatosFaltantesPrompt from '../../components/profile/DatosFaltantesPrompt';
+import { Segmentado } from '../../components/admin/metricas/piezas';
+import { EmptyState, Icon, IconoColor, Skeleton, cn } from '../../components/ui';
 import { useIdioma } from '../../i18n';
-import {
-  Badge,
-  Button, Card, EmptyState, Field, Input, Select,
-  cn,
-  Icon,
-  SkeletonCards,
-} from '../../components/ui';
 
+/* Hasta dónde mira cada «cuándo». «Todo» son 30 días: es lo que el back
+   calcula de encuentros por actividad. */
+const VENTANA = { hoy: 1, semana: 7, finde: 7, todo: 30 };
+const QUEDAN_POCOS = 4;
+
+const diaDe = (valor) => (valor ? formatUtcCalendarDateToString(valor) : null);
+
+/*
+ * Las actividades y, de cada una, sus encuentros de los próximos 30 días con
+ * los lugares que quedan y si la persona ya está anotada (el back lo calcula
+ * por fecha). Si ese pedido falla para una actividad, sus días salen de sus
+ * reglas, sin cupo.
+ */
+const pedir = (q) => async (signal) => {
+  const [actividades, tags] = await Promise.all([
+    axios.get('/activities', { params: q ? { search: q } : {}, signal }).then((r) => r.data.activities ?? []),
+    axios.get('/tags', { signal }).then((r) => r.data.tags ?? []).catch(() => []),
+  ]);
+  const hoy = hoyIso();
+  const conFechas = await Promise.all(
+    actividades.map((a) =>
+      axios
+        .get(`/inscriptions/activity/${a._id}/available-dates`, { signal })
+        .then((r) =>
+          (r.data.availableDates ?? []).map((d) => ({
+            dia: d.fechaStr,
+            hora: d.hora || horaDe(a),
+            quedan: d.cuposDisponibles ?? null,
+            lleno: d.tieneCupo === false,
+            estado: d.estadoInscripcion ?? null,
+          })),
+        )
+        .catch(() =>
+          Array.from({ length: VENTANA.todo }, (_, i) => sumarDias(hoy, i))
+            .filter((dia) => ocurreEl(a, dia))
+            .map((dia) => ({ dia, hora: horaDe(a), quedan: null, lleno: false, estado: diaDe(a.fechaInscripcion) === dia ? a.estadoInscripcion : null })),
+        )
+        .then((fechas) => ({ ...a, fechas: fechas.filter((f) => f.dia >= hoy) })),
+    ),
+  );
+  return { actividades: conFechas, tags };
+};
+
+/* Los días que entran en cada «cuándo»: el finde son el sábado y el domingo que vienen. */
+const diasDe = (cuando, hoy) => {
+  const dias = Array.from({ length: VENTANA[cuando] }, (_, i) => sumarDias(hoy, i));
+  if (cuando !== 'finde') return dias;
+  return dias.filter((d) => [0, 6].includes(new Date(`${d}T00:00:00Z`).getUTCDay())).slice(0, 2);
+};
+
+/* Una fila: la hora adelante, el color de la propuesta y lo que ayuda a decidir. */
+const Fila = ({ a, f, color, icono, t }) => (
+  <li>
+    <Link
+      to={`/activities/${a._id}?fecha=${f.dia}`}
+      className="flex items-center gap-3 rounded-[18px] border border-transparent bg-surface p-3 transition-[border-color,transform] duration-base hover:border-surface-border active:scale-[0.99] motion-reduce:active:scale-100"
+    >
+      <span className="w-12 shrink-0 text-center font-grotesk text-sm font-semibold tabular-nums text-ink">{f.hora || '—'}</span>
+      <IconoColor icono={icono} color={color} />
+      <span className="min-w-0 flex-1">
+        <span dir="auto" className="block truncate font-grotesk font-semibold text-ink">
+          {a.titulo}
+        </span>
+        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+          <span className="tabular-nums text-ink-muted">{a.esGratuita ? t('comun.gratis') : formatActivityPrice(a)}</span>
+          {f.estado === 'aceptada' && <span className="rounded-pill bg-success-50 px-2 py-0.5 font-semibold text-success-700">{t('cartelera.vas')}</span>}
+          {f.estado === 'pendiente' && <span className="rounded-pill bg-warning-50 px-2 py-0.5 font-semibold text-warning-700">{t('cartelera.pendiente')}</span>}
+          {f.estado === 'en_espera' && <span className="rounded-pill bg-info-50 px-2 py-0.5 font-semibold text-info-700">{t('cartelera.enEspera')}</span>}
+          {!f.estado && f.lleno && <span className="rounded-pill bg-ink/[0.06] px-2 py-0.5 font-semibold text-ink-soft">{t('cartelera.lleno')}</span>}
+          {!f.estado && !f.lleno && f.quedan !== null && f.quedan <= QUEDAN_POCOS && (
+            <span className="rounded-pill bg-warning-50 px-2 py-0.5 font-semibold text-warning-700">{t('cartelera.quedan', { n: f.quedan })}</span>
+          )}
+        </span>
+      </span>
+      <Icon name="chevronRight" size="sm" className="shrink-0 text-ink-faint rtl:-scale-x-100" />
+    </Link>
+  </li>
+);
+
+/**
+ * La cartelera de quien participa, como agenda de los próximos días: cada día
+ * con sus encuentros, la hora adelante y lo que hace falta para decidir
+ * (precio, si quedan pocos lugares, si ya va). Los viajes van arriba,
+ * destacados. Se filtra por cuándo y por propuesta, y todo queda en la
+ * dirección. Anotarse se hace en la actividad, con el día ya elegido.
+ */
 const ActivitiesList = () => {
-  const { showSuccess, showError } = useToast();
-  const { t, idioma, locale } = useIdioma();
-  const [activities, setActivities] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [initialLoad, setInitialLoad] = useState(true);
-  const [searchInput, setSearchInput] = useState('');
-  const [filters, setFilters] = useState({
-    search: '',
-    periodo: '',
-    categoria: ''
-  });
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [selectedActivity, setSelectedActivity] = useState(null);
-  const [availableDates, setAvailableDates] = useState([]);
-  const [loadingDates, setLoadingDates] = useState(false);
-  const [showDateModal, setShowDateModal] = useState(false);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [publicTagCatalog, setPublicTagCatalog] = useState([]);
-  const [comprobanteFile, setComprobanteFile] = useState(null);
+  const { t, locale } = useIdioma();
+  const [params, setParams] = useSearchParams();
+  const q = params.get('q') ?? '';
+  const cuando = VENTANA[params.get('cuando')] ? params.get('cuando') : 'semana';
+  const elegidas = (params.get('tags') ?? '').split(',').filter(Boolean);
+  const [texto, setTexto] = useState(q);
+  const buscado = useDebounce(texto.trim(), 350);
 
-  const navigate = useNavigate();
-
-  // Extraer categorías únicas de las actividades cargadas
-  const getAvailableCategories = () => {
-    const allCategories = new Set();
-    activities.forEach(activity => {
-      activityPublicTags(activity).forEach(cat => {
-        if (cat && String(cat).trim()) {
-          allCategories.add(cat);
+  const cambiar = (cambios) =>
+    setParams(
+      (prev) => {
+        const sig = new URLSearchParams(prev);
+        for (const [k, v] of Object.entries(cambios)) {
+          if (!v || (Array.isArray(v) && !v.length)) sig.delete(k);
+          else sig.set(k, Array.isArray(v) ? v.join(',') : v);
         }
-      });
-    });
-    return Array.from(allCategories).sort();
-  };
-
-  const categoriasOptions = getAvailableCategories();
-
-  const debouncedSearch = useDebounce(searchInput, 350);
-
-  useEffect(() => {
-    setFilters(prev => (
-      prev.search === debouncedSearch ? prev : { ...prev, search: debouncedSearch }
-    ));
-  }, [debouncedSearch]);
-
-  useEffect(() => {
-    fetchActivities();
-  }, [filters]);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await axios.get('/tags');
-        if (!cancelled) setPublicTagCatalog(res.data.tags || []);
-      } catch (e) {
-        console.error('Error loading tag catalog:', e);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key === 'Escape') {
-        if (showDateModal) {
-          setShowDateModal(false);
-          setSelectedActivity(null);
-          setAvailableDates([]);
-        } else if (showConfirmModal) {
-          setShowConfirmModal(false);
-          setSelectedDate(null);
-        }
-      }
-    };
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, [showDateModal, showConfirmModal]);
-
-  const getDateRange = (periodo) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    switch (periodo) {
-      case 'esta-semana': {
-        // Lunes de esta semana (0 = domingo, 1 = lunes, etc.)
-        const dayOfWeek = today.getDay();
-        const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Ajuste para que lunes sea el inicio
-        const monday = new Date(today);
-        monday.setDate(today.getDate() + diff);
-        monday.setHours(0, 0, 0, 0);
-        // Domingo de esta semana
-        const sunday = new Date(monday);
-        sunday.setDate(monday.getDate() + 6);
-        sunday.setHours(23, 59, 59, 999);
-        return { fechaDesde: formatDateToString(monday), fechaHasta: formatDateToString(sunday) };
-      }
-      case 'semana-que-viene': {
-        // Lunes de la próxima semana
-        const dayOfWeek = today.getDay();
-        const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-        const monday = new Date(today);
-        monday.setDate(today.getDate() + diff + 7); // Siguiente semana
-        monday.setHours(0, 0, 0, 0);
-        // Domingo de la próxima semana
-        const sunday = new Date(monday);
-        sunday.setDate(monday.getDate() + 6);
-        sunday.setHours(23, 59, 59, 999);
-        return { fechaDesde: formatDateToString(monday), fechaHasta: formatDateToString(sunday) };
-      }
-      case 'este-mes': {
-        // Primer día del mes actual
-        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-        firstDay.setHours(0, 0, 0, 0);
-        // Último día del mes actual
-        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-        lastDay.setHours(23, 59, 59, 999);
-        return { fechaDesde: formatDateToString(firstDay), fechaHasta: formatDateToString(lastDay) };
-      }
-      case 'siguiente-mes': {
-        // Primer día del siguiente mes
-        const firstDay = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-        firstDay.setHours(0, 0, 0, 0);
-        // Último día del siguiente mes
-        const lastDay = new Date(today.getFullYear(), today.getMonth() + 2, 0);
-        lastDay.setHours(23, 59, 59, 999);
-        return { fechaDesde: formatDateToString(firstDay), fechaHasta: formatDateToString(lastDay) };
-      }
-      default:
-        return { fechaDesde: '', fechaHasta: '' };
-    }
-  };
-
-  const getPeriodLabel = (periodo) => {
-    if (!periodo) return t('cartelera.todosLosPeriodos');
-    
-    const { fechaDesde, fechaHasta } = getDateRange(periodo);
-    if (!fechaDesde || !fechaHasta) return t('cartelera.todosLosPeriodos');
-    
-    const formatDate = (dateStr) => {
-      return formatDateEsAR(dateStr, { day: '2-digit', month: '2-digit' });
-    };
-    
-    const desde = formatDate(fechaDesde);
-    const hasta = formatDate(fechaHasta);
-    
-    switch (periodo) {
-      case 'esta-semana':
-        return t('cartelera.estaSemana', { desde, hasta });
-      case 'semana-que-viene':
-        return t('cartelera.semanaQueViene', { desde, hasta });
-      case 'este-mes': {
-        const today = new Date();
-        const monthName = today.toLocaleDateString(locale, { month: 'long' });
-        const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-        return capitalizedMonth;
-      }
-      case 'siguiente-mes': {
-        const today = new Date();
-        const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-        const monthName = nextMonth.toLocaleDateString(locale, { month: 'long' });
-        const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-        return capitalizedMonth;
-      }
-      default:
-        return t('cartelera.todosLosPeriodos');
-    }
-  };
-
-  const fetchActivities = async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams();
-      
-      // Agregar búsqueda
-      if (filters.search) {
-        params.append('search', filters.search);
-      }
-      
-      // Agregar categoría
-      if (filters.categoria) {
-        params.append('categoria', filters.categoria);
-      }
-      
-      // Agregar fechas según el período seleccionado
-      if (filters.periodo) {
-        const { fechaDesde, fechaHasta } = getDateRange(filters.periodo);
-        if (fechaDesde) params.append('fechaDesde', fechaDesde);
-        if (fechaHasta) params.append('fechaHasta', fechaHasta);
-      }
-
-      const response = await axios.get(`/activities?${params.toString()}`);
-      const updatedActivities = response.data.activities;
-      setActivities(updatedActivities);
-      
-      // Si hay una actividad seleccionada, actualizarla también
-      if (selectedActivity) {
-        const updatedActivity = updatedActivities.find(a => a._id === selectedActivity._id);
-        if (updatedActivity) {
-          setSelectedActivity(updatedActivity);
-        }
-      }
-      
-      return updatedActivities;
-    } catch (error) {
-      console.error('Error fetching activities:', error);
-      return [];
-    } finally {
-      setLoading(false);
-      setInitialLoad(false);
-    }
-  };
-
-  const handleInscribe = async (activityData, fecha = null, file = null) => {
-    try {
-      const response = await postInscription(axios, {
-        activityId: activityData._id,
-        fecha,
-        comprobanteFile: file,
-        esGratuita: activityData.esGratuita,
-        tipo: activityData.tipo,
-      });
-      // El mensaje del back está en castellano: en otro idioma va el propio.
-      showSuccess((idioma === 'es' && response.data.message) || t('cartelera.inscripcionOk'));
-      setShowConfirmModal(false);
-      setSelectedDate(null);
-      setComprobanteFile(null);
-      
-      // Recargar las actividades primero (esto actualizará selectedActivity automáticamente)
-      await fetchActivities();
-      
-      // Recargar las fechas disponibles para actualizar el estado de inscripción
-      if (selectedActivity && selectedActivity.tipo === 'recurrente') {
-        try {
-          const responseDates = await axios.get(`/inscriptions/activity/${activityData._id}/available-dates`);
-          setAvailableDates(responseDates.data.availableDates);
-        } catch (error) {
-          console.error('Error reloading available dates:', error);
-        }
-      } else {
-        setShowDateModal(false);
-        setSelectedActivity(null);
-        setAvailableDates([]);
-      }
-    } catch (error) {
-      showError(error.response?.data?.message || t('cartelera.inscripcionError'));
-    }
-  };
-
-  const openConfirmForUnica = (activity) => {
-    const fechaStr = activity.fecha ? formatUtcCalendarDateToString(activity.fecha) : null;
-    setSelectedActivity(activity);
-    setSelectedDate({
-      fecha: activity.fecha,
-      fechaStr,
-      hora: activity.hora,
-    });
-    setComprobanteFile(null);
-    setShowConfirmModal(true);
-  };
-
-  const handleInscribeButtonClick = (dateOption) => {
-    setSelectedDate(dateOption);
-    setComprobanteFile(null);
-    setShowConfirmModal(true);
-  };
-
-  const handleConfirmInscription = () => {
-    if (!selectedDate || !selectedActivity) return;
-    if (!selectedActivity.esGratuita && selectedActivity.tipo !== 'viaje' && !comprobanteFile) {
-      showError(t('cartelera.faltaComprobante'));
-      return;
-    }
-    handleInscribe(selectedActivity, selectedDate.fechaStr, comprobanteFile);
-  };
-
-  const handleAddToCalendar = (dateOption = null) => {
-    if (!selectedActivity) return;
-    const url = buildGoogleCalendarTemplateUrl(selectedActivity, dateOption);
-    if (url) window.open(url, '_blank');
-  };
-
-  const handleActivityClick = (activity, e) => {
-    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) {
-      return;
-    }
-    navigate(`/activities/${activity._id}`);
-  };
-
-  const handleInscribeClick = async (activity, e) => {
-    if (e) {
-      e.stopPropagation();
-    }
-    // Actividad única o viaje: inscribirse directamente o abrir confirmación si es paga
-    if (activity.tipo === 'unica' || activity.tipo === 'viaje') {
-      if (!activity.esGratuita) {
-        openConfirmForUnica(activity);
-        return;
-      }
-      const fecha = activity.fecha ? formatUtcCalendarDateToString(activity.fecha) : null;
-      await handleInscribe(activity, fecha);
-      return;
-    }
-
-    // Si es recurrente, cargar fechas disponibles
-    if (activity.tipo === 'recurrente') {
-      setSelectedActivity(activity);
-      setLoadingDates(true);
-      setShowDateModal(true);
-      try {
-        const response = await axios.get(`/inscriptions/activity/${activity._id}/available-dates`);
-        setAvailableDates(response.data.availableDates);
-      } catch (error) {
-        console.error('Error fetching available dates:', error);
-        showError(t('cartelera.errorFechas'));
-        setShowDateModal(false);
-        setSelectedActivity(null);
-      } finally {
-        setLoadingDates(false);
-      }
-    }
-  };
-
-  // El Select del DS toma opciones como datos, no como <option> sueltos.
-  // getPeriodLabel arma la etiqueta con el rango de fechas real, así que las
-  // opciones se derivan en cada render y no pueden vivir fuera del componente.
-  const PERIODO_OPTIONS = [
-    { value: '', label: t('cartelera.todosLosPeriodos') },
-    { value: 'esta-semana', label: getPeriodLabel('esta-semana') },
-    { value: 'semana-que-viene', label: getPeriodLabel('semana-que-viene') },
-    { value: 'este-mes', label: getPeriodLabel('este-mes') },
-    { value: 'siguiente-mes', label: getPeriodLabel('siguiente-mes') },
-  ];
-
-  const tagOptions = [
-    { value: '', label: t('cartelera.todosLosTags') },
-    ...categoriasOptions.map((cat) => ({
-      value: cat,
-      label: cat.charAt(0).toUpperCase() + cat.slice(1),
-    })),
-  ];
-
-  const activeFilterCount = [filters.periodo, filters.categoria].filter(Boolean).length;
-
-  if (initialLoad) {
-    return (
-      <PageContainer title={t('cartelera.titulo')}>
-        <SkeletonCards />
-      </PageContainer>
+        return sig;
+      },
+      { replace: true },
     );
-  }
+
+  useEffect(() => {
+    if (buscado !== q) cambiar({ q: buscado });
+    // La búsqueda va a la dirección (y al back) 350 ms después de la última tecla.
+  }, [buscado]);
+
+  const { datos, cargando, actualizando, error } = useCargaSuave(pedir(q), `cartelera|${q}`);
+
+  const hoy = hoyIso();
+  const tags = datos?.tags ?? [];
+  const tagDe = (a) => activityPublicTags(a)[0];
+  const colorDe = (a) => (tagDe(a) ? publicTagColor(tags, tagDe(a)) : DEFAULT_PUBLIC_TAG_COLOR);
+  const iconoDe = (a) => (tagDe(a) && publicTagIcon(tags, tagDe(a))) || (a.tipo === 'viaje' ? 'plane' : 'activity');
+
+  const actividades = (datos?.actividades ?? []).filter((a) => !elegidas.length || activityPublicTags(a).some((c) => elegidas.includes(c)));
+  /* Las propuestas que tienen algo en la cartelera, con su color del catálogo. */
+  const propuestas = [...new Set((datos?.actividades ?? []).flatMap(activityPublicTags))].sort((x, y) => x.localeCompare(y, locale));
+
+  /* Los viajes que vienen van arriba, aparte: no se pierden entre los semanales. */
+  const viajes = actividades.filter((a) => a.tipo === 'viaje' && (diaDe(a.fechaFin) ?? diaDe(a.fecha) ?? '') >= hoy);
+  const dias = diasDe(cuando, hoy)
+    .map((dia) => ({
+      dia,
+      items: actividades
+        .filter((a) => a.tipo !== 'viaje')
+        .flatMap((a) => a.fechas.filter((f) => f.dia === dia).map((f) => ({ a, f })))
+        .sort((x, y) => String(x.f.hora).localeCompare(String(y.f.hora))),
+    }))
+    .filter((d) => d.items.length);
+
+  const tituloDia = (dia) => {
+    const n = diasHasta(dia, hoy);
+    if (n === 0) return [t('cartelera.hoy'), fechaEn(dia, locale, { weekday: 'long', day: 'numeric' })];
+    if (n === 1) return [t('cartelera.maniana'), fechaEn(dia, locale, { weekday: 'long', day: 'numeric' })];
+    return [fechaEn(dia, locale, { weekday: 'long' }), fechaEn(dia, locale, { day: 'numeric', month: 'long' })];
+  };
+  const fechasViaje = (a) => {
+    const desde = diaDe(a.fecha);
+    const hasta = diaDe(a.fechaFin);
+    const corto = { day: 'numeric', month: 'short' };
+    return hasta && hasta !== desde ? `${fechaEn(desde, locale, corto)} – ${fechaEn(hasta, locale, corto)}` : fechaEn(desde, locale, corto);
+  };
+
+  const filtros = `${cuando}|${elegidas.join()}|${q}`;
 
   return (
-    <PageContainer title={t('cartelera.titulo')}>
+    <PageContainer title={t('cartelera.titulo')} maxWidth="4xl">
       <BirthDatePrompt className="mb-6" />
       <DatosFaltantesPrompt className="mb-6" />
 
-        {/* Filtros. En mobile los selects viven detrás de un toggle: la card
-            entera ocupaba la primera pantalla y la cartelera quedaba abajo. */}
-        <Card className="mb-6 sm:mb-8">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label={t('cartelera.buscar')} className="mb-0">
-              <Input
-                type="search"
-                icon="search"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder={t('cartelera.buscarPlaceholder')}
-              />
-            </Field>
+      <div className="space-y-3">
+        <label className="flex min-h-[44px] items-center gap-2 rounded-pill border border-surface-border bg-surface px-4 text-ink-muted focus-within:border-ink/40">
+          <Icon name="search" size="sm" />
+          <input
+            type="search"
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            placeholder={t('cartelera.buscarPlaceholder')}
+            aria-label={t('cartelera.buscar')}
+            className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-ink-faint"
+          />
+        </label>
 
-            <div className={cn(filtersOpen ? 'contents' : 'max-sm:hidden sm:contents')}>
-              <Field label={t('cartelera.periodo')} className="mb-0">
-                <Select
-                  options={PERIODO_OPTIONS}
-                  value={filters.periodo}
-                  onChange={(value) => setFilters({ ...filters, periodo: value ?? '' })}
-                />
-              </Field>
+        <Segmentado
+          opciones={['hoy', 'semana', 'finde', 'todo'].map((v) => ({ valor: v, etiqueta: t(`cartelera.${v}`) }))}
+          valor={cuando}
+          onChange={(v) => cambiar({ cuando: v === 'semana' ? null : v })}
+          etiqueta={t('cartelera.cuando')}
+          className="flex w-full sm:inline-flex sm:w-auto [&>button]:flex-1"
+        />
 
-              <Field label={t('cartelera.tags')} className="mb-0">
-                <Select
-                  options={tagOptions}
-                  value={filters.categoria}
-                  onChange={(value) => setFilters({ ...filters, categoria: value ?? '' })}
-                  searchable={tagOptions.length > 8}
-                  emptyMessage={t('cartelera.sinTags')}
-                />
-              </Field>
-            </div>
-          </div>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            icon="filter"
-            iconRight={filtersOpen ? 'chevronUp' : 'chevronDown'}
-            aria-expanded={filtersOpen}
-            onClick={() => setFiltersOpen((o) => !o)}
-            className="mt-3 min-h-0 px-2 py-1 sm:hidden"
-          >
-            {t('cartelera.filtros')}{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ''}
-          </Button>
-        </Card>
-
-        {/* Lista de actividades */}
-        <div className={loading ? 'opacity-50 transition-opacity pointer-events-none' : 'transition-opacity'}>
-        {activities.length === 0 ? (
-          <Card padding="none">
-            <EmptyState
-              icon="search"
-              title={t('cartelera.sinResultados')}
-              description={t('cartelera.sinResultadosTexto')}
-            />
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {activities.map(activity => (
-              <Card
-                key={activity._id}
-                interactive
-                className="flex flex-col"
-                onClick={(e) => handleActivityClick(activity, e)}
-              >
-                {activity.fotos && activity.fotos.length > 0 ? (
-                  <img
-                    src={activity.fotos[0]}
-                    alt={activity.titulo}
-                    className="mb-4 h-48 w-full rounded-card object-cover"
-                  />
-                ) : (
-                  /* Sin foto, la card no se queda en texto plano: una banda
-                     con el color de su primera tag (o el verde de marca) y el
-                     icono del tipo de actividad. */
-                  (() => {
-                    const tagColor =
-                      publicTagColor(publicTagCatalog, activityPublicTags(activity)[0]) ||
-                      DEFAULT_PUBLIC_TAG_COLOR;
-                    const tipoIcon =
-                      publicTagIcon(publicTagCatalog, activityPublicTags(activity)[0]) ||
-                      (activity.tipo === 'viaje'
-                        ? 'location'
-                        : activity.tipo === 'recurrente'
-                          ? 'time'
-                          : 'activity');
-                    return (
-                      <div
-                        aria-hidden="true"
-                        className="mb-4 flex h-28 items-center justify-center rounded-card"
-                        style={{
-                          background: `linear-gradient(135deg, ${tagColor}14, ${tagColor}42)`,
-                        }}
-                      >
-                        <Icon name={tipoIcon} size="2xl" style={{ color: tagColor }} strokeWidth={1.5} />
-                      </div>
-                    );
-                  })()
-                )}
-                <div className="mb-3 flex items-start justify-between gap-3">
-                  {/* dir="auto": el título lo carga el equipo (en castellano) y
-                      tiene que leerse bien aunque la página esté en hebreo. */}
-                  <h2 dir="auto" className="min-w-0 text-lg font-bold leading-snug text-ink">
-                    {activity.titulo}
-                  </h2>
-                  {activity.esGratuita ? (
-                    <Badge tone="success" className="shrink-0">
-                      {t('comun.gratis')}
-                    </Badge>
-                  ) : (
-                    <span className="shrink-0 font-semibold tabular-nums text-ink">
-                      {formatActivityPrice(activity)}
-                    </span>
+        {propuestas.length > 0 && (
+          <div role="group" aria-label={t('cartelera.propuestas')} className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+            {propuestas.map((n) => {
+              const activo = elegidas.includes(n);
+              const color = publicTagColor(tags, n) || DEFAULT_PUBLIC_TAG_COLOR;
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  aria-pressed={activo}
+                  onClick={() => cambiar({ tags: activo ? elegidas.filter((x) => x !== n) : [...elegidas, n] })}
+                  className={cn(
+                    'inline-flex min-h-[36px] shrink-0 items-center gap-1.5 rounded-pill border px-3 text-sm capitalize transition-colors duration-base',
+                    activo ? 'border-transparent text-surface' : 'border-surface-border bg-surface text-ink-soft hover:border-ink/25',
                   )}
-                </div>
-                <ActivityDescription activity={activity} variant="card" />
-
-                <ActivityTags activity={activity} catalog={publicTagCatalog} variant="card" />
-
-                <ActivityInfo activity={activity} variant="card" showPrice={false} />
-
-                <div
-                  className="mt-auto flex items-center justify-between gap-3 border-t border-surface-border pt-3"
-                  onClick={(e) => e.stopPropagation()}
+                  style={activo ? { background: color } : undefined}
                 >
-                  {activity.estadoInscripcion ? (
-                    <div className="flex min-w-0 flex-col gap-1">
-                      <InscriptionStatusTag
-                        estado={activity.estadoInscripcion}
-                        aceptadaLabel={t('cartelera.confirmada')}
-                      />
-                      {activity.tipo === 'recurrente' && activity.fechaInscripcion && (
-                        <p className="text-xs text-ink-muted">
-                          {t('cartelera.inscriptoPara', { fecha: formatUtcCalendarDateEsAR(activity.fechaInscripcion) })}
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <Button
-                      variant="link"
-                      size="sm"
-                      iconRight="forward"
-                      to={`/activities/${activity._id}`}
-                      className="min-h-0 px-0"
-                    >
-                      {t('cartelera.verDetalle')}
-                    </Button>
-                  )}
-
-                  <div className="flex shrink-0 items-center gap-2">
-                    {activity.ubicacionOnline && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        icon="location"
-                        iconOnly
-                        label={t('cartelera.comoLlego')}
-                        title={t('cartelera.comoLlegoTitulo')}
-                        href={activity.ubicacionOnline}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      />
-                    )}
-                    {!activity.estadoInscripcion && (
-                      <Button size="sm" icon="check" onClick={(e) => handleInscribeClick(activity, e)}>
-                        {t('cartelera.inscribirse')}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            ))}
+                  <Icon name={publicTagIcon(tags, n) || 'tag'} size="xs" />
+                  <span dir="auto">{n}</span>
+                </button>
+              );
+            })}
           </div>
         )}
+      </div>
+
+      {error && !datos ? (
+        <div className="mt-6 rounded-[18px] border border-surface-border bg-surface">
+          <EmptyState icon="error" title={t('cartelera.sinResultados')} description={t('cartelera.sinResultadosTexto')} />
         </div>
+      ) : !datos ? (
+        <div className="mt-6 space-y-3" aria-hidden>
+          {cargando && [0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-[4.5rem] rounded-[18px]" />)}
+        </div>
+      ) : (
+        <div key={filtros} className={cn('mt-6 animate-fade-in space-y-6 transition-opacity duration-base', actualizando && 'opacity-60')}>
+          {viajes.map((a) => {
+            const proximo = a.fechas[0];
+            const ocupado = a.cupo && proximo?.quedan !== null && proximo?.quedan !== undefined ? (a.cupo - proximo.quedan) / a.cupo : null;
+            return (
+              <Link key={a._id} to={`/activities/${a._id}`} className="block overflow-hidden rounded-[22px] bg-ink text-surface transition-colors duration-base hover:bg-ink/95">
+                <div className="p-5">
+                  <p className="text-[0.7rem] font-semibold uppercase tracking-label text-surface/60">{t('cartelera.especial', { fechas: fechasViaje(a) })}</p>
+                  <h2 dir="auto" className="mt-1 font-grotesk text-lg font-semibold">
+                    {a.titulo}
+                  </h2>
+                  <p className="text-sm text-surface/75">
+                    {a.esGratuita ? t('comun.gratis') : formatActivityPrice(a)}
+                    {proximo?.estado === 'aceptada'
+                      ? ` · ${t('cartelera.vas')}`
+                      : proximo?.lleno
+                        ? ` · ${t('cartelera.lleno')}`
+                        : proximo?.quedan !== null && proximo?.quedan !== undefined
+                          ? ` · ${t('cartelera.quedanLugares', { n: proximo.quedan })}`
+                          : ''}
+                  </p>
+                  {ocupado !== null && (
+                    <div className="mt-3 h-1.5 rounded-pill bg-surface/15">
+                      <div className="h-1.5 rounded-pill bg-surface" style={{ width: `${Math.min(100, ocupado * 100)}%` }} />
+                    </div>
+                  )}
+                </div>
+                <span className="flex items-center justify-between border-t border-surface/15 px-5 py-3 text-sm font-semibold">
+                  {t('cartelera.verViaje')}
+                  <Icon name="chevronRight" size="sm" className="rtl:-scale-x-100" />
+                </span>
+              </Link>
+            );
+          })}
 
-
-        {showDateModal && selectedActivity && (
-          <DateSelectionModal
-            activity={selectedActivity}
-            availableDates={availableDates}
-            loading={loadingDates}
-            onClose={() => {
-              setShowDateModal(false);
-              setShowConfirmModal(false);
-              setSelectedActivity(null);
-              setSelectedDate(null);
-              setAvailableDates([]);
-            }}
-            onSelect={handleInscribeButtonClick}
-          />
-        )}
-
-        {showConfirmModal && selectedActivity && selectedDate && (
-          <InscriptionConfirmModal
-            activity={selectedActivity}
-            selectedDate={selectedDate}
-            onComprobanteChange={setComprobanteFile}
-            onConfirm={handleConfirmInscription}
-            onAddToCalendar={() => handleAddToCalendar(selectedDate)}
-            onClose={() => {
-              setShowConfirmModal(false);
-              setSelectedDate(null);
-              setComprobanteFile(null);
-            }}
-          />
-        )}
+          {dias.length ? (
+            dias.map((d) => {
+              const [titulo, fecha] = tituloDia(d.dia);
+              return (
+                <section key={d.dia} aria-label={`${titulo} ${fecha}`}>
+                  <h2 className="mb-2 flex items-baseline gap-2 px-1">
+                    <span className="font-grotesk text-base font-semibold text-ink first-letter:uppercase">{titulo}</span>
+                    <span className="text-sm text-ink-muted">{fecha}</span>
+                  </h2>
+                  <ul className="space-y-2">
+                    {d.items.map(({ a, f }) => (
+                      <Fila key={`${a._id}-${f.dia}`} a={a} f={f} color={colorDe(a)} icono={iconoDe(a)} t={t} />
+                    ))}
+                  </ul>
+                </section>
+              );
+            })
+          ) : (
+            <div className="rounded-[18px] border border-dashed border-surface-border px-4 py-6 text-center text-sm text-ink-muted">
+              <p>{t(q || elegidas.length ? 'cartelera.sinResultadosTexto' : 'cartelera.vacioDias')}</p>
+              {cuando !== 'todo' && (
+                <button type="button" onClick={() => cambiar({ cuando: 'todo' })} className="mt-2 font-semibold text-ink underline underline-offset-2">
+                  {t('cartelera.verTodo')}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </PageContainer>
   );
 };
 
 export default ActivitiesList;
-
