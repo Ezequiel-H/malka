@@ -2,157 +2,114 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Route, Routes } from 'react-router-dom';
 import { render, screen, waitFor } from '@testing-library/react';
 import axios from 'axios';
+import { DateTime } from 'luxon';
 import * as AuthContext from '../../contexts/AuthContext.jsx';
 import { AppTestShell } from '../../test/AppTestShell.jsx';
 import AdminDashboard from './AdminDashboard.jsx';
 
-function mockAxiosDashboard() {
-  return vi.spyOn(axios, 'get').mockImplementation((url, config) => {
-    if (url === '/users/pending') {
-      return Promise.resolve({ data: { users: [] } });
-    }
-    if (url === '/activities?estado=publicada') {
-      return Promise.resolve({ data: { count: 1, activities: [] } });
-    }
-    if (url === '/activities') {
+const hoy = DateTime.now().setZone('America/Argentina/Buenos_Aires');
+const dentroDe = (n) => hoy.plus({ days: n }).toISODate();
+const mes = (n) => hoy.minus({ months: n }).toFormat('yyyy-MM');
+
+const PENDIENTE_VACIO = { cantidad: 0, actividades: [], nombres: [], masAntigua: null };
+
+function mockPanel({ pendientes = {}, cumples = {}, actividades = [] } = {}) {
+  return vi.spyOn(axios, 'get').mockImplementation((url) => {
+    if (url === '/admin/hoy') {
       return Promise.resolve({
         data: {
-          activities: [
-            { _id: '507f1f77bcf86cd799439011', titulo: 'Actividad demo' },
-            { _id: '507f1f77bcf86cd799439012', titulo: 'Otra' }
-          ]
-        }
+          personas: { cantidad: 0, nombres: [], masAntigua: null },
+          inscripciones: PENDIENTE_VACIO,
+          comprobantes: PENDIENTE_VACIO,
+          ...pendientes,
+        },
       });
     }
-    if (url === '/inscriptions/stats/accepted-last-30-days') {
-      return Promise.resolve({ data: { count: 2 } });
-    }
-    if (String(url).startsWith('/inscriptions?estado=pendiente')) {
-      return Promise.resolve({ data: { inscriptions: [], count: 0 } });
-    }
-    if (url === '/admin/first-inscription-repeat-stats') {
+    if (url === '/admin/birthdays') return Promise.resolve({ data: { hoy: [], estaSemana: [], proximaSemana: [], total: 0, sinFecha: 0, ...cumples } });
+    if (url === '/admin/metrics') {
       return Promise.resolve({
         data: {
-          cohortSize: 20,
-          withMoreThanOneInscription: 5,
-          minDaysSinceFirstInscription: 15,
-          rate: 0.25
-        }
+          personas: {
+            vuelven: { cohorte: 10, volvieron: 6, porcentaje: 60 },
+            porMes: [5, 4, 3, 2, 1, 0].map((n, i) => ({ mes: mes(n), personas: 10 + i, nuevas: i, frecuencia: 1.5 })),
+          },
+          plata: { porMes: [5, 4, 3, 2, 1, 0].map((n) => ({ mes: mes(n), recaudado: 700, gastado: 1000 })) },
+        },
       });
     }
-    if (url === '/admin/inscription-stats') {
-      const activityId = config?.params?.activityId;
-      if (activityId === '507f1f77bcf86cd799439011') {
-        return Promise.resolve({
-          data: {
-            weeklyNewInscriptions: [{ weekStart: '2025-01-06T00:00:00.000Z', count: 1 }],
-            topOccurrencesAccepted: []
-          }
-        });
-      }
-      return Promise.resolve({
-        data: {
-          weeklyNewInscriptions: [{ weekStart: '2025-01-06T00:00:00.000Z', count: 5 }],
-          topOccurrencesAccepted: [
-            {
-              activityId: '507f1f77bcf86cd799439011',
-              occurrenceDate: '2025-01-15',
-              titulo: 'Actividad demo',
-              count: 3
-            }
-          ]
-        }
-      });
+    if (url === '/admin/actividades-resumen') {
+      return Promise.resolve({ data: { semana: { desde: dentroDe(-3), hasta: dentroDe(3), hoy: hoy.toISODate() }, actividades } });
     }
+    if (url === '/tags') return Promise.resolve({ data: { tags: [] } });
+    if (url === '/settings') return Promise.resolve({ data: { settings: { whatsappCumpleanosMensaje: '¡Feliz cumple, {nombre}!' } } });
     return Promise.reject(new Error(`unexpected GET ${url}`));
   });
 }
 
+const montar = () =>
+  render(
+    <AppTestShell initialEntries={['/admin']}>
+      <Routes>
+        <Route path="/admin" element={<AdminDashboard />} />
+      </Routes>
+    </AppTestShell>,
+  );
+
 describe('AdminDashboard', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
-    vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
-      user: { role: 'admin', nombre: 'Admin' },
-      loading: false
-    });
-    mockAxiosDashboard();
+    vi.spyOn(AuthContext, 'useAuth').mockReturnValue({ user: { role: 'admin', nombre: 'Wally' }, loading: false });
   });
 
-  it('renders admin panel title', async () => {
-    render(
-      <AppTestShell initialEntries={['/admin']}>
-        <Routes>
-          <Route path="/admin" element={<AdminDashboard />} />
-        </Routes>
-      </AppTestShell>
-    );
-
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /^Panel$/i })).toBeInTheDocument();
-    });
+  it('saluda por nombre y dice que no hay nada pendiente', async () => {
+    mockPanel();
+    montar();
+    expect(screen.getByRole('heading', { level: 1, name: /Wally/ })).toBeInTheDocument();
+    expect(await screen.findByText(/Nada pendiente/)).toBeInTheDocument();
   });
 
-  it('shows first-inscription repeat stats', async () => {
-    render(
-      <AppTestShell initialEntries={['/admin']}>
-        <Routes>
-          <Route path="/admin" element={<AdminDashboard />} />
-        </Routes>
-      </AppTestShell>
-    );
-
-    await waitFor(() => {
-      expect(screen.getByText(/Retorno tras primera inscripción/i)).toBeInTheDocument();
+  it('muestra lo pendiente con su acción a un toque', async () => {
+    mockPanel({
+      pendientes: {
+        personas: { cantidad: 2, nombres: ['Noa Feld', 'Uri Kaplan'], masAntigua: hoy.minus({ days: 3 }).toISO() },
+        comprobantes: { cantidad: 1, actividades: ['Cena de Shabat'], nombres: ['Ana Groisman'], masAntigua: null },
+      },
     });
-    expect(screen.getByText('25.0 % con más de una inscripción')).toBeInTheDocument();
+    montar();
+    expect(await screen.findByText('2 personas esperan aprobación')).toBeInTheDocument();
+    expect(screen.getByText(/hace 3 días/)).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'Revisar' }).map((a) => a.getAttribute('href'))).toEqual(['/admin/users/pending', '/admin/inscriptions?comprobantes=1']);
   });
 
-  it('loads inscription stats sections and top table', async () => {
-    render(
-      <AppTestShell initialEntries={['/admin']}>
-        <Routes>
-          <Route path="/admin" element={<AdminDashboard />} />
-        </Routes>
-      </AppTestShell>
-    );
-
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /Inscripciones nuevas por semana/i })).toBeInTheDocument();
+  it('muestra los números del mes y el encuentro grande que viene', async () => {
+    mockPanel({
+      actividades: [
+        {
+          id: 'a1',
+          titulo: 'Kabbalat Shabbat',
+          categorias: [],
+          cupo: 40,
+          semana: [],
+          proximo: { fecha: dentroDe(2), texto: 'vie 15 nov', hora: '20:30', aceptadas: 34, enEspera: 3, pendientes: 0, comprobantes: 0, nombres: ['Tamar Levin'] },
+        },
+      ],
     });
-    await waitFor(() => {
-      expect(screen.getAllByText('Actividad demo').length).toBeGreaterThanOrEqual(1);
-    });
-    const inscLink = screen.getByRole('link', { name: /^Inscripciones$/ });
-    expect(inscLink).toHaveAttribute(
-      'href',
-      '/admin/activities/507f1f77bcf86cd799439011/inscriptions?fecha=2025-01-15'
-    );
+    montar();
+    expect(await screen.findByText('Vinieron este mes')).toBeInTheDocument();
+    expect(screen.getByText('Vinieron este mes').parentElement).toHaveTextContent('15');
+    expect(screen.getByText('60 %')).toBeInTheDocument();
+    expect(screen.getByText('70 %')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Kabbalat Shabbat' })).toBeInTheDocument();
+    expect(screen.getByText('3 en lista de espera')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Lista para el día' })).toHaveAttribute('href', `/admin/activities/a1/inscriptions?fecha=${dentroDe(2)}`);
   });
 
-  it('requests per-activity stats when an activity is selected', async () => {
-    const user = (await import('@testing-library/user-event')).default.setup();
-    render(
-      <AppTestShell initialEntries={['/admin']}>
-        <Routes>
-          <Route path="/admin" element={<AdminDashboard />} />
-        </Routes>
-      </AppTestShell>
-    );
-
-    // El selector de actividad ya no es un <select> nativo sino el Select del
-    // design system, así que se opera abriendo el listbox y eligiendo la
-    // opción. La conducta que se verifica —que se pida la estadística de esa
-    // actividad— es la misma.
-    await waitFor(() => {
-      expect(screen.getByRole('combobox', { name: /Actividad/i })).toBeInTheDocument();
-    });
-    await user.click(screen.getByRole('combobox', { name: /Actividad/i }));
-    await user.click(await screen.findByRole('option', { name: 'Actividad demo' }));
-
-    await waitFor(() => {
-      const calls = axios.get.mock.calls.filter((c) => c[0] === '/admin/inscription-stats');
-      const withActivity = calls.some((c) => c[1]?.params?.activityId === '507f1f77bcf86cd799439011');
-      expect(withActivity).toBe(true);
-    });
+  it('si una pieza falla, lo demás sale igual', async () => {
+    const get = mockPanel();
+    const original = get.getMockImplementation();
+    get.mockImplementation((url, config) => (url === '/admin/metrics' ? Promise.reject(new Error('caído')) : original(url, config)));
+    montar();
+    expect(await screen.findByText(/Nada pendiente/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText('Vinieron este mes')).not.toBeInTheDocument());
   });
 });

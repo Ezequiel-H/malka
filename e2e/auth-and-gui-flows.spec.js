@@ -133,7 +133,8 @@ test.describe('Login', () => {
     await page.locator('input[type="password"]').fill('any-password');
     await page.getByRole('button', { name: 'Iniciar Sesión' }).click();
     await expect(page).toHaveURL(/\/admin$/);
-    await expect(page.getByRole('heading', { name: 'Panel' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: /^(Buen día|Buenas tardes|Buenas noches)/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Para hacer' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Usuarios' })).toBeVisible();
   });
 });

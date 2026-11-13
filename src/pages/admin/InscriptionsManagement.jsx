@@ -53,7 +53,8 @@ const InscriptionsManagement = () => {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pendingPaymentsCount, setPendingPaymentsCount] = useState(0);
-  const [showProofsModal, setShowProofsModal] = useState(false);
+  // El panel manda acá con ?comprobantes=1 para abrir la revisión de una.
+  const [showProofsModal, setShowProofsModal] = useState(() => searchParams.get('comprobantes') === '1');
   const [filters, setFilters] = useState({
     estado: searchParams.get('estado') || 'pendiente',
     activityId: searchParams.get('activityId') || '',

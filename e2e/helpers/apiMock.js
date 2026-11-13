@@ -84,6 +84,18 @@ export async function installApiMock(page, options = {}) {
       return;
     }
 
+    // El panel: nada pendiente, sin números y sin actividades en la semana.
+    if (method === 'GET' && path === '/api/admin/hoy') {
+      const vacio = { cantidad: 0, actividades: [], nombres: [], masAntigua: null };
+      await route.fulfill(json({ personas: { cantidad: 0, nombres: [], masAntigua: null }, inscripciones: vacio, comprobantes: vacio }));
+      return;
+    }
+
+    if (method === 'GET' && path === '/api/admin/actividades-resumen') {
+      await route.fulfill(json({ semana: { desde: '2026-09-21', hasta: '2026-09-27', hoy: '2026-09-25' }, actividades: [] }));
+      return;
+    }
+
     if (method === 'GET' && path.startsWith('/api/users/pending')) {
       await route.fulfill(json({ users: [] }));
       return;
