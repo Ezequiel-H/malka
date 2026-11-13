@@ -6,7 +6,27 @@
 const NARROW = 640;
 const MAX_POINTS = 16e3;
 const ICON_BOX = 24;
-const SHAPES = ["mark", "email", "password", "ok", "error"];
+/*
+ * Las figuras de cada campo, en una caja de 24 como los íconos del sistema.
+ * `trazos` se dibujan con línea; `rellenos`, llenos (lo que en puntos se lee
+ * mejor macizo, como el corazón). Círculos como [cx, cy, r].
+ */
+const FIGURAS = {
+  persona: { circulos: [[12, 7.5, 4]], trazos: ["M4 21a8 8 0 0 1 16 0"] },
+  calendario: { rects: [[3, 4.5, 18, 17, 2]], trazos: ["M8 2.5v4", "M16 2.5v4", "M3 10h18"] },
+  globo: { circulos: [[12, 12, 9.5]], trazos: ["M12 2.5a14 14 0 0 0 0 19 14 14 0 0 0 0-19", "M2.5 12h19"] },
+  casa: { trazos: ["M3.5 10.5 12 3.5l8.5 7V20a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1z", "M9.5 21v-6h5v6"] },
+  credencial: { rects: [[2.5, 5, 19, 14, 2]], circulos: [[8.5, 11, 2]], trazos: ["M5.5 16a3.2 3.2 0 0 1 6 0", "M14.5 10h4", "M14.5 14h3"] },
+  telefono: {
+    trazos: [
+      "M21 16.4v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.6 5.2 2 2 0 0 1 4.6 3h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.6 10.8a16 16 0 0 0 4.6 4.6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"
+    ]
+  },
+  corazon: { rellenos: ["M12 21s-8.5-5.3-8.5-11.2A4.8 4.8 0 0 1 12 6.6a4.8 4.8 0 0 1 8.5 3.2C20.5 15.7 12 21 12 21z"] },
+  cubiertos: { trazos: ["M4 2.5v6.5a2.5 2.5 0 0 0 2.5 2.5h1A2.5 2.5 0 0 0 10 9V2.5", "M7 2.5v19", "M19.5 15V2.5a4.5 4.5 0 0 0-4.5 4.5v6a2 2 0 0 0 2 2h2.5zm0 0v6.5"] },
+  dialogo: { trazos: ["M7.9 19.5A9 9 0 1 0 4.5 16L3 21z"] }
+};
+const SHAPES = ["mark", "email", "password", "ok", "error", ...Object.keys(FIGURAS)];
 const LOCK_BODY = { x: 4.5, y: 10.5, w: 15, h: 11, r: 2.4 };
 const LOCK_SHACKLE = "M8 10.5V7a4 4 0 0 1 8 0v3.5";
 const CHECK = "M4 12.8l5.4 5.4L20 6.8";
@@ -44,7 +64,9 @@ export const createDotsEngine = (canvas, name, reduced) => {
     mask.fillText(word, area.x + area.w / 2, area.y + area.h / 2);
   };
   const drawIcon = (mask, draw2) => {
-    const scale = Math.min(area.w, area.h) * 0.8 / ICON_BOX;
+    /* Un poco más chicas que el área: una figura que llena media pantalla
+       se lee como textura y no como ícono. */
+    const scale = Math.min(area.w, area.h) * 0.62 / ICON_BOX;
     mask.save();
     mask.translate(
       area.x + area.w / 2 - ICON_BOX / 2 * scale,
@@ -77,6 +99,23 @@ export const createDotsEngine = (canvas, name, reduced) => {
         icon.beginPath();
         icon.arc(12, 16, 1.7, 0, Math.PI * 2);
         icon.fill();
+      });
+    if (FIGURAS[target])
+      return drawIcon(mask, (icon) => {
+        const figura = FIGURAS[target];
+        icon.lineWidth = 2.6;
+        for (const [cx, cy, radio] of figura.circulos ?? []) {
+          icon.beginPath();
+          icon.arc(cx, cy, radio, 0, Math.PI * 2);
+          icon.stroke();
+        }
+        for (const [x, y, w, h, radio] of figura.rects ?? []) {
+          icon.beginPath();
+          icon.roundRect(x, y, w, h, radio);
+          icon.stroke();
+        }
+        for (const d of figura.trazos ?? []) icon.stroke(new Path2D(d));
+        for (const d of figura.rellenos ?? []) icon.fill(new Path2D(d));
       });
     if (target === "ok" || target === "error")
       return drawIcon(mask, (icon) => {
@@ -157,7 +196,13 @@ export const createDotsEngine = (canvas, name, reduced) => {
       narrow ? 8 : 11,
       Math.sqrt(width * height / MAX_POINTS)
     );
-    area = narrow ? { x: 0, y: 30, w: width, h: height * 0.3 } : { x: width * 0.42, y: 0, w: width * 0.55, h: height };
+    /* En el teléfono el lienzo es sólo la franja de arriba y la figura la
+       llena; en pantallas anchas va al costado opuesto al formulario, que en
+       hebreo es el izquierdo. */
+    const rtl = getComputedStyle(canvas).direction === "rtl";
+    area = narrow
+      ? { x: 0, y: height * 0.08, w: width, h: height * 0.8 }
+      : { x: rtl ? width * 0.03 : width * 0.42, y: 0, w: width * 0.55, h: height };
     const current = new Map(
       points.map((point) => [`${point.x}:${point.y}`, point.w])
     );

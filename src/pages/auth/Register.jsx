@@ -163,6 +163,7 @@ const RegisterForm = () => {
               <Input
                 type="text"
                 name="nombre"
+                data-figura="persona"
                 value={formData.nombre}
                 onChange={handleChange}
                 required
@@ -173,6 +174,7 @@ const RegisterForm = () => {
               <Input
                 type="text"
                 name="apellido"
+                data-figura="persona"
                 value={formData.apellido}
                 onChange={handleChange}
                 required
@@ -182,6 +184,7 @@ const RegisterForm = () => {
             <Field label={t('registro.fechaNacimiento')} required>
               <DatePicker
                 name="fechaNacimiento"
+                data-figura="calendario"
                 value={formData.fechaNacimiento}
                 onChange={(fechaNacimiento) =>
                   setFormData((previo) => ({ ...previo, fechaNacimiento }))
@@ -194,6 +197,7 @@ const RegisterForm = () => {
               <Select
                 id="registro-nacionalidad"
                 name="nacionalidad"
+                data-figura="globo"
                 options={paises}
                 value={formData.nacionalidad}
                 onChange={(nacionalidad) => setFormData((previo) => ({ ...previo, nacionalidad: nacionalidad ?? '' }))}
@@ -202,6 +206,7 @@ const RegisterForm = () => {
               />
             </Field>
 
+            <div data-figura="casa">
             <RadioGroup
               label={t('registro.dondeVivis')}
               name="residencia"
@@ -210,6 +215,7 @@ const RegisterForm = () => {
               onChange={(residencia) => setFormData((previo) => ({ ...previo, residencia }))}
               className="mb-5"
             />
+            </div>
 
             {formData.residencia && formData.residencia !== 'buenos_aires' && (
               <div className="mb-5 animate-fade-in-up">
@@ -217,6 +223,7 @@ const RegisterForm = () => {
                   <Input
                     id="registro-ciudad"
                     name="ciudad"
+                    data-figura="casa"
                     value={formData.ciudad}
                     onChange={handleChange}
                     required
@@ -232,6 +239,7 @@ const RegisterForm = () => {
 
             {/* DNI primero; el pasaporte queda de última opción para quien no
                 tiene DNI, y con él el registro sigue por WhatsApp. */}
+            <div data-figura="credencial">
             <RadioGroup
               label={t('registro.documento')}
               name="tipoDocumento"
@@ -244,12 +252,14 @@ const RegisterForm = () => {
               onChange={(tipoDocumento) => setFormData((previo) => ({ ...previo, tipoDocumento, dni: '' }))}
               className="mb-3"
             />
+            </div>
             {formData.tipoDocumento === 'pasaporte' ? (
               <div key="pasaporte" className="animate-fade-in">
                 <Field label={t('registro.pasaporte')} hint={t('registro.pasaporteAyuda')} required>
                   <Input
                     type="text"
                     name="dni"
+                    data-figura="credencial"
                     dir="ltr"
                     value={formData.dni}
                     onChange={handleChange}
@@ -274,6 +284,7 @@ const RegisterForm = () => {
                 <Input
                   type="text"
                   name="dni"
+                  data-figura="credencial"
                   dir="ltr"
                   value={formData.dni}
                   onChange={handleChange}
@@ -307,6 +318,7 @@ const RegisterForm = () => {
                 type="tel"
                 icon="phone"
                 name="telefono"
+                data-figura="telefono"
                 dir="ltr"
                 value={formData.telefono}
                 onChange={handleChange}
@@ -335,7 +347,7 @@ const RegisterForm = () => {
 
             {/* Grupo de checkboxes: el <fieldset> es lo que hace que un lector
                 de pantalla anuncie la pregunta antes de cada opción. */}
-            <fieldset className="mb-5">
+            <fieldset className="mb-5" data-figura="cubiertos">
               <legend className="mb-2 block text-sm font-medium text-ink-soft">
                 {t('registro.restriccionesPregunta')}
               </legend>
@@ -355,6 +367,7 @@ const RegisterForm = () => {
               <Input
                 type="text"
                 name="comoSeEntero"
+                data-figura="dialogo"
                 value={formData.comoSeEntero}
                 onChange={handleChange}
                 placeholder={t('registro.comoTeEnterastePlaceholder')}
@@ -372,6 +385,7 @@ const RegisterForm = () => {
                   {t('registro.cargandoIntereses')}
                 </div>
               ) : (
+                <div data-figura="corazon">
                 <PublicTagPicker
                   availableTags={availableTags}
                   selectedNames={tags}
@@ -382,6 +396,7 @@ const RegisterForm = () => {
                     </p>
                   }
                 />
+                </div>
               )}
             </Field>
 

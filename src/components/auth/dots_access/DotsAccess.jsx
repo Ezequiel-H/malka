@@ -20,7 +20,15 @@ export const useDotsAccess = () => useContext(DotsContext);
 const OK_MS = 620;
 const FLY_MS = 560;
 const ERROR_MS = 1500;
+/**
+ * La figura del campo enfocado. Primero manda un `data-figura` explícito en
+ * el campo o en el contenedor (así sirven los desplegables, el calendario y
+ * los radios, que no son un input de texto); si no hay, se adivina por el
+ * tipo de campo.
+ */
 const shapeOfField = (field) => {
+  const figura = field instanceof Element ? field.closest("[data-figura]")?.getAttribute("data-figura") : null;
+  if (figura) return figura;
   if (field instanceof HTMLButtonElement) return null;
   if (!(field instanceof HTMLInputElement)) return "mark";
   const autocomplete = field.autocomplete;
@@ -40,9 +48,10 @@ const readColor = (root, token) => {
   return color;
 };
 /**
- * Pantalla de acceso sin tarjeta: la grilla de fondo arma el logo, una @ al
- * escribir el email, un candado en la contraseña y un tilde al entrar.
- * Los formularios adentro siguen siendo los del DS.
+ * Pantalla de acceso: la grilla de fondo arma el logo y, al completar cada
+ * campo, su figura (una @ en el mail, un calendario en la fecha, un globo en
+ * la nacionalidad…), una cruz si falla y un tilde al entrar. El formulario va
+ * en un panel opaco, nunca directo sobre los puntos.
  */
 export const DotsAccess = ({ name, markSrc, children }) => {
   const rootRef = useRef(null);
@@ -68,10 +77,15 @@ export const DotsAccess = ({ name, markSrc, children }) => {
     const onPointer = (event) => engine.pointer(event.clientX, event.clientY);
     const resize = window.ResizeObserver ? new ResizeObserver(() => engine.resize()) : null;
     resize?.observe(canvas);
-    const theme = new MutationObserver(paint);
+    /* Al cambiar el tema se repintan los colores; al cambiar de idioma
+       (hebreo da vuelta la página) la figura se reacomoda del otro lado. */
+    const theme = new MutationObserver(() => {
+      paint();
+      engine.resize();
+    });
     theme.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ["class", "data-theme"]
+      attributeFilter: ["class", "data-theme", "dir"]
     });
     const scheme = window.matchMedia?.("(prefers-color-scheme: dark)");
     scheme?.addEventListener?.("change", paint);
@@ -139,5 +153,5 @@ export const DotsAccess = ({ name, markSrc, children }) => {
     onFocus={followFocus}
     onBlur={followFocus}
     onInput={() => engineRef.current?.ripple()}
-  ><canvas ref={canvasRef} aria-hidden className='dots-access__canvas' /><div className='dots-access__panel'>{children}</div></div></DotsContext.Provider>;
+  ><canvas ref={canvasRef} aria-hidden className='dots-access__canvas' /><div className='dots-access__panel'><div className='dots-access__tarjeta'>{children}</div></div></div></DotsContext.Provider>;
 };
