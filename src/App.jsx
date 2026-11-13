@@ -25,6 +25,7 @@ import PrivateTagsManagement from './pages/admin/PrivateTagsManagement';
 import Settings from './pages/admin/Settings';
 import Metricas from './pages/admin/Metricas';
 import Historial from './pages/admin/Historial';
+import Maquetas from './pages/admin/maquetas/Maquetas';
 import ContactoDetalle from './pages/admin/ContactoDetalle';
 import UserDetail from './pages/admin/UserDetail';
 import MyInterests from './pages/participant/MyInterests';
@@ -204,6 +205,14 @@ function App() {
           element={
             <AdminRoute>
               <PrivateTagsManagement />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/maquetas"
+          element={
+            <AdminRoute>
+              <Maquetas />
             </AdminRoute>
           }
         />
