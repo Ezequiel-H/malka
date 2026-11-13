@@ -5,6 +5,8 @@ import { AvisoMaqueta } from './piezas';
 import MaquetaPanel from './MaquetaPanel';
 import MaquetaActividades from './MaquetaActividades';
 import MaquetaExportar from './MaquetaExportar';
+import MaquetaCartelera from './MaquetaCartelera';
+import MaquetaColores from './MaquetaColores';
 import { MaquetaAjustes, MaquetaNuevaActividad, MaquetaPersonas } from './MaquetasAdmin';
 import { MaquetaDetalle, MaquetaInicio, MaquetaMisInscripciones, MaquetaPerfil } from './MaquetasParticipante';
 
@@ -44,10 +46,23 @@ const PANTALLAS = [
       'Un índice a la izquierda y cada ajuste se guarda solo. Los datos del mensaje (nombre, fecha, lugar…) se suman tocándolos y quedan como pastillas dentro del texto; a la derecha se ve cómo le llega al centro. Probá escribir y sumar uno.',
     Pantalla: MaquetaAjustes,
   },
+  {
+    valor: 'colores',
+    etiqueta: 'Colores de Métricas',
+    aviso: 'Los mismos gráficos con cuatro paletas, para elegir. Todas se distinguen bien también para quien no ve algunos colores. Pasá el mouse por las barras.',
+    Pantalla: MaquetaColores,
+  },
 ];
 
 /* Lo que ve una persona que participa: pensado para el celular. */
 const PARTICIPANTE = [
+  {
+    valor: 'p-cartelera',
+    etiqueta: 'Cartelera',
+    aviso:
+      'La agenda de los próximos días en vez de tarjetas grandes: cada día con sus encuentros, la hora adelante y lo que hace falta para decidir (precio, si quedan pocos lugares, si ya vas). Lo especial va arriba. Probá «Hoy», «Finde» y las propuestas.',
+    Pantalla: MaquetaCartelera,
+  },
   {
     valor: 'p-inicio',
     etiqueta: 'Inicio',
