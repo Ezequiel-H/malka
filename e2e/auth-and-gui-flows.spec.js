@@ -138,7 +138,7 @@ test.describe('Login', () => {
     await expect(page).toHaveURL(/\/admin$/);
     await expect(page.getByRole('heading', { level: 1, name: /^(Buen día|Buenas tardes|Buenas noches)/ })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Para hacer' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Usuarios' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Personas' })).toBeVisible();
   });
 });
 

@@ -13,7 +13,7 @@ import { SelectorIdioma, useIdioma } from '../../i18n';
    ADMIN_TAB_COUNT entradas van a la tab bar mobile; el resto vive en "Más". */
 const ADMIN_LINKS = [
   { to: '/admin', label: 'Panel', icon: 'dashboard', exact: true },
-  { to: '/admin/users', label: 'Usuarios', icon: 'users' },
+  { to: '/admin/users', label: 'Personas', icon: 'users' },
   { to: '/admin/activities', label: 'Actividades', icon: 'activity' },
   { to: '/admin/inscriptions', label: 'Inscripciones', icon: 'document' },
   { to: '/admin/historial', label: 'Historial', icon: 'book', also: ['/admin/contactos'] },
