@@ -257,7 +257,7 @@ export const colorRampa = (valor, maximo) => {
   const paso = 2 + Math.round((valor / maximo) * (RAMPA.length - 3));
   return RAMPA[Math.min(paso, RAMPA.length - 1)];
 };
-const textoSobre = (fondo) => (RAMPA.indexOf(fondo) >= 5 ? '#ffffff' : EJE.tinta);
+const textoSobre = (fondo) => (RAMPA.indexOf(fondo) >= 6 ? '#ffffff' : EJE.tinta);
 
 /* ---------- Globo flotante para grillas propias ---------- */
 
