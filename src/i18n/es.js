@@ -319,7 +319,7 @@ const textos = {
     "expandir": "Expandir menú",
     "colapsar": "Colapsar menú",
     "links": {
-      "actividades": "Actividades",
+      "actividades": "Cartelera",
       "inscripciones": "Mis cosas",
       "intereses": "Mis intereses",
       "perfil": "Mi perfil",

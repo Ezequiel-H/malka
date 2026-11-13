@@ -319,14 +319,14 @@ const textos = {
     "expandir": "Expand menu",
     "colapsar": "Collapse menu",
     "links": {
-      "actividades": "Activities",
+      "actividades": "What’s on",
       "inscripciones": "My stuff",
       "intereses": "My interests",
       "perfil": "My profile",
       "inicio": "Home"
     },
     "tabs": {
-      "actividades": "Activities",
+      "actividades": "What’s on",
       "inscripciones": "My stuff",
       "intereses": "Interests",
       "perfil": "Profile",

@@ -319,14 +319,14 @@ const textos = {
     "expandir": "הרחבת התפריט",
     "colapsar": "כיווץ התפריט",
     "links": {
-      "actividades": "פעילויות",
+      "actividades": "לוח פעילויות",
       "inscripciones": "הדברים שלי",
       "intereses": "תחומי העניין שלי",
       "perfil": "הפרופיל שלי",
       "inicio": "בית"
     },
     "tabs": {
-      "actividades": "פעילויות",
+      "actividades": "לוח פעילויות",
       "inscripciones": "הדברים שלי",
       "intereses": "תחומי עניין",
       "perfil": "פרופיל",

@@ -114,7 +114,7 @@ test.describe('Login', () => {
     await expect(page).toHaveURL(/\/dashboard$/);
     await expect(page.getByRole('heading', { level: 1, name: 'Hola, Ana' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Los próximos días' })).toBeVisible();
-    await page.getByRole('button', { name: 'Actividades' }).first().click();
+    await page.getByRole('button', { name: 'Cartelera' }).first().click();
     await expect(page.getByRole('heading', { name: 'Cartelera' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Malka' })).toBeVisible();
   });
