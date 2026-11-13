@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Avatar, BarraCupo, Icon, IconoColor, cn } from '../../../components/ui';
 import { Segmentado } from '../../../components/admin/metricas/piezas';
 import { Boton } from './piezas';
@@ -390,20 +390,114 @@ export const MaquetaNuevaActividad = () => {
 
 /* ---------------- Ajustes: índice + guardado solo ---------------- */
 
-const VARIABLES = ['nombre', 'actividad', 'fecha', 'hora', 'lugar', 'precio'];
-const EJEMPLO = {
-  nombre: 'Tamar',
-  actividad: 'Viaje a Bariloche',
-  fecha: 'vie 6 dic',
-  hora: '08:00',
-  lugar: 'Retiro',
-  precio: '$ 850.000',
+/* Los datos que se pueden sumar al mensaje. Se guardan como {clave} (así los
+   reemplaza el back), pero en pantalla se ven como pastillas con su nombre. */
+const VARIABLES = [
+  { clave: 'nombre', etiqueta: 'Nombre', icono: 'user', ejemplo: 'Tamar' },
+  { clave: 'actividad', etiqueta: 'Actividad', icono: 'activity', ejemplo: 'Viaje a Bariloche' },
+  { clave: 'fecha', etiqueta: 'Fecha', icono: 'addToCalendar', ejemplo: 'vie 6 dic' },
+  { clave: 'hora', etiqueta: 'Hora', icono: 'time', ejemplo: '08:00' },
+  { clave: 'lugar', etiqueta: 'Lugar', icono: 'location', ejemplo: 'Retiro' },
+  { clave: 'precio', etiqueta: 'Precio', icono: 'payment', ejemplo: '$ 850.000' },
+];
+const PASTILLA = 'mx-0.5 inline-flex select-none items-center rounded-pill bg-primary-600/[0.12] px-2 py-px align-baseline text-[0.85em] font-semibold text-primary-800';
+
+const pastilla = (v) => {
+  const el = document.createElement('span');
+  el.contentEditable = 'false';
+  el.dataset.var = v.clave;
+  el.className = PASTILLA;
+  el.textContent = v.etiqueta;
+  return el;
+};
+
+/* Arma el editor a partir del texto guardado y lo vuelve a texto al escribir. */
+const pintar = (raiz, texto) => {
+  raiz.replaceChildren();
+  texto.split(/(\{\w+\})/).forEach((parte) => {
+    const v = VARIABLES.find((x) => `{${x.clave}}` === parte);
+    raiz.append(v ? pastilla(v) : document.createTextNode(parte));
+  });
+};
+const leer = (raiz) => [...raiz.childNodes].map((n) => (n.dataset?.var ? `{${n.dataset.var}}` : n.textContent)).join('');
+
+const EditorConDatos = ({ valor, onChange }) => {
+  const ref = useRef(null);
+  const rango = useRef(null);
+  useEffect(() => {
+    pintar(ref.current, valor);
+    // Sólo al montar: después el editor es la fuente de verdad.
+  }, []);
+  const recordar = () => {
+    const sel = window.getSelection();
+    if (sel?.rangeCount && ref.current.contains(sel.anchorNode)) rango.current = sel.getRangeAt(0).cloneRange();
+  };
+  const sumar = (v) => {
+    const el = pastilla(v);
+    const espacio = document.createTextNode('\u00a0');
+    if (rango.current) {
+      rango.current.deleteContents();
+      const { startContainer: nodo, startOffset: pos } = rango.current;
+      const pegado = nodo.nodeType === Node.TEXT_NODE && pos > 0 && !/\s/.test(nodo.textContent[pos - 1]);
+      rango.current.insertNode(espacio);
+      rango.current.insertNode(el);
+      // Si el cursor estaba pegado a una palabra, la pastilla no se le pega.
+      if (pegado) rango.current.insertNode(document.createTextNode(' '));
+    } else {
+      ref.current.append(el, espacio);
+    }
+    const r = document.createRange();
+    r.setStartAfter(espacio);
+    rango.current = r;
+    onChange(leer(ref.current));
+  };
+  return (
+    <div>
+      <div
+        ref={ref}
+        role="textbox"
+        aria-multiline="true"
+        aria-label="Mensaje"
+        contentEditable
+        suppressContentEditableWarning
+        onInput={() => onChange(leer(ref.current))}
+        onKeyUp={recordar}
+        onMouseUp={recordar}
+        onBlur={recordar}
+        className={cn(entrada, 'min-h-[8.5rem] whitespace-pre-wrap leading-[1.9]')}
+      />
+      <p className="mb-2 mt-3 text-xs font-medium text-ink-muted">Tocá un dato para sumarlo donde está el cursor</p>
+      <div className="flex flex-wrap gap-1.5">
+        {VARIABLES.map((v) => (
+          <button
+            key={v.clave}
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => sumar(v)}
+            className="inline-flex min-h-[34px] items-center gap-1.5 rounded-pill border border-surface-border bg-surface px-3 text-xs font-semibold text-ink-soft transition-colors duration-base hover:border-primary-600/40 hover:text-primary-800"
+          >
+            <Icon name={v.icono} size="xs" />
+            {v.etiqueta}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 };
 
 export const MaquetaAjustes = () => {
   const [seccion, setSeccion] = useState('whatsapp');
   const [mensaje, setMensaje] = useState('¡Hola! Soy {nombre}. Me anoté al {actividad} ({fecha}) y quiero coordinar el pago.');
-  const armado = mensaje.replace(/\{(\w+)\}/g, (m, k) => EJEMPLO[k] ?? m);
+  const armado = mensaje.split(/(\{\w+\})/).map((parte, i) => {
+    const v = VARIABLES.find((x) => `{${x.clave}}` === parte);
+    return v ? (
+      <strong key={i} className="font-semibold">
+        {v.ejemplo}
+      </strong>
+    ) : (
+      parte
+    );
+  });
   return (
     <div className="grid gap-6 lg:grid-cols-[14rem_minmax(0,1fr)] [&>*]:min-w-0">
       <nav className="-mx-1 flex gap-1 overflow-x-auto px-1 lg:flex-col">
@@ -443,15 +537,7 @@ export const MaquetaAjustes = () => {
 
         <div className="grid gap-6 xl:grid-cols-2">
           <div>
-            <textarea value={mensaje} onChange={(e) => setMensaje(e.target.value)} rows={5} className={cn(entrada, 'resize-none leading-relaxed')} />
-            <p className="mb-2 mt-3 text-xs font-medium text-ink-muted">Tocá para sumar un dato de la persona o la actividad</p>
-            <div className="flex flex-wrap gap-1.5">
-              {VARIABLES.map((v) => (
-                <button key={v} type="button" onClick={() => setMensaje((m) => `${m} {${v}}`)} className="rounded-pill bg-ink/[0.05] px-3 py-1.5 text-xs font-semibold text-ink-soft hover:bg-ink/10">
-                  + {v}
-                </button>
-              ))}
-            </div>
+            <EditorConDatos valor={mensaje} onChange={setMensaje} />
           </div>
           {/* Cómo le llega: con datos de ejemplo, como en el teléfono. */}
           <div className="rounded-[18px] bg-surface-sunken p-4">
