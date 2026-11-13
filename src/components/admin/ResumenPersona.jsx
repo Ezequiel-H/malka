@@ -48,7 +48,7 @@ const ResumenPersona = ({ userId }) => {
   const [filtro, setFiltro] = useState('todas');
   const [visibles, setVisibles] = useState(POR_TANDA);
   const { datos: r, cargando, error } = useCargaSuave(
-    (signal) => axios.get(`/admin/users/${userId}/metrics`, { signal }).then((res) => res.data),
+    (signal) => axios.get(`/admin/users/${encodeURIComponent(userId)}/metrics`, { signal }).then((res) => res.data),
     userId
   );
 
@@ -192,7 +192,12 @@ const ResumenPersona = ({ userId }) => {
                 key: 'actividad',
                 header: 'Actividad',
                 render: (h) => (
-                  <Link to={`/admin/activities/${h.actividadId}/inscriptions`} className="font-medium text-ink hover:text-primary-700 hover:underline">
+                  <Link
+                    to={
+                      String(h.actividadId).startsWith('ev:')
+                        ? `/admin/metricas?vista=actividades&actividad=${encodeURIComponent(h.actividadId)}`
+                        : `/admin/activities/${h.actividadId}/inscriptions`
+                    } className="font-medium text-ink hover:text-primary-700 hover:underline">
                     {titulo(h.titulo)}
                   </Link>
                 ),

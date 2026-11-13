@@ -103,7 +103,10 @@ const Ranking = ({ desde, hasta, abrirFicha }) => {
               render: (a) => (
                 <span className="min-w-0">
                   <span className="block font-medium text-ink">{titulo(a.titulo)}</span>
-                  <span className="text-xs text-ink-muted">{TIPO[a.tipo] ?? a.tipo}{a.gratuita ? ' · gratuita' : ''}</span>
+                  <span className="text-xs text-ink-muted">
+                    {TIPO[a.tipo] ?? a.tipo}
+                    {a.esEvento ? ' · de la planilla' : a.gratuita ? ' · gratuita' : ''}
+                  </span>
                 </span>
               ),
             },
@@ -126,7 +129,7 @@ const fechaCorta = (dia) => new Date(`${dia}T00:00:00.000Z`).toLocaleDateString(
 
 const Ficha = ({ id, desde, hasta, volver, abrirFicha, abrirDetalle }) => {
   const { datos: d, cargando, actualizando, error } = useCargaSuave(
-    (signal) => axios.get(`/admin/metrics/activities/${id}`, { params: { from: desde, to: hasta }, signal }).then((r) => r.data),
+    (signal) => axios.get(`/admin/metrics/activities/${encodeURIComponent(id)}`, { params: { from: desde, to: hasta }, signal }).then((r) => r.data),
     `${id}|${desde}|${hasta}`
   );
   if (error) return <p className="text-sm text-danger-600">No se pudo calcular la ficha de esta actividad.</p>;
@@ -161,6 +164,7 @@ const Ficha = ({ id, desde, hasta, volver, abrirFicha, abrirDetalle }) => {
           <h2 className="text-2xl font-semibold tracking-tight text-ink">{titulo(d.actividad.titulo)}</h2>
           <div className="mt-2 flex flex-wrap gap-2">
             <Badge tone="neutral">{TIPO[d.actividad.tipo] ?? d.actividad.tipo}</Badge>
+            {d.actividad.esEvento && <Badge tone="neutral">Evento de la planilla</Badge>}
             <Badge tone="neutral">{d.actividad.gratuita ? 'Gratuita' : pesos(d.actividad.precio)}</Badge>
             {d.actividad.cupo && <Badge tone="neutral">Cupo {d.actividad.cupo}</Badge>}
             {d.actividad.categorias.map((c) => (
@@ -174,9 +178,17 @@ const Ficha = ({ id, desde, hasta, volver, abrirFicha, abrirDetalle }) => {
           <Button variant="secondary" size="sm" onClick={() => abrirDetalle({ actividad: [d.actividad.id] })}>
             Ver quiénes vinieron
           </Button>
-          <Button variant="secondary" size="sm" to={`/admin/activities/${d.actividad.id}/inscriptions`}>
-            Inscripciones
-          </Button>
+          {/* Los eventos de la planilla no son actividades de la app: no
+              tienen inscripciones, se ven en el historial. */}
+          {d.actividad.esEvento ? (
+            <Button variant="secondary" size="sm" to={`/admin/historial?q=${encodeURIComponent(d.actividad.titulo)}`}>
+              Historial
+            </Button>
+          ) : (
+            <Button variant="secondary" size="sm" to={`/admin/activities/${d.actividad.id}/inscriptions`}>
+              Inscripciones
+            </Button>
+          )}
         </div>
       </div>
 

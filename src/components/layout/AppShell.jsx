@@ -16,6 +16,7 @@ const ADMIN_LINKS = [
   { to: '/admin/users', label: 'Usuarios', icon: 'users' },
   { to: '/admin/activities', label: 'Actividades', icon: 'activity' },
   { to: '/admin/inscriptions', label: 'Inscripciones', icon: 'document' },
+  { to: '/admin/historial', label: 'Historial', icon: 'book', also: ['/admin/contactos'] },
   { to: '/admin/metricas', label: 'Métricas', icon: 'chart' },
   { to: '/admin/tags', label: 'Tags', icon: 'tag', also: ['/admin/tags-privados'] },
   { to: '/admin/settings', label: 'Ajustes', icon: 'settings' },

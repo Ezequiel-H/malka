@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
@@ -14,6 +14,8 @@ import LoadingScreen from '../../components/layout/LoadingScreen';
 import PageContainer from '../../components/layout/PageContainer';
 import PendingPaymentProofsModal from '../../components/admin/PendingPaymentProofsModal';
 import WaitlistExitModal from '../../components/activities/WaitlistExitModal';
+import SinAnotarse from '../../components/admin/historial/SinAnotarse';
+import FormVisita from '../../components/admin/historial/FormVisita';
 import {
   Badge,
   Button,
@@ -219,6 +221,42 @@ const ActivityInscriptions = () => {
   /* Por defecto se ven los encuentros desde ayer; para tomar asistencia de
      uno de la semana pasada se prenden los anteriores. */
   const [verAnteriores, setVerAnteriores] = useState(false);
+  /* Quienes vinieron sin anotarse, por fecha del encuentro, y el encuentro
+     al que se está sumando a alguien. */
+  const [sinAnotarse, setSinAnotarse] = useState({});
+  const [sumandoEn, setSumandoEn] = useState(null);
+  const cargarSinAnotarse = useCallback(() => {
+    axios
+      .get('/historial', { params: { actividad: id, origen: 'sin_anotarse', limit: 200 } })
+      .then((r) => {
+        const porFecha = {};
+        for (const f of r.data.filas) {
+          const dia = String(f.fecha).slice(0, 10);
+          (porFecha[dia] ??= []).push(f);
+        }
+        setSinAnotarse(porFecha);
+      })
+      .catch(() => setSinAnotarse({}));
+  }, [id]);
+  useEffect(() => {
+    cargarSinAnotarse();
+  }, [cargarSinAnotarse]);
+  const sacarSinAnotarse = async (fila) => {
+    const ok = await confirm({
+      title: `¿Sacar a ${fila.persona.nombre}?`,
+      description: 'Deja de figurar que vino a este encuentro sin anotarse.',
+      confirmLabel: 'Sacar',
+      tone: 'danger',
+    });
+    if (!ok) return;
+    try {
+      await axios.delete(`/historial/${fila.id}`);
+      cargarSinAnotarse();
+    } catch (error) {
+      showError(error.response?.data?.message || 'No se pudo sacar');
+    }
+  };
+  const hoyStr = formatLocalDateToString(new Date());
   const [loading, setLoading] = useState(true);
   const [groupedInscriptions, setGroupedInscriptions] = useState({});
   const [comprobanteAbierto, setComprobanteAbierto] = useState(null);
@@ -918,6 +956,13 @@ const ActivityInscriptions = () => {
                       {inscriptionListHeader}
                       {fechaInscriptions.map(inscription => renderInscriptionCard(inscription))}
                     </div>
+                    {fechaStr <= hoyStr && (
+                      <SinAnotarse
+                        filas={sinAnotarse[fechaStr]}
+                        onSumar={() => setSumandoEn(fechaStr)}
+                        onBorrar={sacarSinAnotarse}
+                      />
+                    )}
                   </div>
                 );
               })
@@ -937,6 +982,22 @@ const ActivityInscriptions = () => {
             {inscriptions.map(inscription => renderInscriptionCard(inscription))}
           </div>
         )}
+        {activity.tipo !== 'recurrente' && activity.fecha && formatUtcCalendarDateToString(activity.fecha) <= hoyStr && (
+          <SinAnotarse
+            filas={sinAnotarse[formatUtcCalendarDateToString(activity.fecha)]}
+            onSumar={() => setSumandoEn(formatUtcCalendarDateToString(activity.fecha))}
+            onBorrar={sacarSinAnotarse}
+          />
+        )}
+        <FormVisita
+          abierto={Boolean(sumandoEn)}
+          fijo={sumandoEn ? { actividadId: id, fecha: sumandoEn, titulo: activity.titulo } : null}
+          onCerrar={() => setSumandoEn(null)}
+          onGuardada={() => {
+            setSumandoEn(null);
+            cargarSinAnotarse();
+          }}
+        />
       <PendingPaymentProofsModal
         open={showProofsModal}
         activityId={id}
