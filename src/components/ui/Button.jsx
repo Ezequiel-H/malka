@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom';
 import Icon from './Icon';
 import cn from './cn';
 
+/* Pastillas, con la tinta como color principal (el mismo idioma que la
+   landing). El verde queda para el éxito y los acentos. */
 const VARIANTS = {
-  primary: 'bg-primary text-white shadow-subtle hover:bg-primary-600 active:bg-primary-700',
-  secondary:
-    'bg-surface text-ink border border-surface-border shadow-subtle hover:bg-ink/[0.04] active:bg-ink/[0.08]',
-  ghost: 'bg-transparent text-ink-soft hover:bg-primary-50 hover:text-primary-700',
+  primary: 'bg-ink text-surface hover:bg-primary-800 active:bg-primary-900',
+  secondary: 'bg-surface text-ink border border-ink/15 hover:border-ink/30 hover:bg-ink/[0.03] active:bg-ink/[0.06]',
+  ghost: 'bg-transparent text-ink-soft hover:bg-ink/[0.05] hover:text-ink',
+  soft: 'bg-ink/[0.06] text-ink hover:bg-ink/10 active:bg-ink/[0.14]',
   danger: 'bg-danger-500 text-white shadow-subtle hover:bg-danger-600 active:bg-danger-700',
   success: 'bg-success-500 text-white shadow-subtle hover:bg-success-600 active:bg-success-700',
   warning: 'bg-warning-500 text-white shadow-subtle hover:bg-warning-600 active:bg-warning-700',
@@ -70,7 +72,7 @@ const Button = forwardRef(
     const isDisabled = disabled || loading;
 
     const classes = cn(
-      'inline-flex items-center justify-center font-medium rounded-control',
+      'inline-flex items-center justify-center font-semibold rounded-pill',
       'transition-chrome duration-fast ease-standard',
       // El foco se ve siempre, pero sólo cuando se navega por teclado.
       // Ring semitransparente pegado al botón: un offset con color de fondo

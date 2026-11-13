@@ -26,10 +26,11 @@ const Card = ({
   ...props
 }) => {
   const classes = cn(
-    'rounded-card border border-surface-border bg-surface shadow-card',
+    // Plana: una línea fina alcanza para separar, sin sombra.
+    'rounded-[20px] border border-surface-border bg-surface',
     'transition-elevate duration-fast ease-standard motion-reduce:transition-none',
     interactive &&
-      'cursor-pointer hover:-translate-y-0.5 hover:shadow-raised active:translate-y-0 active:shadow-card motion-reduce:hover:translate-y-0',
+      'cursor-pointer hover:-translate-y-0.5 hover:border-ink/20 hover:shadow-card active:translate-y-0 motion-reduce:hover:translate-y-0',
     PADDING[padding],
     className
   );

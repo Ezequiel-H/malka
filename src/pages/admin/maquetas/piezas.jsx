@@ -47,53 +47,8 @@ export const IconoPropuesta = ({ propuesta, tamano = 'md' }) => {
   );
 };
 
-const TONOS_AVATAR = ['#689b78', '#b0567a', '#c98a1e', '#3d7d99', '#7c5cbf', '#c4453c'];
-/* Iniciales en un círculo: las caras de quién viene, sin fotos. */
-export const Avatar = ({ nombre, tamano = 28, borde = true }) => {
-  const iniciales = nombre
-    .split(' ')
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join('');
-  const tono = TONOS_AVATAR[nombre.length % TONOS_AVATAR.length];
-  return (
-    <span
-      className={cn('inline-flex shrink-0 items-center justify-center rounded-pill font-grotesk text-[0.66rem] font-semibold tracking-tight text-surface', borde && 'ring-2 ring-surface')}
-      style={{ width: tamano, height: tamano, background: tono }}
-      title={nombre}
-    >
-      {iniciales}
-    </span>
-  );
-};
-
-export const Avatares = ({ nombres, total, max = 5, tamano = 28 }) => (
-  <span className="flex items-center">
-    <span className="flex -space-x-1.5">
-      {nombres.slice(0, max).map((n) => (
-        <Avatar key={n} nombre={n} tamano={tamano} />
-      ))}
-    </span>
-    {total > max && <span className="ml-2 text-xs font-medium text-ink-muted">+{total - max}</span>}
-  </span>
-);
-
-/* Cuánto del cupo está lleno, con color que avisa cuando se llena. */
-export const BarraCupo = ({ inscriptos, cupo, ancho = 'w-28' }) => {
-  if (!cupo) return <span className="text-xs text-ink-muted">{inscriptos} anotados · sin cupo</span>;
-  const pct = Math.min(100, Math.round((inscriptos / cupo) * 100));
-  const color = pct >= 100 ? '#c4453c' : pct >= 80 ? '#c98a1e' : '#537f61';
-  return (
-    <span className="flex flex-col gap-1">
-      <span className="text-xs tabular-nums text-ink-soft">
-        <span className="font-semibold text-ink">{inscriptos}</span>/{cupo} {pct >= 100 ? '· lleno' : ''}
-      </span>
-      <span className={cn('h-1.5 overflow-hidden rounded-pill bg-ink/[0.07]', ancho)}>
-        <span className="block h-full rounded-pill transition-[width] duration-slow" style={{ width: `${pct}%`, background: color }} />
-      </span>
-    </span>
-  );
-};
+/* Las piezas que pasaron al DS: las maquetas usan las mismas. */
+export { Avatar, Avatares, BarraCupo } from '../../../components/ui';
 
 /* El aviso de que esto es una maqueta, arriba de todo. */
 export const AvisoMaqueta = ({ children }) => (

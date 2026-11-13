@@ -38,7 +38,7 @@ const PageContainer = ({ title, back, actions, maxWidth = '7xl', className = '',
           <div className="mx-auto flex min-w-0 max-w-7xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div className="flex min-w-0 items-center gap-3">
               {back}
-              <h1 className="min-w-0 truncate text-xl font-semibold tracking-tight text-ink">
+              <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-ink">
                 {title}
               </h1>
             </div>

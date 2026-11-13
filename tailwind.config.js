@@ -108,7 +108,9 @@ export default {
            como un lugar para gente de veinticinco. */
         grotesk: ['Archivo', 'Heebo', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
         display: ['"Cormorant Garamond"', 'Georgia', 'serif'],
-        sans: ['ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+        /* La app usa la misma grotesca que la landing (rediseño aprobado en
+           noviembre de 2026): un solo idioma visual adentro y afuera. */
+        sans: ['Archivo', 'Heebo', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
 

@@ -36,5 +36,8 @@ export { default as ImageLightbox } from './ImageLightbox';
 
 // Feedback
 export { default as Badge, badgeTones } from './Badge';
+export { default as Avatar, Avatares } from './Avatar';
+export { default as BarraCupo } from './BarraCupo';
+export { default as IconoColor } from './IconoColor';
 export { default as Alert, alertTones } from './Alert';
 export { Spinner, Skeleton, SkeletonText, SkeletonCards, SkeletonRows, EmptyState } from './Feedback';
