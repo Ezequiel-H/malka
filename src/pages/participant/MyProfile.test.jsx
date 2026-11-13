@@ -7,10 +7,13 @@ import MyProfile from './MyProfile';
 
 const patchMock = vi.fn();
 
+const getMock = vi.fn();
+
 vi.mock('axios', () => {
   return {
     default: {
-      patch: (...args) => patchMock(...args)
+      patch: (...args) => patchMock(...args),
+      get: (...args) => getMock(...args)
     }
   };
 });
@@ -18,7 +21,9 @@ vi.mock('axios', () => {
 const authMock = {
   user: null,
   updateUser: vi.fn(),
-  fetchUser: vi.fn()
+  fetchUser: vi.fn(),
+  updateMyTags: vi.fn(),
+  logout: vi.fn()
 };
 
 vi.mock('../../contexts/AuthContext', () => {
@@ -41,6 +46,10 @@ vi.mock('../../contexts/ToastContext', () => {
 describe('MyProfile', () => {
   beforeEach(() => {
     patchMock.mockReset();
+    getMock.mockReset();
+    getMock.mockResolvedValue({ data: { tags: [{ nombre: 'música', color: '#7c5cbf', icono: 'music' }, { nombre: 'cocina', color: '#c98a1e', icono: 'chef' }] } });
+    authMock.updateMyTags.mockReset();
+    authMock.updateMyTags.mockResolvedValue({ success: true });
     authMock.updateUser.mockReset();
     authMock.fetchUser.mockReset();
     toastMock.showSuccess.mockReset();
@@ -60,92 +69,64 @@ describe('MyProfile', () => {
     };
   });
 
-  it('muestra el formulario prellenado y email bloqueado', () => {
+  const montar = () =>
     render(
       <MemoryRouter>
         <MyProfile />
       </MemoryRouter>
     );
 
+  it('muestra los datos como una lista y el email sin poder cambiarse', async () => {
+    montar();
     expect(screen.getByRole('heading', { name: 'Mi perfil' })).toBeInTheDocument();
-
-    expect(screen.getByLabelText('Nombre')).toHaveValue('Ana');
-    expect(screen.getByLabelText('Apellido')).toHaveValue('Perez');
-    // El DatePicker es un botón que muestra la fecha en es-AR, no un input.
-    expect(screen.getByLabelText('Fecha de nacimiento')).toHaveTextContent('10/07/1992');
-    expect(screen.getByLabelText('DNI')).toHaveValue('12345678');
-    expect(screen.getByLabelText('Teléfono')).toHaveValue('+5491112345678');
-    expect(screen.getByLabelText('Email')).toHaveValue('ana@example.com');
-    expect(screen.getByLabelText('Email')).toBeDisabled();
-
-    expect(screen.getByLabelText('¿Cómo te enteraste de esta propuesta?')).toHaveValue('Instagram');
-    expect(screen.getByLabelText('Sin TACC')).toBeChecked();
+    expect(screen.getByRole('button', { name: /Nombre\s*Ana/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Teléfono\s*\+5491112345678/ })).toBeInTheDocument();
+    expect(screen.getByText('ana@example.com')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /ana@example.com/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Sin TACC/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(await screen.findByRole('button', { name: /música/i })).toBeInTheDocument();
   });
 
-  it('envía PATCH /users/me y actualiza el user cuando el API devuelve user', async () => {
+  it('un dato se edita en el lugar y se guarda solo ese', async () => {
     const u = userEvent.setup();
-    patchMock.mockResolvedValueOnce({
-      data: {
-        user: {
-          ...authMock.user,
-          telefono: '+5491100000000',
-          restriccionesAlimentarias: ['Vegano']
-        }
-      }
-    });
-
-    render(
-      <MemoryRouter>
-        <MyProfile />
-      </MemoryRouter>
-    );
-
-    await u.clear(screen.getByLabelText('Teléfono'));
-    await u.type(screen.getByLabelText('Teléfono'), '+5491100000000');
-    await u.click(screen.getByLabelText('Sin TACC'));
-    await u.click(screen.getByLabelText('Vegano'));
-
-    await u.click(screen.getByRole('button', { name: 'Guardar cambios' }));
-
-    await waitFor(() => {
-      expect(patchMock).toHaveBeenCalledTimes(1);
-    });
-
-    expect(patchMock).toHaveBeenCalledWith('/users/me', {
-      nombre: 'Ana',
-      apellido: 'Perez',
-      fechaNacimiento: '1992-07-10',
-      dni: '12345678',
-      telefono: '+5491100000000',
-      restriccionesAlimentarias: ['Vegano'],
-      comoSeEntero: 'Instagram'
-    });
-
-    expect(authMock.updateUser).toHaveBeenCalledWith({
-      ...authMock.user,
-      telefono: '+5491100000000',
-      restriccionesAlimentarias: ['Vegano']
-    });
-    expect(toastMock.showSuccess).toHaveBeenCalledWith('Tu perfil se guardó correctamente');
+    patchMock.mockResolvedValueOnce({ data: { user: { ...authMock.user, telefono: '+5491100000000' } } });
+    montar();
+    await u.click(screen.getByRole('button', { name: /Teléfono/ }));
+    const campo = screen.getByLabelText('Teléfono');
+    await u.clear(campo);
+    await u.type(campo, '+5491100000000');
+    await u.click(screen.getByRole('button', { name: 'Listo' }));
+    await waitFor(() => expect(patchMock).toHaveBeenCalledWith('/users/me', { telefono: '+5491100000000' }));
+    expect(authMock.updateUser).toHaveBeenCalledWith({ ...authMock.user, telefono: '+5491100000000' });
   });
 
-  it('muestra error si falla el PATCH', async () => {
+  it('no deja vaciar un dato obligatorio', async () => {
     const u = userEvent.setup();
-    patchMock.mockRejectedValueOnce({
-      response: { data: { message: 'Teléfono inválido' } }
-    });
+    montar();
+    await u.click(screen.getByRole('button', { name: /Nombre/ }));
+    await u.clear(screen.getByLabelText('Nombre'));
+    await u.click(screen.getByRole('button', { name: 'Listo' }));
+    expect(screen.getByText('Este dato no puede quedar vacío')).toBeInTheDocument();
+    expect(patchMock).not.toHaveBeenCalled();
+  });
 
-    render(
-      <MemoryRouter>
-        <MyProfile />
-      </MemoryRouter>
-    );
+  it('la comida y los intereses se guardan solos al tocarlos', async () => {
+    const u = userEvent.setup();
+    patchMock.mockResolvedValue({ data: {} });
+    montar();
+    await u.click(screen.getByRole('button', { name: /Vegano/ }));
+    await waitFor(() => expect(patchMock).toHaveBeenCalledWith('/users/me', { restriccionesAlimentarias: ['Sin TACC', 'Vegano'] }), { timeout: 2500 });
+    await u.click(await screen.findByRole('button', { name: /música/i }));
+    await waitFor(() => expect(authMock.updateMyTags).toHaveBeenCalledWith(['música']), { timeout: 2500 });
+  });
 
-    await u.click(screen.getByRole('button', { name: 'Guardar cambios' }));
-
-    await waitFor(() => {
-      expect(toastMock.showError).toHaveBeenCalledWith('Teléfono inválido');
-    });
+  it('muestra el error si no se puede guardar', async () => {
+    const u = userEvent.setup();
+    patchMock.mockRejectedValueOnce({ response: { data: { message: 'Teléfono inválido' } } });
+    montar();
+    await u.click(screen.getByRole('button', { name: /Apellido/ }));
+    await u.type(screen.getByLabelText('Apellido'), 'z');
+    await u.click(screen.getByRole('button', { name: 'Listo' }));
+    await waitFor(() => expect(toastMock.showError).toHaveBeenCalledWith('Teléfono inválido'));
   });
 });
-

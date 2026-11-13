@@ -1,290 +1,319 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { formatAuthError, normalizePhone } from '../../utils/authErrors';
 import { birthDateToInputValue, formatLocalDateToString } from '../../utils/dateUtils';
+import { publicTagColor, publicTagIcon, userPublicTags } from '../../utils/tagFields';
+import { fechaEn } from '../../utils/participante';
 import PageContainer from '../../components/layout/PageContainer';
 import NotificationSettings from '../../components/profile/NotificationSettings';
-import { Alert, Button, Card, Checkbox, DatePicker, Field, Input } from '../../components/ui';
-import { invalidEs } from '../../utils/formValidation';
+import { Alert, Avatar, Button, DatePicker, Icon, Input, cn } from '../../components/ui';
 import { SelectorIdioma, useIdioma } from '../../i18n';
 import { RESTRICCIONES } from '../../utils/restricciones';
 
+const ESPERA_GUARDADO_MS = 1200;
 
-const MyProfile = () => {
-  const { user, updateUser, fetchUser, logout } = useAuth();
-  const { showSuccess, showError } = useToast();
-  const { t } = useIdioma();
-  const navigate = useNavigate();
-  const [saving, setSaving] = useState(false);
+/* Lo que se puede cambiar de cada dato, y cómo se valida en el lugar. */
+const CAMPOS = [
+  { clave: 'nombre', icono: 'user', etiqueta: 'registro.nombre', tipo: 'text', autoComplete: 'given-name' },
+  { clave: 'apellido', icono: 'user', etiqueta: 'registro.apellido', tipo: 'text', autoComplete: 'family-name' },
+  { clave: 'telefono', icono: 'phone', etiqueta: 'registro.telefono', tipo: 'tel', dir: 'ltr', patron: /^[+]?[0-9]{8,20}$/, error: 'registro.telefonoInvalido' },
+  { clave: 'fechaNacimiento', icono: 'cake', etiqueta: 'registro.fechaNacimiento', tipo: 'fecha' },
+  { clave: 'dni', icono: 'document', etiqueta: 'registro.dni', tipo: 'text', dir: 'ltr', inputMode: 'numeric' },
+  { clave: 'comoSeEntero', icono: 'sparkles', etiqueta: 'registro.comoTeEnteraste', tipo: 'text' },
+];
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+const valorDe = (user, clave) => {
+  if (clave === 'fechaNacimiento') return birthDateToInputValue(user?.fechaNacimiento);
+  if (clave === 'telefono') return normalizePhone(user?.telefono);
+  if (clave === 'dni') return String(user?.dni ?? '').replace(/ /g, '').trim();
+  return user?.[clave] ?? '';
+};
+
+/** Una fila de dato: se toca, se edita ahí mismo y se guarda sola. */
+const FilaDato = ({ campo, user, guardar, t, locale }) => {
+  const [editando, setEditando] = useState(false);
+  const [valor, setValor] = useState('');
+  const [error, setError] = useState(null);
+  const actual = valorDe(user, campo.clave);
+
+  const abrir = () => {
+    setValor(actual);
+    setError(null);
+    setEditando(true);
+  };
+  const terminar = async (v = valor) => {
+    const limpio = campo.clave === 'telefono' || campo.clave === 'dni' ? String(v).replace(/\s/g, '') : String(v).trim();
+    if (limpio === actual) return setEditando(false);
+    if (!limpio && campo.clave !== 'comoSeEntero') return setError(t('perfil.obligatorio'));
+    if (campo.patron && !campo.patron.test(limpio)) return setError(t(campo.error));
+    const ok = await guardar({ [campo.clave]: limpio });
+    if (ok) setEditando(false);
   };
 
-  const initial = useMemo(() => {
-    return {
-      nombre: user?.nombre ?? '',
-      apellido: user?.apellido ?? '',
-      fechaNacimiento: birthDateToInputValue(user?.fechaNacimiento),
-      dni: String(user?.dni ?? '').replace(/ /g, '').trim(),
-      email: user?.email ?? '',
-      telefono: normalizePhone(user?.telefono),
-      restriccionesAlimentarias: Array.isArray(user?.restriccionesAlimentarias) ? user.restriccionesAlimentarias : [],
-      comoSeEntero: user?.comoSeEntero ?? ''
-    };
-  }, [user]);
+  const mostrado = campo.clave === 'fechaNacimiento' && actual ? fechaEn(actual, locale, { day: 'numeric', month: 'long', year: 'numeric' }) : actual;
+  const id = `perfil-${campo.clave}`;
 
-  const [formData, setFormData] = useState(initial);
+  return (
+    <li className="px-4 py-3">
+      {editando ? (
+        <div className="animate-fade-in">
+          <label htmlFor={id} className="mb-1.5 block text-xs font-medium text-ink-muted">
+            {t(campo.etiqueta)}
+          </label>
+          <div className="flex items-start gap-2">
+            <div className="min-w-0 flex-1">
+              {campo.tipo === 'fecha' ? (
+                <DatePicker id={id} name={campo.clave} value={valor} onChange={(v) => setValor(v)} max={formatLocalDateToString(new Date())} />
+              ) : (
+                <Input
+                  id={id}
+                  type={campo.tipo}
+                  dir={campo.dir}
+                  inputMode={campo.inputMode}
+                  autoComplete={campo.autoComplete}
+                  autoFocus
+                  value={valor}
+                  onChange={(e) => setValor(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') terminar();
+                    if (e.key === 'Escape') setEditando(false);
+                  }}
+                />
+              )}
+              {error && <p className="mt-1 text-xs text-danger-600">{error}</p>}
+            </div>
+            <Button size="sm" onClick={() => terminar()}>
+              {t('perfil.listo')}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <button type="button" onClick={abrir} className="flex w-full items-center gap-3 text-start">
+          <Icon name={campo.icono} size="sm" className="shrink-0 text-ink-muted" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs text-ink-muted">{t(campo.etiqueta)}</span>
+            <span dir={campo.dir ?? 'auto'} className={cn('block truncate text-sm font-medium', mostrado ? 'text-ink' : 'text-ink-faint')}>
+              {mostrado || t('perfil.sinCargar')}
+            </span>
+          </span>
+          <Icon name="chevronRight" size="sm" className="shrink-0 text-ink-faint rtl:-scale-x-100" />
+        </button>
+      )}
+    </li>
+  );
+};
+
+/**
+ * El perfil: los datos como una lista que se toca para cambiar (cada uno se
+ * guarda solo), y los intereses y la comida como pastillas que se prenden.
+ * También el idioma, las notificaciones y salir.
+ */
+const MyProfile = () => {
+  const { user, updateUser, updateMyTags, logout } = useAuth();
+  const { showError } = useToast();
+  const { t, locale } = useIdioma();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [catalogo, setCatalogo] = useState([]);
+  const [intereses, setIntereses] = useState(() => userPublicTags(user));
+  const [restricciones, setRestricciones] = useState(() => user?.restriccionesAlimentarias ?? []);
+  const [estado, setEstado] = useState(null); // null | 'guardando' | 'guardado'
+  const espera = useRef({});
+  const interesesRef = useRef(null);
 
   useEffect(() => {
-    setFormData(initial);
-  }, [initial]);
+    axios
+      .get('/tags?activa=true')
+      .then((res) => setCatalogo(res.data.tags || []))
+      .catch(() => showError(t('misIntereses.errorTags')));
+  }, [showError, t]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    const next =
-      name === 'dni'
-        ? value.replace(/ /g, '').trim()
-        : name === 'telefono'
-          ? value.replace(/\s/g, '').trim()
-          : value;
-    setFormData(prev => ({ ...prev, [name]: next }));
+  /* Desde «Elegir intereses» se llega directo a esa parte. */
+  useEffect(() => {
+    if (location.hash === '#intereses') interesesRef.current?.scrollIntoView({ block: 'start' });
+  }, [location.hash]);
+
+  useEffect(() => () => Object.values(espera.current).forEach(clearTimeout), []);
+
+  const guardar = async (cambio) => {
+    setEstado('guardando');
+    try {
+      const res = await axios.patch('/users/me', cambio);
+      if (res.data?.user) updateUser(res.data.user);
+      setEstado('guardado');
+      return true;
+    } catch (error) {
+      setEstado(null);
+      showError(formatAuthError(error, t('perfil.error')));
+      return false;
+    }
   };
 
-  const handleRestriccionChange = (restriccion) => {
-    setFormData(prev => {
-      const restricciones = prev.restriccionesAlimentarias || [];
-      if (restricciones.includes(restriccion)) {
-        return {
-          ...prev,
-          restriccionesAlimentarias: restricciones.filter(r => r !== restriccion)
-        };
+  /* Las pastillas se guardan solas 1,2 s después del último toque. */
+  const guardarDespues = (clave, accion) => {
+    clearTimeout(espera.current[clave]);
+    setEstado('guardando');
+    espera.current[clave] = setTimeout(accion, ESPERA_GUARDADO_MS);
+  };
+  const cambiarIntereses = (next) => {
+    setIntereses(next);
+    guardarDespues('tags', async () => {
+      const r = await updateMyTags(next);
+      if (r.success) setEstado('guardado');
+      else {
+        setEstado(null);
+        showError(r.message || t('misIntereses.errorGuardar'));
       }
-      return {
-        ...prev,
-        restriccionesAlimentarias: [...restricciones, restriccion]
-      };
     });
   };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // El DatePicker guarda en un input hidden y el navegador no valida hidden:
-    // el `required` del Field es sólo visual, así que la fecha va a mano.
-    if (!formData.fechaNacimiento) {
-      showError(t('perfil.faltaFecha'));
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const payload = {
-        nombre: formData.nombre,
-        apellido: formData.apellido,
-        fechaNacimiento: formData.fechaNacimiento,
-        dni: String(formData.dni ?? '').replace(/ /g, '').trim(),
-        telefono: normalizePhone(formData.telefono),
-        restriccionesAlimentarias: formData.restriccionesAlimentarias || [],
-        comoSeEntero: formData.comoSeEntero
-      };
-
-      const res = await axios.patch('/users/me', payload);
-      const next = res.data?.user;
-      if (next) {
-        updateUser(next);
-      } else {
-        updateUser(payload);
-        await fetchUser();
-      }
-      showSuccess(t('perfil.guardado'));
-    } catch (error) {
-      showError(formatAuthError(error, t('perfil.error')));
-    } finally {
-      setSaving(false);
-    }
+  const cambiarRestriccion = (valor) => {
+    const next = restricciones.includes(valor) ? restricciones.filter((r) => r !== valor) : [...restricciones, valor];
+    setRestricciones(next);
+    guardarDespues('restricciones', () => guardar({ restriccionesAlimentarias: next }));
   };
 
   if (!user) return null;
+  const nombre = [user.nombre, user.apellido].filter(Boolean).join(' ');
+  const desde = user.createdAt ? fechaEn(String(user.createdAt).slice(0, 10), locale, { month: 'long', year: 'numeric' }) : null;
 
   return (
     <PageContainer title={t('shell.links.perfil')} maxWidth="2xl">
-      <Card>
-        <p className="mb-6 text-ink-muted">
-          {t('perfil.intro')}{' '}
-          <Button variant="link" size="sm" to="/my-interests" className="min-h-0 px-0 py-0 align-baseline">
-            {t('shell.links.intereses')}
-          </Button>
-          .
-        </p>
+      <div className="space-y-7">
+        <div className="flex items-center gap-4">
+          <Avatar nombre={nombre} tamano={64} borde={false} />
+          <div className="min-w-0 flex-1">
+            <p dir="auto" className="truncate font-grotesk text-xl font-semibold text-ink">
+              {nombre}
+            </p>
+            {desde && <p className="text-sm text-ink-muted">{t('perfil.desde', { desde })}</p>}
+          </div>
+          <span className="text-xs text-ink-muted" aria-live="polite">
+            {estado === 'guardando' ? t('comun.guardando') : estado === 'guardado' ? (
+              <span className="inline-flex items-center gap-1">
+                <Icon name="check" size="xs" className="text-success-700" />
+                {t('perfil.guardadoSolo')}
+              </span>
+            ) : null}
+          </span>
+        </div>
 
         {user.estado === 'pending' && (
-          <Alert tone="info" className="mb-6" title={t('perfil.validandoTitulo')}>
+          <Alert tone="info" title={t('perfil.validandoTitulo')}>
             {t('perfil.validandoTexto')}
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit}>
-          <Field label={t('registro.nombre')} htmlFor="my-profile-nombre" required>
-            <Input
-              type="text"
-              name="nombre"
-              value={formData.nombre}
-              onChange={handleChange}
-              required
-              autoComplete="given-name"
-            />
-          </Field>
+        <section aria-labelledby="mis-datos">
+          <h2 id="mis-datos" className="mb-2 px-1 text-xs font-semibold uppercase tracking-label text-ink-faint">
+            {t('perfil.misDatos')}
+          </h2>
+          <ul className="divide-y divide-surface-border rounded-[18px] border border-surface-border bg-surface">
+            <li className="flex items-center gap-3 px-4 py-3">
+              <Icon name="mail" size="sm" className="shrink-0 text-ink-muted" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-xs text-ink-muted">{t('registro.email')}</span>
+                <span dir="ltr" className="block truncate text-sm font-medium text-ink">
+                  {user.email}
+                </span>
+              </span>
+              <span className="shrink-0 text-xs text-ink-faint">{t('perfil.emailFijo')}</span>
+            </li>
+            {CAMPOS.map((campo) => (
+              <FilaDato key={campo.clave} campo={campo} user={user} guardar={guardar} t={t} locale={locale} />
+            ))}
+          </ul>
+          <p className="mt-2 px-1 text-xs text-ink-muted">{t('perfil.tocaParaCambiar')}</p>
+        </section>
 
-          <Field label={t('registro.apellido')} htmlFor="my-profile-apellido" required>
-            <Input
-              type="text"
-              name="apellido"
-              value={formData.apellido}
-              onChange={handleChange}
-              required
-              autoComplete="family-name"
-            />
-          </Field>
-
-          <Field label={t('registro.fechaNacimiento')} htmlFor="my-profile-fechaNacimiento" required>
-            <DatePicker
-              id="my-profile-fechaNacimiento"
-              name="fechaNacimiento"
-              value={formData.fechaNacimiento}
-              onChange={(fechaNacimiento) =>
-                setFormData((previo) => ({ ...previo, fechaNacimiento }))
-              }
-              max={formatLocalDateToString(new Date())}
-            />
-          </Field>
-
-          <Field
-            label={t('registro.dni')}
-            htmlFor="my-profile-dni"
-            hint={t('registro.dniAyuda')}
-            required
-          >
-            <Input
-              type="text"
-              name="dni"
-              dir="ltr"
-              value={formData.dni}
-              onChange={handleChange}
-              required
-              inputMode="numeric"
-              autoComplete="off"
-              minLength={7}
-              maxLength={10}
-              pattern="\d{7,10}"
-              title={t('registro.dniInvalido')}
-              {...invalidEs(t('registro.dniAyuda'))}
-            />
-          </Field>
-
-          <Field
-            label={t('registro.email')}
-            htmlFor="my-profile-email"
-            hint={t('perfil.emailAyuda')}
-          >
-            <Input type="email" icon="mail" name="email" dir="ltr" value={formData.email} disabled />
-          </Field>
-
-          <Field
-            label={t('registro.telefono')}
-            htmlFor="my-profile-telefono"
-            hint={t('registro.telefonoAyuda')}
-            required
-          >
-            <Input
-              type="tel"
-              icon="phone"
-              name="telefono"
-              dir="ltr"
-              value={formData.telefono}
-              onChange={handleChange}
-              required
-              inputMode="tel"
-              autoComplete="tel"
-              minLength={8}
-              maxLength={22}
-              pattern="^[+]?[0-9]{8,20}$"
-              title={t('registro.telefonoInvalido')}
-              {...invalidEs(t('registro.telefonoInvalido'))}
-            />
-          </Field>
-
-          {/* <fieldset> + <legend>: hace que la pregunta se anuncie una vez
-              antes del grupo, en vez de repetirse en cada casilla. */}
-          <fieldset className="mb-5">
-            <legend className="mb-2 block text-sm font-medium text-ink-soft">
-              {t('registro.restriccionesPregunta')}
-            </legend>
-            <div className="space-y-2.5">
-              {RESTRICCIONES.map(({ valor, clave }) => (
-                <Checkbox
-                  key={valor}
-                  label={t(`registro.restricciones.${clave}`)}
-                  checked={formData.restriccionesAlimentarias?.includes(valor) || false}
-                  onChange={() => handleRestriccionChange(valor)}
-                />
-              ))}
+        <section id="intereses" ref={interesesRef} aria-labelledby="me-interesa" className="scroll-mt-24">
+          <h2 id="me-interesa" className="mb-1 px-1 text-xs font-semibold uppercase tracking-label text-ink-faint">
+            {t('perfil.meInteresa')}
+          </h2>
+          <p className="mb-3 px-1 text-sm text-ink-muted">{t('perfil.meInteresaTexto')}</p>
+          {catalogo.length === 0 ? (
+            <p className="px-1 text-sm text-ink-muted">{t('misIntereses.sinCatalogo')}</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {catalogo.map((tag) => {
+                const activo = intereses.some((x) => String(x).toLowerCase() === tag.nombre.toLowerCase());
+                const color = publicTagColor(catalogo, tag.nombre);
+                return (
+                  <button
+                    key={tag._id ?? tag.nombre}
+                    type="button"
+                    aria-pressed={activo}
+                    onClick={() => cambiarIntereses(activo ? intereses.filter((x) => String(x).toLowerCase() !== tag.nombre.toLowerCase()) : [...intereses, tag.nombre])}
+                    className={cn(
+                      'inline-flex min-h-[38px] items-center gap-2 rounded-pill border px-3.5 text-sm font-medium capitalize transition-colors duration-base',
+                      activo ? 'border-transparent text-surface' : 'border-surface-border bg-surface text-ink-soft hover:border-ink/25',
+                    )}
+                    style={activo ? { background: color } : undefined}
+                  >
+                    <Icon name={activo ? 'check' : publicTagIcon(catalogo, tag.nombre) || 'tag'} size="xs" style={activo ? undefined : { color }} />
+                    {tag.nombre}
+                  </button>
+                );
+              })}
             </div>
-          </fieldset>
+          )}
+        </section>
 
-          <Field
-            label={t('registro.comoTeEnteraste')}
-            htmlFor="my-profile-comoSeEntero"
-            required
-          >
-            <Input
-              type="text"
-              name="comoSeEntero"
-              value={formData.comoSeEntero}
-              onChange={handleChange}
-              placeholder={t('registro.comoTeEnterastePlaceholder')}
-              required
-            />
-          </Field>
-
-          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <Button variant="secondary" to="/my-interests" className="w-full sm:w-auto">
-              {t('shell.links.intereses')}
-            </Button>
-            <Button type="submit" loading={saving} className="w-full sm:w-auto">
-              {saving ? t('comun.guardando') : t('perfil.guardar')}
-            </Button>
+        <section aria-labelledby="comida">
+          <h2 id="comida" className="mb-3 px-1 text-xs font-semibold uppercase tracking-label text-ink-faint">
+            {t('perfil.comida')}
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {RESTRICCIONES.map(({ valor, clave }) => {
+              const activa = restricciones.includes(valor);
+              return (
+                <button
+                  key={valor}
+                  type="button"
+                  aria-pressed={activa}
+                  onClick={() => cambiarRestriccion(valor)}
+                  className={cn(
+                    'inline-flex min-h-[38px] items-center gap-1.5 rounded-pill border px-3.5 text-sm transition-colors duration-base',
+                    activa ? 'border-transparent bg-ink text-surface' : 'border-surface-border bg-surface text-ink-soft hover:border-ink/25',
+                  )}
+                >
+                  {activa && <Icon name="check" size="xs" />}
+                  {t(`registro.restricciones.${clave}`)}
+                </button>
+              );
+            })}
           </div>
-        </form>
+        </section>
 
         {/* El idioma se guarda en la cuenta: vale en cualquier dispositivo. */}
-        <section className="mt-6 border-t border-surface-border pt-6" aria-labelledby="perfil-idioma">
-          <h2 id="perfil-idioma" className="mb-1 text-lg font-semibold text-ink">
+        <section aria-labelledby="perfil-idioma">
+          <h2 id="perfil-idioma" className="mb-1 px-1 text-xs font-semibold uppercase tracking-label text-ink-faint">
             {t('comun.idioma')}
           </h2>
-          <p className="mb-3 text-sm text-ink-muted">{t('perfil.idiomaTexto')}</p>
+          <p className="mb-2 px-1 text-sm text-ink-muted">{t('perfil.idiomaTexto')}</p>
           <SelectorIdioma className="-ms-2" />
         </section>
 
-        <NotificationSettings className="mt-6 border-t border-surface-border pt-6" />
+        <NotificationSettings className="rounded-[18px] border border-surface-border bg-surface p-4" />
 
         {/* En mobile no hay sidebar ni drawer: el logout vive acá. */}
-        <div className="mt-6 border-t border-surface-border pt-4 lg:hidden">
+        <div className="lg:hidden">
           <Button
             variant="ghost"
             icon="logout"
-            onClick={handleLogout}
+            onClick={() => {
+              logout();
+              navigate('/login');
+            }}
             fullWidth
             className="text-danger-600 hover:bg-danger-50 hover:text-danger-700"
           >
             {t('perfil.cerrarSesion')}
           </Button>
         </div>
-      </Card>
+      </div>
     </PageContainer>
   );
 };

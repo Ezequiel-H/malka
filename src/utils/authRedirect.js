@@ -29,6 +29,6 @@ export function resolvePostAuthPath(user, location) {
     return returnPath;
   }
   if (user?.role === 'admin') return '/admin';
-  if (user?.estado === 'approved') return '/activities';
+  // Quien participa (aprobado o no) entra a su inicio.
   return '/dashboard';
 }

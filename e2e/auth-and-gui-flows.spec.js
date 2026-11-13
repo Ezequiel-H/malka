@@ -105,13 +105,16 @@ test.describe('Login', () => {
     await expect(page.getByText('Credenciales inválidas')).toBeVisible();
   });
 
-  test('participante aprobado llega a la cartelera', async ({ page }) => {
+  test('participante aprobado llega a su inicio', async ({ page }) => {
     await installApiMock(page, { loginUser: participantApproved });
     await page.goto('/login');
     await page.locator('input[type="email"]').fill(participantApproved.email);
     await page.locator('input[type="password"]').fill('any-password');
     await page.getByRole('button', { name: 'Iniciar Sesión' }).click();
-    await expect(page).toHaveURL(/\/activities$/);
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Hola, Ana' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Los próximos días' })).toBeVisible();
+    await page.getByRole('button', { name: 'Actividades' }).first().click();
     await expect(page.getByRole('heading', { name: 'Cartelera' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Malka' })).toBeVisible();
   });
@@ -147,15 +150,15 @@ test.describe('Sesión restaurada', () => {
     });
 
     /* La vitrina es para quien todavía no tiene cuenta: con sesión, la raíz
-       (en cualquier idioma) va directo a anotarse a las actividades. */
+       (en cualquier idioma) va directo a su inicio. */
     await page.goto('/');
-    await expect(page).toHaveURL(/\/activities$/);
+    await expect(page).toHaveURL(/\/dashboard$/);
     await page.goto('/he');
-    await expect(page).toHaveURL(/\/activities$/);
+    await expect(page).toHaveURL(/\/dashboard$/);
 
     /* Y la sesión guardada sigue abriendo la app sin pasar por el login. */
     await page.goto('/login');
-    await expect(page).toHaveURL(/\/activities$/);
+    await expect(page).toHaveURL(/\/dashboard$/);
   });
 });
 
@@ -290,16 +293,18 @@ test.describe('Idiomas de la plataforma', () => {
 });
 
 test.describe('Navegación autenticada (participante)', () => {
-  test('accede a Mis intereses desde el nav', async ({ page }) => {
+  test('los intereses están en el perfil, y la dirección vieja lleva ahí', async ({ page }) => {
     await installApiMock(page, { loginUser: participantApproved });
     await page.goto('/login');
     await page.locator('input[type="email"]').fill(participantApproved.email);
     await page.locator('input[type="password"]').fill('any-password');
     await page.getByRole('button', { name: 'Iniciar Sesión' }).click();
-    await expect(page).toHaveURL(/\/activities$/);
-    await page.getByRole('button', { name: 'Mis intereses' }).click();
-    await expect(page).toHaveURL(/\/my-interests$/);
-    await expect(page.getByRole('heading', { name: /Mis intereses/i })).toBeVisible();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await page.getByRole('button', { name: 'Mi perfil' }).first().click();
+    await expect(page).toHaveURL(/\/my-profile$/);
+    await expect(page.getByRole('heading', { name: 'Me interesa' })).toBeVisible();
+    await page.goto('/my-interests');
+    await expect(page).toHaveURL(/\/my-profile#intereses$/);
   });
 });
 

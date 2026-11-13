@@ -96,6 +96,12 @@ export async function installApiMock(page, options = {}) {
       return;
     }
 
+    // Cuántas veces vino en el año (inicio y Mis cosas).
+    if (method === 'GET' && path === '/api/me/resumen') {
+      await route.fulfill(json({ anio: 2026, veces: 0 }));
+      return;
+    }
+
     if (method === 'GET' && path.startsWith('/api/users/pending')) {
       await route.fulfill(json({ users: [] }));
       return;

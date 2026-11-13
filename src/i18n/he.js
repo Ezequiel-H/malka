@@ -69,9 +69,26 @@ const textos = {
     "cargando": "טוען פעילות...",
     "volver": "חזרה ללוח הפעילויות",
     "fechasDisponibles": "תאריכים פנויים",
-    "masFechas": "ועוד {cantidad} תאריכים...",
+    "masFechas": "עוד {cantidad} תאריכים",
     "todasLasFechas": "לכל התאריכים",
-    "politica": "מדיניות ביטול"
+    "politica": "מדיניות ביטול",
+    "cadaSemana": "כל שבוע",
+    "porEncuentro": "למפגש",
+    "elegiDia": "בחרו יום",
+    "lleno": "מלא · רשימת המתנה",
+    "quedan": "נשארו {cupos} מקומות",
+    "lugares": "{cupos} מקומות",
+    "verMenos": "פחות תאריכים",
+    "anotarmeAl": "להרשמה ל־{dia} · {precio}",
+    "sumarmeEspera": "להצטרפות לרשימת ההמתנה ל־{dia}",
+    "listo": {
+      "aceptada": "נרשמת! מחכים לך ב־{dia}",
+      "pendiente": "נרשמת ל־{dia}: הצוות עוד צריך לאשר",
+      "en_espera": "נכנסת לרשימת ההמתנה ל־{dia}"
+    },
+    "listoTexto": "אפשר לראות את זה בדברים שלי.",
+    "agendar": "הוספה ליומן",
+    "verMisCosas": "הדברים שלי"
   },
   "error": {
     "titulo": "משהו השתבש במסך הזה",
@@ -210,7 +227,18 @@ const textos = {
     "emailAyuda": "כדי לשנות את האימייל, כתבו לנו.",
     "guardar": "שמירת השינויים",
     "idiomaTexto": "השפה שבה אתם רואים את Malka. נשמרת בחשבון שלכם.",
-    "cerrarSesion": "יציאה"
+    "cerrarSesion": "יציאה",
+    "obligatorio": "השדה הזה לא יכול להישאר ריק",
+    "listo": "סיום",
+    "sinCargar": "לא הוזן",
+    "desde": "במלכה מאז {desde}",
+    "guardadoSolo": "נשמר",
+    "misDatos": "הפרטים שלי",
+    "tocaParaCambiar": "נוגעים בפרט כדי לשנות אותו. נשמר לבד.",
+    "meInteresa": "מעניין אותי",
+    "meInteresaTexto": "לפי זה נציג לך פעילויות בשבילך.",
+    "comida": "אוכל",
+    "emailFijo": "לא משתנה מכאן"
   },
   "registro": {
     "titulo": "הרשמה",
@@ -231,7 +259,10 @@ const textos = {
     "dniAyuda": "בין 7 ל־10 ספרות, בלי נקודות",
     "dniInvalido": "הזינו בין 7 ל־10 ספרות",
     "documento": "תעודה מזהה",
-    "tiposDocumento": { "dni": "DNI ארגנטינאי", "pasaporte": "דרכון" },
+    "tiposDocumento": {
+      "dni": "DNI ארגנטינאי",
+      "pasaporte": "דרכון"
+    },
     "pasaporte": "מספר דרכון",
     "pasaporteAyuda": "אותיות ומספרים, בלי רווחים",
     "pasaporteInvalido": "הזינו בין 5 ל־20 אותיות או מספרים",
@@ -272,15 +303,17 @@ const textos = {
     "colapsar": "כיווץ התפריט",
     "links": {
       "actividades": "פעילויות",
-      "inscripciones": "ההרשמות שלי",
+      "inscripciones": "הדברים שלי",
       "intereses": "תחומי העניין שלי",
-      "perfil": "הפרופיל שלי"
+      "perfil": "הפרופיל שלי",
+      "inicio": "בית"
     },
     "tabs": {
       "actividades": "פעילויות",
-      "inscripciones": "הרשמות",
+      "inscripciones": "הדברים שלי",
       "intereses": "תחומי עניין",
-      "perfil": "פרופיל"
+      "perfil": "פרופיל",
+      "inicio": "בית"
     }
   },
   "ui": {
@@ -358,6 +391,37 @@ const textos = {
     "guardados": "הפרטים נשמרו",
     "error": "לא הצלחנו לשמור את הפרטים",
     "faltan": "ספרו לנו מה האזרחות שלכם ואיפה אתם גרים."
+  },
+  "inicio": {
+    "hola": "שלום, {nombre}",
+    "viniste": "השנה הגעת למלכה {veces} פעמים.",
+    "vinisteUna": "השנה הגעת למלכה פעם אחת.",
+    "tuProxima": "הבא שלך · {cuando}",
+    "hoy": "היום",
+    "maniana": "מחר",
+    "enDias": "בעוד {dias} ימים",
+    "calendario": "יומן",
+    "comoLlegar": "איך מגיעים",
+    "sinProxima": "עוד לא נרשמת לשום דבר",
+    "sinProximaTexto": "כדאי לראות מה יש בימים הקרובים ולהירשם בנגיעה.",
+    "verCartelera": "לכל הפעילויות",
+    "semana": "הימים הקרובים",
+    "vas": "נרשמת",
+    "anotarme": "להרשמה",
+    "diaLibre": "אין פעילויות ביום הזה.",
+    "paraVos": "בשבילך",
+    "porque": "כי מעניין אותך {temas}",
+    "paraVosVacio": "כרגע אין משהו חדש ממה שמעניין אותך. נעדכן כשיהיה.",
+    "sinIntereses": "ספרו לנו מה מעניין אתכם ונציג כאן פעילויות בשבילכם.",
+    "elegirIntereses": "לבחירת תחומי עניין"
+  },
+  "misCosas": {
+    "titulo": "הדברים שלי",
+    "vez": "פעם",
+    "veces": "פעמים",
+    "vinisteAnio": "הגעת למלכה ב־{anio}",
+    "proximas": "בקרוב",
+    "subirComprobante": "להעלאת אישור תשלום אחר"
   }
 };
 

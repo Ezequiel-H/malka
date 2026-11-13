@@ -69,9 +69,26 @@ const textos = {
     "cargando": "Cargando actividad...",
     "volver": "Volver a la cartelera",
     "fechasDisponibles": "Fechas disponibles",
-    "masFechas": "Y {cantidad} fecha(s) más...",
+    "masFechas": "Ver {cantidad} fechas más",
     "todasLasFechas": "Ver todas las fechas",
-    "politica": "Política de cancelación"
+    "politica": "Política de cancelación",
+    "cadaSemana": "todas las semanas",
+    "porEncuentro": "por encuentro",
+    "elegiDia": "Elegí el día",
+    "lleno": "Lleno · lista de espera",
+    "quedan": "Quedan {cupos} lugares",
+    "lugares": "{cupos} lugares",
+    "verMenos": "Ver menos fechas",
+    "anotarmeAl": "Anotarme al {dia} · {precio}",
+    "sumarmeEspera": "Sumarme a la lista de espera del {dia}",
+    "listo": {
+      "aceptada": "¡Listo! Te esperamos el {dia}",
+      "pendiente": "Te anotaste para el {dia}: falta que el equipo confirme",
+      "en_espera": "Quedaste en la lista de espera del {dia}"
+    },
+    "listoTexto": "Lo ves en Mis cosas.",
+    "agendar": "Agendar",
+    "verMisCosas": "Mis cosas"
   },
   "error": {
     "titulo": "Algo salió mal en esta pantalla",
@@ -210,7 +227,18 @@ const textos = {
     "emailAyuda": "Para cambiar tu email, escribinos.",
     "guardar": "Guardar cambios",
     "idiomaTexto": "En qué idioma ves Malka. Se guarda en tu cuenta.",
-    "cerrarSesion": "Cerrar sesión"
+    "cerrarSesion": "Cerrar sesión",
+    "obligatorio": "Este dato no puede quedar vacío",
+    "listo": "Listo",
+    "sinCargar": "Sin cargar",
+    "desde": "En Malka desde {desde}",
+    "guardadoSolo": "Guardado",
+    "misDatos": "Mis datos",
+    "tocaParaCambiar": "Tocá un dato para cambiarlo. Se guarda solo.",
+    "meInteresa": "Me interesa",
+    "meInteresaTexto": "Con esto te mostramos actividades para vos.",
+    "comida": "Comida",
+    "emailFijo": "No se cambia desde acá"
   },
   "registro": {
     "titulo": "Registro",
@@ -231,7 +259,10 @@ const textos = {
     "dniAyuda": "Entre 7 y 10 dígitos, sin puntos",
     "dniInvalido": "Ingresá entre 7 y 10 dígitos",
     "documento": "Documento",
-    "tiposDocumento": { "dni": "DNI", "pasaporte": "Pasaporte" },
+    "tiposDocumento": {
+      "dni": "DNI",
+      "pasaporte": "Pasaporte"
+    },
     "pasaporte": "Número de pasaporte",
     "pasaporteAyuda": "Letras y números, sin espacios",
     "pasaporteInvalido": "Ingresá entre 5 y 20 letras o números",
@@ -272,15 +303,17 @@ const textos = {
     "colapsar": "Colapsar menú",
     "links": {
       "actividades": "Actividades",
-      "inscripciones": "Mis inscripciones",
+      "inscripciones": "Mis cosas",
       "intereses": "Mis intereses",
-      "perfil": "Mi perfil"
+      "perfil": "Mi perfil",
+      "inicio": "Inicio"
     },
     "tabs": {
       "actividades": "Cartelera",
-      "inscripciones": "Inscripciones",
+      "inscripciones": "Mis cosas",
       "intereses": "Intereses",
-      "perfil": "Perfil"
+      "perfil": "Perfil",
+      "inicio": "Inicio"
     }
   },
   "ui": {
@@ -358,6 +391,37 @@ const textos = {
     "guardados": "Datos guardados",
     "error": "No se pudieron guardar tus datos",
     "faltan": "Contanos tu nacionalidad y dónde vivís."
+  },
+  "inicio": {
+    "hola": "Hola, {nombre}",
+    "viniste": "Este año viniste {veces} veces a Malka.",
+    "vinisteUna": "Este año viniste una vez a Malka.",
+    "tuProxima": "Tu próxima · {cuando}",
+    "hoy": "hoy",
+    "maniana": "mañana",
+    "enDias": "en {dias} días",
+    "calendario": "Calendario",
+    "comoLlegar": "Cómo llegar",
+    "sinProxima": "Todavía no te anotaste a nada",
+    "sinProximaTexto": "Mirá lo que hay en los próximos días y anotate en un toque.",
+    "verCartelera": "Ver la cartelera",
+    "semana": "Los próximos días",
+    "vas": "Vas",
+    "anotarme": "Anotarme",
+    "diaLibre": "Ese día no hay actividades.",
+    "paraVos": "Para vos",
+    "porque": "Porque te interesa {temas}",
+    "paraVosVacio": "Por ahora no hay nada nuevo de lo que te interesa. Te avisamos cuando haya.",
+    "sinIntereses": "Contanos qué te interesa y acá te mostramos actividades para vos.",
+    "elegirIntereses": "Elegir intereses"
+  },
+  "misCosas": {
+    "titulo": "Mis cosas",
+    "vez": "vez",
+    "veces": "veces",
+    "vinisteAnio": "viniste a Malka en {anio}",
+    "proximas": "Próximas",
+    "subirComprobante": "Subir otro comprobante"
   }
 };
 

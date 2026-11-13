@@ -27,10 +27,11 @@ const ADMIN_TAB_COUNT = 4;
    participante salen del idioma elegido (`clave` en shell.links); el panel
    del equipo queda en castellano. */
 const PARTICIPANT_LINKS = [
+  { to: '/dashboard', clave: 'inicio', icon: 'dashboard', exact: true },
   { to: '/activities', clave: 'actividades', icon: 'activity' },
   { to: '/my-inscriptions', clave: 'inscripciones', icon: 'document' },
-  { to: '/my-interests', clave: 'intereses', icon: 'tag' },
-  { to: '/my-profile', clave: 'perfil', icon: 'user' },
+  // Los intereses viven en el perfil.
+  { to: '/my-profile', clave: 'perfil', icon: 'user', also: ['/my-interests'] },
 ];
 
 const SIDEBAR_KEY = 'malka.sidebar';
@@ -158,7 +159,7 @@ const AppShell = ({ children }) => {
             /* El logo completo no entra colapsado; queda el monograma. */
             <button
               type="button"
-              onClick={() => go(user?.role === 'admin' ? '/admin' : '/activities')}
+              onClick={() => go(user?.role === 'admin' ? '/admin' : '/dashboard')}
               aria-label={t('shell.irAlInicio')}
               className="flex h-9 w-9 items-center justify-center rounded-control bg-primary-50 font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
@@ -167,7 +168,7 @@ const AppShell = ({ children }) => {
           ) : (
             <button
               type="button"
-              onClick={() => go(user?.role === 'admin' ? '/admin' : '/activities')}
+              onClick={() => go(user?.role === 'admin' ? '/admin' : '/dashboard')}
               className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               <img src={logoMalka} alt="Malka" className="h-8 w-auto" />
@@ -235,7 +236,7 @@ const AppShell = ({ children }) => {
       <header className="sticky top-0 z-40 flex items-center justify-between border-b border-surface-border bg-surface px-4 py-3 lg:hidden">
         <button
           type="button"
-          onClick={() => go(user?.role === 'admin' ? '/admin' : '/activities')}
+          onClick={() => go(user?.role === 'admin' ? '/admin' : '/dashboard')}
           className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <img src={logoMalka} alt="Malka" className="h-8 w-auto" />

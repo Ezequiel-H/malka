@@ -69,9 +69,26 @@ const textos = {
     "cargando": "Loading activity...",
     "volver": "Back to activities",
     "fechasDisponibles": "Available dates",
-    "masFechas": "And {cantidad} more date(s)...",
+    "masFechas": "Show {cantidad} more dates",
     "todasLasFechas": "See all dates",
-    "politica": "Cancellation policy"
+    "politica": "Cancellation policy",
+    "cadaSemana": "every week",
+    "porEncuentro": "per session",
+    "elegiDia": "Pick a day",
+    "lleno": "Full · waiting list",
+    "quedan": "{cupos} spots left",
+    "lugares": "{cupos} spots",
+    "verMenos": "Show fewer dates",
+    "anotarmeAl": "Sign up for {dia} · {precio}",
+    "sumarmeEspera": "Join the waiting list for {dia}",
+    "listo": {
+      "aceptada": "You're in! See you on {dia}",
+      "pendiente": "You signed up for {dia}: the team still has to confirm",
+      "en_espera": "You're on the waiting list for {dia}"
+    },
+    "listoTexto": "You'll find it in My stuff.",
+    "agendar": "Add to calendar",
+    "verMisCosas": "My stuff"
   },
   "error": {
     "titulo": "Something went wrong on this screen",
@@ -210,7 +227,18 @@ const textos = {
     "emailAyuda": "To change your email, message us.",
     "guardar": "Save changes",
     "idiomaTexto": "The language you see Malka in. It’s saved to your account.",
-    "cerrarSesion": "Log out"
+    "cerrarSesion": "Log out",
+    "obligatorio": "This can't be empty",
+    "listo": "Done",
+    "sinCargar": "Not set",
+    "desde": "At Malka since {desde}",
+    "guardadoSolo": "Saved",
+    "misDatos": "My details",
+    "tocaParaCambiar": "Tap a detail to change it. It saves on its own.",
+    "meInteresa": "I'm into",
+    "meInteresaTexto": "We use this to show you activities for you.",
+    "comida": "Food",
+    "emailFijo": "Can't be changed here"
   },
   "registro": {
     "titulo": "Sign up",
@@ -231,7 +259,10 @@ const textos = {
     "dniAyuda": "7 to 10 digits, no dots",
     "dniInvalido": "Enter 7 to 10 digits",
     "documento": "ID document",
-    "tiposDocumento": { "dni": "Argentine DNI", "pasaporte": "Passport" },
+    "tiposDocumento": {
+      "dni": "Argentine DNI",
+      "pasaporte": "Passport"
+    },
     "pasaporte": "Passport number",
     "pasaporteAyuda": "Letters and numbers, no spaces",
     "pasaporteInvalido": "Enter 5 to 20 letters or numbers",
@@ -272,15 +303,17 @@ const textos = {
     "colapsar": "Collapse menu",
     "links": {
       "actividades": "Activities",
-      "inscripciones": "My registrations",
+      "inscripciones": "My stuff",
       "intereses": "My interests",
-      "perfil": "My profile"
+      "perfil": "My profile",
+      "inicio": "Home"
     },
     "tabs": {
       "actividades": "Activities",
-      "inscripciones": "Registrations",
+      "inscripciones": "My stuff",
       "intereses": "Interests",
-      "perfil": "Profile"
+      "perfil": "Profile",
+      "inicio": "Home"
     }
   },
   "ui": {
@@ -358,6 +391,37 @@ const textos = {
     "guardados": "Details saved",
     "error": "We couldn’t save your details",
     "faltan": "Tell us your nationality and where you live."
+  },
+  "inicio": {
+    "hola": "Hi, {nombre}",
+    "viniste": "This year you came to Malka {veces} times.",
+    "vinisteUna": "This year you came to Malka once.",
+    "tuProxima": "Up next · {cuando}",
+    "hoy": "today",
+    "maniana": "tomorrow",
+    "enDias": "in {dias} days",
+    "calendario": "Calendar",
+    "comoLlegar": "Directions",
+    "sinProxima": "You haven't signed up for anything yet",
+    "sinProximaTexto": "See what's on in the next few days and sign up in one tap.",
+    "verCartelera": "See all activities",
+    "semana": "The next few days",
+    "vas": "You're going",
+    "anotarme": "Sign up",
+    "diaLibre": "No activities that day.",
+    "paraVos": "For you",
+    "porque": "Because you're into {temas}",
+    "paraVosVacio": "Nothing new for your interests right now. We'll let you know.",
+    "sinIntereses": "Tell us what you're into and we'll show you activities for you here.",
+    "elegirIntereses": "Choose interests"
+  },
+  "misCosas": {
+    "titulo": "My stuff",
+    "vez": "time",
+    "veces": "times",
+    "vinisteAnio": "you came to Malka in {anio}",
+    "proximas": "Coming up",
+    "subirComprobante": "Upload another receipt"
   }
 };
 

@@ -30,7 +30,7 @@ describe('authRedirect', () => {
 
   it('falls back to role-based default when no redirect', () => {
     expect(resolvePostAuthPath({ role: 'admin' }, {})).toBe('/admin');
-    expect(resolvePostAuthPath({ role: 'participant', estado: 'approved' }, {})).toBe('/activities');
+    expect(resolvePostAuthPath({ role: 'participant', estado: 'approved' }, {})).toBe('/dashboard');
     expect(resolvePostAuthPath({ role: 'participant', estado: 'pending' }, {})).toBe('/dashboard');
   });
 });
