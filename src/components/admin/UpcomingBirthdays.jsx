@@ -137,7 +137,8 @@ const Grupo = ({ titulo, personas }) => {
   );
 };
 
-const UpcomingBirthdays = ({ className = '' }) => {
+/* `semanaQueViene`: el panel a medida puede mostrar sólo esta semana. */
+const UpcomingBirthdays = ({ className = '', semanaQueViene = true }) => {
   const [data, setData] = useState(null);
   const [saludoPlantilla, setSaludoPlantilla] = useState('');
   const [error, setError] = useState(null);
@@ -196,8 +197,8 @@ const UpcomingBirthdays = ({ className = '' }) => {
   };
 
   const hoy = data?.hoy ?? [];
-  const vacio =
-    data && !hoy.length && !data.estaSemana.length && !data.proximaSemana.length;
+  const proxima = semanaQueViene ? data?.proximaSemana ?? [] : [];
+  const vacio = data && !hoy.length && !data.estaSemana.length && !proxima.length;
 
   return (
     <Card as="section" className={className}>
@@ -207,7 +208,7 @@ const UpcomingBirthdays = ({ className = '' }) => {
         </span>
         <div className="min-w-0">
           <h2 className="text-xl font-bold text-ink">Próximos cumpleaños</h2>
-          <p className="text-sm text-ink-muted">Esta semana y la que viene</p>
+          <p className="text-sm text-ink-muted">{semanaQueViene ? 'Esta semana y la que viene' : 'Esta semana'}</p>
         </div>
       </div>
 
@@ -232,12 +233,12 @@ const UpcomingBirthdays = ({ className = '' }) => {
 
           {vacio ? (
             <p className="py-2 text-sm text-ink-muted">
-              Nadie cumple años en estas dos semanas.
+              {semanaQueViene ? 'Nadie cumple años en estas dos semanas.' : 'Nadie cumple años esta semana.'}
             </p>
           ) : (
             <>
               <Grupo titulo="Esta semana" personas={data.estaSemana} />
-              <Grupo titulo="La semana que viene" personas={data.proximaSemana} />
+              <Grupo titulo="La semana que viene" personas={proxima} />
             </>
           )}
 

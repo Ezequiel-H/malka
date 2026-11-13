@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Route, Routes } from 'react-router-dom';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import axios from 'axios';
 import { DateTime } from 'luxon';
 import * as AuthContext from '../../contexts/AuthContext.jsx';
@@ -10,6 +11,17 @@ import AdminDashboard from './AdminDashboard.jsx';
 const hoy = DateTime.now().setZone('America/Argentina/Buenos_Aires');
 const dentroDe = (n) => hoy.plus({ days: n }).toISODate();
 const mes = (n) => hoy.minus({ months: n }).toFormat('yyyy-MM');
+
+/* El catálogo como lo devuelve el back (forma reducida pero real). */
+const CATALOGO = [
+  { id: 'pendientes', visible: true, ancho: 'entera', opciones: { mostrar: { tipo: 'lista', valores: ['personas', 'inscripciones', 'comprobantes'], defecto: ['personas', 'inscripciones', 'comprobantes'] } } },
+  { id: 'numeros', visible: true, ancho: 'entera', opciones: { cuales: { tipo: 'lista', valores: ['vinieron', 'vuelven', 'veces', 'cubrio', 'nuevos', 'recaudado'], defecto: ['vinieron', 'vuelven', 'veces', 'cubrio'] }, meses: { tipo: 'uno', valores: [3, 6, 12], defecto: 6 } } },
+  { id: 'semana', visible: true, ancho: 'entera', opciones: { borradores: { tipo: 'si_no', defecto: false } } },
+  { id: 'proximo', visible: true, ancho: 'media', opciones: { criterio: { tipo: 'uno', valores: ['mas_gente', 'mas_cercano'], defecto: 'mas_gente' }, dias: { tipo: 'uno', valores: [3, 7, 14], defecto: 7 } } },
+  { id: 'cumples', visible: true, ancho: 'media', opciones: { semanaQueViene: { tipo: 'si_no', defecto: true } } },
+  { id: 'plata', visible: false, ancho: 'media', opciones: { comparar: { tipo: 'si_no', defecto: true } } },
+];
+const DE_SIEMPRE = CATALOGO.map((c) => ({ id: c.id, visible: c.visible, ancho: c.ancho, opciones: Object.fromEntries(Object.entries(c.opciones).map(([k, o]) => [k, o.defecto])) }));
 
 const PENDIENTE_VACIO = { cantidad: 0, actividades: [], nombres: [], masAntigua: null };
 
@@ -40,6 +52,7 @@ function mockPanel({ pendientes = {}, cumples = {}, actividades = [] } = {}) {
     if (url === '/admin/actividades-resumen') {
       return Promise.resolve({ data: { semana: { desde: dentroDe(-3), hasta: dentroDe(3), hoy: hoy.toISODate() }, actividades } });
     }
+    if (url === '/admin/inicio') return Promise.resolve({ data: { bloques: DE_SIEMPRE, personalizado: false, catalogo: CATALOGO } });
     if (url === '/tags') return Promise.resolve({ data: { tags: [] } });
     if (url === '/settings') return Promise.resolve({ data: { settings: { whatsappCumpleanosMensaje: '¡Feliz cumple, {nombre}!' } } });
     return Promise.reject(new Error(`unexpected GET ${url}`));
@@ -87,6 +100,7 @@ describe('AdminDashboard', () => {
         {
           id: 'a1',
           titulo: 'Kabbalat Shabbat',
+          estado: 'publicada',
           categorias: [],
           cupo: 40,
           semana: [],
@@ -111,5 +125,51 @@ describe('AdminDashboard', () => {
     montar();
     expect(await screen.findByText(/Nada pendiente/)).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByText('Vinieron este mes')).not.toBeInTheDocument());
+  });
+
+  it('«Armar mi panel» edita sobre la misma pantalla: ocultar, sumar y Cancelar vuelve todo atrás', async () => {
+    mockPanel();
+    const user = userEvent.setup();
+    montar();
+    await user.click(await screen.findByRole('button', { name: 'Armar mi panel' }));
+    expect(screen.getByText('Estás armando tu panel')).toBeInTheDocument();
+    const bandeja = screen.getByRole('region', { name: 'Para sumar' });
+    expect(within(bandeja).getByText('La plata del mes')).toBeInTheDocument();
+
+    await user.click(within(bandeja).getByText('La plata del mes'));
+    expect(within(bandeja).queryByText('La plata del mes')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Ocultar' })).toHaveLength(6);
+
+    await user.click(screen.getAllByRole('button', { name: 'Cancelar' })[0]);
+    expect(screen.queryByText('Estás armando tu panel')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'La plata del mes' })).not.toBeInTheDocument();
+  });
+
+  it('Guardar manda el orden y lo elegido al servidor', async () => {
+    mockPanel();
+    const put = vi.spyOn(axios, 'put').mockImplementation((url, body) => Promise.resolve({ data: { bloques: body.bloques, personalizado: true, catalogo: CATALOGO } }));
+    const user = userEvent.setup();
+    montar();
+    await user.click(await screen.findByRole('button', { name: 'Armar mi panel' }));
+    await user.click(screen.getAllByRole('button', { name: 'Bajar' })[0]); // «Para hacer» pasa abajo de los números
+    await user.click(screen.getAllByRole('button', { name: 'Guardar' })[0]);
+    await waitFor(() => expect(put).toHaveBeenCalled());
+    const [url, body] = put.mock.calls[0];
+    expect(url).toBe('/admin/inicio');
+    expect(body.bloques.map((b) => b.id).slice(0, 2)).toEqual(['numeros', 'pendientes']);
+  });
+
+  it('el engranaje de un bloque cambia sólo sus opciones, y el bloque cambia al momento', async () => {
+    mockPanel();
+    const put = vi.spyOn(axios, 'put').mockImplementation((url, body) => Promise.resolve({ data: { bloques: body.bloques, personalizado: true, catalogo: CATALOGO } }));
+    const user = userEvent.setup();
+    montar();
+    await user.click(await screen.findByRole('button', { name: 'Opciones de «Los números del mes»' }));
+    expect(screen.queryByText('Estás armando tu panel')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Recaudado este mes' }));
+    expect(screen.getByText('Recaudado este mes', { selector: 'a span' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Guardar/ }));
+    await waitFor(() => expect(put).toHaveBeenCalled());
+    expect(put.mock.calls[0][1].bloques.find((b) => b.id === 'numeros').opciones.cuales).toContain('recaudado');
   });
 });
