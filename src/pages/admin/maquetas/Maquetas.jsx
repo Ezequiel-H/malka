@@ -40,7 +40,8 @@ const PANTALLAS = [
   {
     valor: 'ajustes',
     etiqueta: 'Ajustes',
-    aviso: 'Un índice a la izquierda y cada ajuste se guarda solo. Los mensajes de WhatsApp se arman tocando los datos y se ven como le llegan al centro.',
+    aviso:
+      'Un índice a la izquierda y cada ajuste se guarda solo. Los datos del mensaje (nombre, fecha, lugar…) se suman tocándolos y quedan como pastillas dentro del texto; a la derecha se ve cómo le llega al centro. Probá escribir y sumar uno.',
     Pantalla: MaquetaAjustes,
   },
 ];
@@ -62,7 +63,7 @@ const PARTICIPANTE = [
   {
     valor: 'p-mias',
     etiqueta: 'Mis cosas',
-    aviso: 'Cuántas veces vino este año, lo próximo como una línea de tiempo con su estado (y el botón para subir el comprobante si falta) y lo que ya hizo.',
+    aviso: 'Sólo lo que le sirve: cuántas veces vino este año y lo próximo como línea de tiempo, con su estado (y el botón para subir el comprobante si falta). Lo que ya hizo no se muestra.',
     Pantalla: MaquetaMisInscripciones,
   },
   {

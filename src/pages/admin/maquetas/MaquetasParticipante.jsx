@@ -247,34 +247,21 @@ export const MaquetaDetalle = () => {
 
 /* ---------------- Mis inscripciones ---------------- */
 
-const MESES = [3, 5, 2, 4, 6, 1, 0, 2, 5, 4, 3, 2];
-const NOMBRES_MES = ['dic', 'ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov'];
-
 export const MaquetaMisInscripciones = () => (
   <Celular activa="mias">
     <h1 className="font-grotesk text-[1.7rem] font-semibold tracking-tight text-ink">Mis cosas</h1>
 
-    {/* Cuánto viene, para que se vea parte. */}
-    <section className="mt-4 rounded-[22px] bg-surface p-5">
-      <p className="text-sm text-ink-muted">Este año viniste</p>
-      <p className="font-grotesk text-4xl font-semibold tabular-nums text-ink">
-        37 <span className="text-lg font-medium text-ink-muted">veces</span>
-      </p>
-      <div className="mt-4 flex h-14 items-end gap-1.5" aria-hidden>
-        {MESES.map((n, i) => (
-          <span key={i} className="flex flex-1 flex-col items-center gap-1">
-            <span
-              className="w-full rounded-[4px] bg-primary-600"
-              style={{
-                height: `${Math.max(6, n * 7)}px`,
-                opacity: i === MESES.length - 1 ? 1 : 0.45,
-              }}
-            />
-            <span className="text-[0.6rem] text-ink-faint">{NOMBRES_MES[i][0]}</span>
-          </span>
-        ))}
-      </div>
-      <p className="mt-3 text-sm text-ink-soft">Lo que más hacés: Shabbat y Cocina.</p>
+    {/* Sólo cuántas veces vino: sin el detalle de lo que ya hizo. */}
+    <section className="mt-4 flex items-center gap-4 rounded-[22px] bg-surface p-5">
+      <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-pill bg-primary-600/[0.12] text-primary-800">
+        <Icon name="heart" />
+      </span>
+      <span>
+        <span className="block font-grotesk text-3xl font-semibold tabular-nums text-ink">
+          37 <span className="text-base font-medium text-ink-muted">veces</span>
+        </span>
+        <span className="text-sm text-ink-muted">viniste a Malka este año</span>
+      </span>
     </section>
 
     <section className="mt-6">
@@ -328,26 +315,6 @@ export const MaquetaMisInscripciones = () => (
           </li>
         ))}
       </ol>
-    </section>
-
-    <section className="mt-6">
-      <h2 className="mb-3 font-grotesk text-lg font-semibold text-ink">Ya fuiste</h2>
-      <ul className="divide-y divide-surface-border rounded-[18px] bg-surface">
-        {[
-          [ACTIVIDADES[0], 'Viernes 8 de nov'],
-          [ACTIVIDADES[1], 'Martes 5 de nov'],
-          [ACTIVIDADES[0], 'Viernes 1 de nov'],
-        ].map(([a, f], i) => (
-          <li key={i} className="flex items-center gap-3 px-4 py-3">
-            <IconoColor icono={icono(a)} color={color(a)} tamano="sm" />
-            <span className="flex-1">
-              <span className="block text-sm font-semibold text-ink">{a.titulo}</span>
-              <span className="text-xs text-ink-muted">{f}</span>
-            </span>
-            <Icon name="check" size="sm" className="text-success-700" />
-          </li>
-        ))}
-      </ul>
     </section>
   </Celular>
 );
