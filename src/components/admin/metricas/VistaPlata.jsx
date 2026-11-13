@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Table } from '../../ui';
+import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Field, Select, Table } from '../../ui';
 import { EJE, RAMPA, SERIE } from './colores';
 import {
   BarrasHorizontales,
@@ -31,6 +31,144 @@ const CATEGORIA_GASTO = {
 /* Sin prefijo de prueba en los títulos ("[M] Cena" → "Cena"). */
 const titulo = (t) => t.replace(/^\[[A-Z]\]\s*/, '');
 
+/* ---------- Evento por evento (las hojas de gastos de la planilla) ---------- */
+
+const mayuscula = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : t);
+const promedio = (lista) => (lista.length ? lista.reduce((a, b) => a + b, 0) / lista.length : null);
+
+/**
+ * Cada evento con su plata y su gente, filtrable por mes y categoría, con
+ * los cuatro números que la planilla mostraba arriba y la evolución por
+ * mes. «Puso la casa» es lo que costó menos lo que se recaudó: lo que no se
+ * cubrió con ingresos.
+ */
+const PorEvento = ({ eventos, onEvento }) => {
+  const [mes, setMes] = useState('');
+  const [categoria, setCategoria] = useState('');
+  const meses = [...new Set(eventos.map((e) => e.mes))].sort().reverse();
+  const categorias = [...new Set(eventos.map((e) => e.categoria).filter(Boolean))].sort();
+  const lista = eventos.filter((e) => (!mes || e.mes === mes) && (!categoria || e.categoria === categoria));
+  const costo = lista.reduce((t, e) => t + e.costo, 0);
+  const puso = lista.reduce((t, e) => t + (e.costo - e.recaudado), 0);
+  const conGente = lista.filter((e) => e.personas > 0);
+  const porPersona = promedio(conGente.map((e) => (e.costo - e.recaudado) / e.personas));
+  const evolucion = [...new Set(lista.map((e) => e.mes))].sort().map((m) => {
+    const delMes = lista.filter((e) => e.mes === m);
+    const gasto = delMes.reduce((t, e) => t + e.costo, 0);
+    const neto = delMes.reduce((t, e) => t + (e.costo - e.recaudado), 0);
+    return { mes: m, etiqueta: mesCorto(m), gasto, neto, promedio: Math.round(neto / delMes.length) };
+  });
+  const caro = lista.length ? lista.reduce((a, b) => (b.costo - b.recaudado > a.costo - a.recaudado ? b : a)) : null;
+
+  if (!eventos.length) return null;
+  return (
+    <Panel
+      titulo="Evento por evento"
+      lectura={
+        caro
+          ? `En lo filtrado, la casa puso ${pesos(puso)} en ${numero(lista.length)} eventos: ${pesos(Math.round(puso / lista.length))} por evento${porPersona ? ` y ${pesos(Math.round(porPersona))} por persona` : ''}. El que más le costó fue ${titulo(caro.titulo)} del ${new Date(`${caro.fecha}T00:00:00Z`).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', timeZone: 'UTC' })}.`
+          : null
+      }
+      ayuda="Cada evento con gastos o recaudación cargados: lo que costó, lo que se recaudó, lo que puso la casa (lo que no cubrió la recaudación), cuánta gente vino, la edad promedio y cuánto le costó a la casa cada persona. Filtrá por mes y categoría como en la planilla; tocá un evento para ver su ficha."
+      accion={
+        <div className="flex flex-wrap gap-2">
+          <Field label="Mes" htmlFor="evento-mes" className="mb-0 w-44">
+            <Select id="evento-mes" options={meses.map((m) => ({ value: m, label: mayuscula(mesLargo(m)) }))} value={mes} onChange={(v) => setMes(v ?? '')} placeholder="Todos" clearable size="sm" />
+          </Field>
+          <Field label="Categoría" htmlFor="evento-categoria" className="mb-0 w-44">
+            <Select id="evento-categoria" options={categorias.map((c) => ({ value: c, label: mayuscula(c) }))} value={categoria} onChange={(v) => setCategoria(v ?? '')} placeholder="Todas" clearable size="sm" />
+          </Field>
+        </div>
+      }
+    >
+      <div className="mb-5 grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 lg:grid-cols-4">
+        {[
+          ['Puso la casa', pesos(puso), 'Lo que costó menos lo recaudado'],
+          ['Gastos sin recaudación', pesos(costo), 'Todo lo que se gastó'],
+          ['Por evento', lista.length ? pesos(Math.round(puso / lista.length)) : '—', `Promedio de ${numero(lista.length)} eventos`],
+          ['Por persona', porPersona ? pesos(Math.round(porPersona)) : '—', 'Lo que puso la casa por cada una'],
+        ].map(([t, v, d]) => (
+          <div key={t} className="rounded-control border border-surface-border bg-surface-sunken px-4 py-3">
+            <p className="text-xs text-ink-muted">{t}</p>
+            <p className="text-xl font-semibold tabular-nums text-ink">{v}</p>
+            <p className="text-xs text-ink-muted">{d}</p>
+          </div>
+        ))}
+      </div>
+
+      {evolucion.length > 1 && (
+        <>
+          <Leyenda
+            items={[
+              { etiqueta: 'Gastó', color: SERIE.ambar },
+              { etiqueta: 'Puso la casa', color: SERIE.verde },
+              { etiqueta: 'Promedio por evento', color: RAMPA[4] },
+            ]}
+          />
+          <div className="mb-5 h-60 min-w-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={evolucion} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+                <CartesianGrid vertical={false} stroke={EJE.grilla} />
+                <XAxis dataKey="etiqueta" {...ejeX} interval="preserveStartEnd" minTickGap={12} />
+                <YAxis {...ejeY} width={80} tickFormatter={pesosCorto} />
+                <Tooltip
+                  cursor={{ stroke: EJE.texto, strokeDasharray: '3 3' }}
+                  content={
+                    <TooltipCaja
+                      titulo={(_, payload) => mesLargo(payload[0].payload.mes)}
+                      filas={(payload) => {
+                        const d = payload[0].payload;
+                        return [
+                          { etiqueta: 'Gastó', valor: pesos(d.gasto), color: SERIE.ambar },
+                          { etiqueta: 'Puso la casa', valor: pesos(d.neto), color: SERIE.verde },
+                          { etiqueta: 'Por evento', valor: pesos(d.promedio), color: RAMPA[4] },
+                        ];
+                      }}
+                    />
+                  }
+                />
+                <Line type="monotone" dataKey="gasto" stroke={SERIE.ambar} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                <Line type="monotone" dataKey="neto" stroke={SERIE.verde} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                <Line type="monotone" dataKey="promedio" stroke={RAMPA[4]} strokeWidth={2} strokeDasharray="4 4" dot={false} activeDot={{ r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </>
+      )}
+
+      <Table
+        stacked
+        rows={lista.slice(0, 60)}
+        rowKey={(e) => `${e.actividadId}|${e.fecha}`}
+        onRowClick={(e) => onEvento(e.actividadId)}
+        empty={<p className="text-sm text-ink-muted">No hay eventos con estos filtros.</p>}
+        columns={[
+          {
+            key: 'evento',
+            header: 'Evento',
+            render: (e) => (
+              <span className="min-w-0">
+                <span className="block font-medium text-ink">{titulo(e.titulo)}</span>
+                <span className="text-xs text-ink-muted">
+                  {new Date(`${e.fecha}T00:00:00Z`).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
+                  {e.categoria ? ` · ${mayuscula(e.categoria)}` : ''}
+                </span>
+              </span>
+            ),
+          },
+          { key: 'costo', header: 'Gastó', align: 'right', render: (e) => pesos(e.costo) },
+          { key: 'recaudado', header: 'Recaudó', align: 'right', render: (e) => pesos(e.recaudado) },
+          { key: 'puso', header: 'Puso la casa', align: 'right', render: (e) => <span className="font-semibold tabular-nums text-ink">{pesos(e.costo - e.recaudado)}</span> },
+          { key: 'personas', header: 'Personas', align: 'right', render: (e) => numero(e.personas) },
+          { key: 'edad', header: 'Edad', align: 'right', render: (e) => (e.edadPromedio === null ? '—' : numero(e.edadPromedio)) },
+          { key: 'porPersona', header: 'Por persona', align: 'right', render: (e) => (e.personas ? pesos(Math.round((e.costo - e.recaudado) / e.personas)) : '—') },
+        ]}
+      />
+      {lista.length > 60 && <p className="mt-3 text-center text-xs text-ink-muted">Se muestran los 60 más recientes de {numero(lista.length)}. Filtrá por mes para ver el resto.</p>}
+    </Panel>
+  );
+};
+
 /* ---------- Lecturas ---------- */
 
 const lecturaMeses = (porMes) => {
@@ -52,7 +190,7 @@ const lecturaEncuentros = (filas) => {
  * Cuánto entra, cuánto sale y cuánto de cada encuentro se cubre con lo que
  * se cobra. Sólo pesos: lo que se cobra en dólares se informa aparte.
  */
-const VistaPlata = ({ plata, anterior, participantes, onMes, onTipo }) => {
+const VistaPlata = ({ plata, anterior, participantes, onMes, onTipo, onEvento }) => {
   const pl = plata;
   const porMes = pl.porMes.map((m) => ({ ...m, etiqueta: mesCorto(m.mes) }));
   const sinGastos = pl.gastado === 0;
@@ -151,6 +289,8 @@ const VistaPlata = ({ plata, anterior, participantes, onMes, onTipo }) => {
         </div>
         <p className="mt-2 text-xs text-ink-muted">Tocá una columna para ver los gastos de ese mes.</p>
       </Panel>
+
+      <PorEvento eventos={pl.porEvento ?? []} onEvento={onEvento} />
 
       <Panel
         titulo="Cuánto cuesta cada encuentro"

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Button } from '../../ui';
+import { Button, Table } from '../../ui';
 import { EJE, RAMPA, SERIE } from './colores';
 import {
   BarrasHorizontales,
@@ -93,6 +93,13 @@ const lecturaEdad = (edad) => {
   if (edad.promedio === null) return null;
   const mayor = edad.tramos.reduce((a, b) => (b.personas > a.personas ? b : a));
   return `El grupo más grande es el de ${mayor.etiqueta} años${edad.sinDato ? `. ${numero(edad.sinDato)} no cargaron su fecha de nacimiento` : ''}.`;
+};
+
+const lecturaResumen = (porMes) => {
+  const conDatos = porMes.filter((m) => m.participaciones > 0);
+  if (!conDatos.length) return null;
+  const masFiel = conDatos.reduce((a, b) => ((b.frecuencia ?? 0) > (a.frecuencia ?? 0) ? b : a));
+  return `El mes en que la gente más repitió fue ${mesLargo(masFiel.mes)}: cada persona vino ${numero(masFiel.frecuencia)} veces en promedio.`;
 };
 
 /* ---------- Rangos para abrir «En detalle» ---------- */
@@ -321,6 +328,32 @@ const VistaPersonas = ({ personas, anterior, abrirDetalle }) => {
         )}
       </Panel>
 
+      <Panel
+        titulo="Resumen por mes"
+        lectura={lecturaResumen(porMes)}
+        ayuda="La misma cuenta que la tabla de resumen de eventos de la planilla: por mes, cuántas asistencias hubo (cada vez que alguien vino), cuántas personas distintas, la edad promedio el día del encuentro y la frecuencia (asistencias por persona). Tocá un mes para ver quiénes vinieron."
+      >
+        <Table
+          stacked
+          rows={[...porMes].reverse().filter((m) => m.participaciones > 0)}
+          rowKey={(m) => m.mes}
+          onRowClick={(m) => abrirDetalle({ veces: VECES_QUE_VINIERON }, rangoMes(m.mes))}
+          columns={[
+            { key: 'mes', header: 'Mes', render: (m) => <span className="capitalize">{mesLargo(m.mes)}</span> },
+            { key: 'asistencias', header: 'Asistencias', align: 'right', render: (m) => numero(m.participaciones) },
+            { key: 'personas', header: 'Personas', align: 'right', render: (m) => numero(m.personas) },
+            { key: 'nuevas', header: 'Nuevas', align: 'right', render: (m) => numero(m.nuevas) },
+            { key: 'edad', header: 'Edad promedio', align: 'right', render: (m) => (m.edadPromedio === null ? '—' : numero(m.edadPromedio)) },
+            { key: 'frecuencia', header: 'Frecuencia', align: 'right', render: (m) => (m.frecuencia === null ? '—' : numero(m.frecuencia)) },
+          ]}
+        />
+        <p className="mt-3 text-sm text-ink-muted">
+          En todo el período: <span className="font-semibold text-ink">{numero(p.participaciones)}</span> asistencias de{' '}
+          <span className="font-semibold text-ink">{numero(p.participantes)}</span> personas, frecuencia{' '}
+          <span className="font-semibold text-ink">{numero(p.participacionesPorPersona)}</span>.
+        </p>
+      </Panel>
+
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel
           titulo="Cuántas veces vienen"
@@ -449,6 +482,29 @@ const VistaPersonas = ({ personas, anterior, abrirDetalle }) => {
         </Panel>
       </div>
 
+      {p.edad.porPropuesta?.length > 0 && (
+        <Panel
+          titulo="Edad por propuesta"
+          lectura={(() => {
+            const lista = p.edad.porPropuesta;
+            const joven = lista.reduce((a, b) => (b.promedio < a.promedio ? b : a));
+            const grande = lista.reduce((a, b) => (b.promedio > a.promedio ? b : a));
+            return joven.nombre === grande.nombre
+              ? null
+              : `La propuesta con gente más joven es ${joven.nombre} (${numero(joven.promedio)} años); la de gente más grande, ${grande.nombre} (${numero(grande.promedio)}).`;
+          })()}
+          ayuda="La edad promedio de quienes vinieron a cada propuesta, calculada el día de cada encuentro (como el resumen de edades de la planilla). Tocá una para ver quiénes son."
+        >
+          <BarrasHorizontales
+            filas={p.edad.porPropuesta.map((e) => ({ etiqueta: mayuscula(e.nombre), valor: e.promedio, clave: e.nombre, detalle: `${numero(e.personas)} personas` }))}
+            formato={(n) => `${numero(n)} años`}
+            color={RAMPA[5]}
+            base={Math.max(0, Math.floor(Math.min(...p.edad.porPropuesta.map((e) => e.promedio))) - 3)}
+            onFila={(f) => abrirDetalle({ propuesta: [f.clave] })}
+          />
+        </Panel>
+      )}
+
       <Panel
         titulo="Asistencia"
         lectura={
@@ -489,6 +545,20 @@ const VistaPersonas = ({ personas, anterior, abrirDetalle }) => {
             </div>
           ))}
         </dl>
+        {/* Quien viene sin anotarse no está en las inscripciones: se suma
+            desde la actividad o el historial, y conviene hablarle. */}
+        <div className="mt-4 flex flex-col gap-2 border-t border-surface-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-ink-soft">
+            {p.sinAnotarse?.veces
+              ? `${numero(p.sinAnotarse.veces)} veces vino alguien sin anotarse (${numero(p.sinAnotarse.personas)} personas distintas).`
+              : 'Nadie quedó registrado como «vino sin anotarse» en el período.'}
+          </p>
+          {p.sinAnotarse?.veces > 0 && (
+            <Button size="sm" variant="secondary" onClick={() => abrirDetalle({ sinAnotarse: ['si'] })}>
+              Ver quiénes son
+            </Button>
+          )}
+        </div>
       </Panel>
     </div>
   );

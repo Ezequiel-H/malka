@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { Bar, BarChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -28,8 +29,11 @@ const METRICAS = [
 
 /* ---------- El ranking ---------- */
 
+const PRIMERAS = 15;
+
 const Ranking = ({ desde, hasta, abrirFicha }) => {
   const [params, setParams] = useSearchParams();
+  const [todas, setTodas] = useState(false);
   const tipo = TIPOS.some((t) => t.valor === params.get('tipoAct')) ? params.get('tipoAct') : 'todas';
   const metrica = METRICAS.find((m) => m.value === params.get('por')) ?? METRICAS[0];
   const poner = (k, v, base) =>
@@ -75,7 +79,7 @@ const Ranking = ({ desde, hasta, abrirFicha }) => {
       >
         <BarrasHorizontales
           key={metrica.value + tipo}
-          filas={orden.map((a) => ({
+          filas={(todas ? orden : orden.slice(0, PRIMERAS)).map((a) => ({
             etiqueta: titulo(a.titulo),
             valor: metrica.de(a),
             detalle: `${TIPO[a.tipo] ?? a.tipo} · ${numero(a.encuentros)} encuentros · ${numero(a.personas)} personas`,
@@ -87,6 +91,13 @@ const Ranking = ({ desde, hasta, abrirFicha }) => {
           accionFila="Ver la actividad"
           vacio="No hubo actividades de este tipo en el período."
         />
+        {orden.length > PRIMERAS && (
+          <div className="mt-4 flex justify-center">
+            <Button variant="secondary" size="sm" onClick={() => setTodas((t) => !t)}>
+              {todas ? `Ver sólo las ${PRIMERAS} primeras` : `Ver las ${orden.length}`}
+            </Button>
+          </div>
+        )}
       </Panel>
 
       <Panel titulo="Todas, lado a lado" ayuda="La misma información en una tabla, para comparar varios números a la vez. Tocá una actividad para ver su ficha.">

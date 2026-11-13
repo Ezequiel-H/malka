@@ -16,7 +16,7 @@ const etiquetaCategoria = (c) => CATEGORIAS.find((x) => x.value === c)?.label ??
 const fechaCorta = (f) => new Date(f).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
 const titulo = (t) => (t ?? '').replace(/^\[[A-Z]\]\s*/, '');
 
-const VACIO = { fecha: '', concepto: '', categoria: 'comida', monto: '', moneda: 'ARS', cantidad: '', unidad: '', actividadId: '', notas: '' };
+const VACIO = { fecha: '', concepto: '', categoria: 'comida', tipo: 'gasto', monto: '', moneda: 'ARS', cantidad: '', unidad: '', actividadId: '', evento: '', notas: '' };
 
 /**
  * El formulario de un gasto, para cargar uno nuevo o editar uno existente.
@@ -36,6 +36,8 @@ const FormGasto = ({ abierto, gasto, actividades, onCerrar, onGuardado }) => {
             fecha: String(gasto.fecha).slice(0, 10),
             concepto: gasto.concepto ?? '',
             categoria: gasto.categoria ?? 'otros',
+            tipo: gasto.tipo ?? 'gasto',
+            evento: gasto.evento ?? '',
             monto: String(gasto.monto ?? ''),
             moneda: gasto.moneda ?? 'ARS',
             cantidad: gasto.cantidad != null ? String(gasto.cantidad) : '',
@@ -53,7 +55,7 @@ const FormGasto = ({ abierto, gasto, actividades, onCerrar, onGuardado }) => {
     e.preventDefault();
     setGuardando(true);
     try {
-      const cuerpo = { ...datos, actividadId: datos.actividadId || null, cantidad: datos.cantidad || null };
+      const cuerpo = { ...datos, actividadId: datos.actividadId || null, evento: datos.actividadId ? '' : datos.evento, cantidad: datos.cantidad || null };
       if (gasto) await axios.put(`/gastos/${gasto._id}`, cuerpo);
       else await axios.post('/gastos', cuerpo);
       showSuccess(gasto ? 'Gasto actualizado' : 'Gasto cargado');
@@ -86,6 +88,17 @@ const FormGasto = ({ abierto, gasto, actividades, onCerrar, onGuardado }) => {
         <Field label="Concepto" htmlFor="gasto-concepto" className="sm:col-span-2">
           <Input id="gasto-concepto" value={datos.concepto} onChange={cambiar('concepto')} placeholder="Comida del Shabat, vino, arcilla…" required maxLength={120} />
         </Field>
+        <Field label="Es" htmlFor="gasto-tipo" className="sm:col-span-2">
+          <Select
+            id="gasto-tipo"
+            options={[
+              { value: 'gasto', label: 'Un gasto' },
+              { value: 'ingreso', label: 'Plata que entró (recaudación en efectivo, donación)' },
+            ]}
+            value={datos.tipo}
+            onChange={cambiar('tipo')}
+          />
+        </Field>
         <Field label="Fecha" htmlFor="gasto-fecha">
           <DatePicker id="gasto-fecha" value={datos.fecha} onChange={cambiar('fecha')} />
         </Field>
@@ -117,6 +130,11 @@ const FormGasto = ({ abierto, gasto, actividades, onCerrar, onGuardado }) => {
             clearable
           />
         </Field>
+        {!datos.actividadId && (
+          <Field label="Evento" htmlFor="gasto-evento" hint="Si no es de una actividad de la app" className="sm:col-span-2">
+            <Input id="gasto-evento" value={datos.evento} onChange={cambiar('evento')} maxLength={160} placeholder="Kabbalat Shabbat - 06/10/2023" />
+          </Field>
+        )}
         <Field label="Cantidad" htmlFor="gasto-cantidad" hint="Opcional">
           <Input id="gasto-cantidad" type="number" inputMode="decimal" min="0" step="any" value={datos.cantidad} onChange={cambiar('cantidad')} />
         </Field>
@@ -189,7 +207,7 @@ const VistaGastos = ({ desde, hasta, categorias, onCategorias, onCambio }) => {
   };
 
   const lista = datos ?? [];
-  const total = lista.filter((g) => g.moneda === 'ARS').reduce((t, g) => t + g.monto, 0);
+  const total = lista.filter((g) => g.moneda === 'ARS' && g.tipo !== 'ingreso').reduce((t, g) => t + g.monto, 0);
   const alternar = (c) => onCategorias(categorias.includes(c) ? categorias.filter((x) => x !== c) : [...categorias, c]);
 
   return (
@@ -254,11 +272,17 @@ const VistaGastos = ({ desde, hasta, categorias, onCategorias, onCambio }) => {
                   render: (g) => (
                     <span className="min-w-0">
                       <span className="block font-medium text-ink">{g.concepto}</span>
-                      {g.actividadId?.titulo && <span className="block text-xs text-ink-muted">{titulo(g.actividadId.titulo)}</span>}
+                      {(g.actividadId?.titulo || g.evento) && (
+                        <span className="block text-xs text-ink-muted">{titulo(g.actividadId?.titulo ?? g.evento)}</span>
+                      )}
                     </span>
                   ),
                 },
-                { key: 'categoria', header: 'Tipo', render: (g) => etiquetaCategoria(g.categoria) },
+                {
+                  key: 'categoria',
+                  header: 'Tipo',
+                  render: (g) => (g.tipo === 'ingreso' ? <span className="text-success-700">Entró</span> : etiquetaCategoria(g.categoria)),
+                },
                 {
                   key: 'cantidad',
                   header: 'Cantidad',
@@ -269,7 +293,12 @@ const VistaGastos = ({ desde, hasta, categorias, onCategorias, onCambio }) => {
                   key: 'monto',
                   header: 'Monto',
                   align: 'right',
-                  render: (g) => <span className="font-semibold tabular-nums text-ink">{g.moneda === 'USD' ? `US$ ${numero(g.monto)}` : pesos(g.monto)}</span>,
+                  render: (g) => (
+                    <span className="font-semibold tabular-nums text-ink">
+                      {g.tipo === 'ingreso' ? '+ ' : ''}
+                      {g.moneda === 'USD' ? `US$ ${numero(g.monto)}` : pesos(g.monto)}
+                    </span>
+                  ),
                 },
                 {
                   key: 'acciones',
@@ -286,7 +315,7 @@ const VistaGastos = ({ desde, hasta, categorias, onCategorias, onCambio }) => {
             />
             {lista.length > 0 && (
               <p className="mt-3 text-right text-sm text-ink-muted">
-                {numero(lista.length)} gastos · total en pesos <span className="font-semibold tabular-nums text-ink">{pesos(total)}</span>
+                {numero(lista.length)} movimientos · gastado en pesos <span className="font-semibold tabular-nums text-ink">{pesos(total)}</span>
               </p>
             )}
           </>

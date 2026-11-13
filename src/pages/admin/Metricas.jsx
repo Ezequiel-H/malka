@@ -227,6 +227,7 @@ const Metricas = () => {
                 participantes={datos.personas.participantes}
                 onMes={(mes) => cambiar({ vista: 'gastos', periodo: 'rango', ...rangoDelMes(mes) })}
                 onTipo={(tipo) => cambiar({ vista: 'gastos', tipo: [tipo] })}
+                onEvento={(actividad) => cambiar({ vista: 'actividades', actividad })}
               />
             ) : (
               <VistaPersonas personas={datos.personas} anterior={datos.anterior?.personas} abrirDetalle={abrirDetalle} />

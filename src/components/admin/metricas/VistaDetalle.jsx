@@ -47,6 +47,34 @@ const armarDimensiones = (datos) => {
   return [
     { clave: 'estado', etiqueta: 'Estado', opciones: Object.entries(ESTADOS).map(([v, e]) => ({ value: v, label: e.etiqueta })), de: (p) => [p.estado] },
     { clave: 'veces', etiqueta: 'Veces en el período', opciones: TRAMOS_VECES.map((t) => ({ value: t.valor, label: t.etiqueta })), de: (p) => [tramo(TRAMOS_VECES, p.veces)] },
+    {
+      clave: 'clave',
+      etiqueta: 'Eventos clave',
+      opciones: [
+        { value: '0', label: 'Nunca vino a uno' },
+        { value: '1', label: 'Vino a uno' },
+        { value: '2+', label: 'Recurrente (2 o más)' },
+      ],
+      de: (p) => [p.vecesClave >= 2 ? '2+' : String(p.vecesClave ?? 0)],
+    },
+    {
+      clave: 'sinAnotarse',
+      etiqueta: 'Se anota',
+      opciones: [
+        { value: 'si', label: 'Vino alguna vez sin anotarse' },
+        { value: 'no', label: 'Siempre se anotó' },
+      ],
+      de: (p) => [p.sinAnotarse > 0 ? 'si' : 'no'],
+    },
+    {
+      clave: 'cuenta',
+      etiqueta: 'Cuenta en la app',
+      opciones: [
+        { value: 'usuario', label: 'Tiene cuenta' },
+        { value: 'contacto', label: 'Sin cuenta (contacto)' },
+      ],
+      de: (p) => [p.esContacto ? 'contacto' : 'usuario'],
+    },
     { clave: 'nueva', etiqueta: 'Primera vez', opciones: [{ value: 'si', label: 'Vino por primera vez en el período' }], de: (p) => (p.nuevaEnRango ? ['si'] : []) },
     {
       clave: 'edad',
@@ -171,6 +199,9 @@ const preguntasRapidas = (datos) => {
   const shabat = datos.actividades.filter((a) => /shabat/i.test(a.titulo)).map((a) => a.id);
   return [
     shabat.length && { etiqueta: 'Vinieron sólo a Shabat', filtros: { solo: shabat } },
+    { etiqueta: 'Recurrentes en eventos clave', filtros: { clave: ['2+'] } },
+    { etiqueta: 'Vinieron sin anotarse', filtros: { sinAnotarse: ['si'] } },
+    { etiqueta: 'Sin cuenta en la app', filtros: { cuenta: ['contacto'], veces: ['1', '2-4', '5-9', '10-24', '25+'] } },
     { etiqueta: 'Se están alejando', filtros: { estado: ['alejandose'] } },
     { etiqueta: 'Nuevas en el período', filtros: { nueva: ['si'] } },
     { etiqueta: 'Las que más vienen', filtros: { veces: ['10-24', '25+'] } },
@@ -197,6 +228,10 @@ const descargarCsv = (personas, desde, hasta) => {
     ['Estado', (p) => ESTADOS[p.estado]?.etiqueta],
     ['Veces en el período', (p) => p.veces],
     ['Veces en total', (p) => p.vecesTotal],
+    ['Eventos clave en el período', (p) => p.vecesClave],
+    ['Vino sin anotarse', (p) => p.sinAnotarse],
+    ['Último encuentro', (p) => p.ultimoEncuentro],
+    ['Tiene cuenta', (p) => (p.esContacto ? 'No' : 'Sí')],
     ['Primera vez', (p) => fechaCsv(p.primeraVez)],
     ['Última vez', (p) => fechaCsv(p.ultimaVez)],
     ['Edad', (p) => p.edad],
@@ -562,9 +597,15 @@ const VistaDetalle = ({ desde, hasta }) => {
               key: 'nombre',
               header: 'Persona',
               render: (p) => (
-                <Link to={`/admin/users/${p.id}`} className="font-medium text-ink hover:text-primary-700 hover:underline">
-                  {p.nombre}
-                </Link>
+                <span className="min-w-0">
+                  <Link
+                    to={p.esContacto ? `/admin/contactos/${p.id.slice(2)}` : `/admin/users/${p.id}`}
+                    className="block font-medium text-ink hover:text-primary-700 hover:underline"
+                  >
+                    {p.nombre}
+                  </Link>
+                  {p.esContacto && <span className="text-xs text-ink-muted">Sin cuenta</span>}
+                </span>
               ),
             },
             {
@@ -577,6 +618,7 @@ const VistaDetalle = ({ desde, hasta }) => {
               ),
             },
             { key: 'veces', header: 'Veces', align: 'right', render: (p) => <span className="tabular-nums">{numero(p.veces)}</span> },
+            { key: 'clave', header: 'Clave', align: 'right', render: (p) => <span className="tabular-nums">{numero(p.vecesClave ?? 0)}</span> },
             {
               key: 'ultima',
               header: 'Última vez',

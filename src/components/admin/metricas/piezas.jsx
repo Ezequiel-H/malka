@@ -456,7 +456,9 @@ export const MatrizCruce = ({ categorias, matriz, onCelda }) => {
  * (por actividad, por categoría) se lee mejor que un gráfico de columnas: el
  * nombre entra entero y el valor está escrito al lado.
  */
-export const BarrasHorizontales = ({ filas, formato = numero, color = RAMPA[6], vacio, onFila, accionFila = 'Ver quiénes' }) => {
+/* `base` corre el cero de la escala: para promedios (edades) que van de 22
+   a 32, barras desde 0 se verían todas iguales. */
+export const BarrasHorizontales = ({ filas, formato = numero, color = RAMPA[6], vacio, onFila, accionFila = 'Ver quiénes', base = 0 }) => {
   const [activa, setActiva] = useState(null);
   if (!filas.length) return <p className="text-sm text-ink-muted">{vacio}</p>;
   const maximo = Math.max(...filas.map((f) => f.valor));
@@ -480,7 +482,7 @@ export const BarrasHorizontales = ({ filas, formato = numero, color = RAMPA[6], 
                 <div className="h-2.5 rounded-pill bg-surface-sunken">
                   <div
                     className="h-full rounded-pill transition-[width] duration-slow ease-standard motion-reduce:transition-none"
-                    style={{ width: `${maximo ? Math.max(2, (f.valor / maximo) * 100) : 0}%`, background: f.color ?? color }}
+                    style={{ width: `${maximo > base ? Math.max(2, ((f.valor - base) / (maximo - base)) * 100) : 0}%`, background: f.color ?? color }}
                   />
                 </div>
                 {(f.detalle || (onFila && activa === i)) && (
